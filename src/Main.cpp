@@ -78,7 +78,7 @@ public:
             MessageManager::callAsync([this]()
             {
                 DialogWindow::LaunchOptions opts;
-                opts.dialogTitle = "HARP";
+                opts.dialogTitle = "Welcome";
                 opts.content.setOwned(new WelcomeWindow([this]()
                 {
                     if (auto* mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))

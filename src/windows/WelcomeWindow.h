@@ -17,7 +17,7 @@ public:
         // --- Intro Text ---
         introText.setText(
             "Welcome to HARP!\n"
-            "A tool for hosted, asynchronous processing of audio tracks.",
+            "A tool for hosted, asynchronous, remote processing of audio tracks.",
             dontSendNotification);
         introText.setJustificationType(Justification::centred);
         introText.setFont(Font(17.0f, Font::bold));
@@ -26,15 +26,16 @@ public:
         // --- Instructions ---
         instructions.setText(
             "\n HARP operates as a standalone app or plugin-like editor within your DAW, allowing you "
-            "to process tracks using ML models hosted on platforms like Hugging Face or Stability AI.\n\n"
-            "The interface is organized into three main sections:\n"
+            "to process tracks using machine learning models hosted on platforms like Hugging Face or Stability AI.\n\n"
+            "The interface is organized into several sections:\n"
             "1. The top area allows model selection and parameter control.\n"
-            "2. The middle area handles audio & MIDI input and processing.\n"
-            "3. The bottom shows model status & info for hovered component.\n\n"
-            "GET STARTED:\n\n"
-            "Access tokens are required for models hosted on Hugging Face or Stability AI, "
-            "to authenticate your account and let HARP securely fetch and run models. "
-            "The first two models in the dropdown are on Stability, and the rest are on Hugging Face.\n\n"
+            "2. The middle area handles audio & MIDI I/O and processing.\n"
+            "3. The bottom shows model status & info for hovered component.\n"
+            "4. The rightmost panel can hold intermediate inputs / outputs and overwrite DAW-linked tracks.\n\n"
+            "Getting started:\n"
+            "Access tokens are required for models hosted on Hugging Face (as ZeroGPU spaces)"
+            " or Stability AI, to authenticate your account and let HARP securely fetch and run models. "
+            "The first two models in the dropdown are hosted by Stability AI, and the rest are hosted on Hugging Face.\n\n"
             "Add tokens under File -> Settings -> Hugging Face, or by clicking 'Open Settings' below.",
             dontSendNotification);
         instructions.setJustificationType(Justification::centredTop);
