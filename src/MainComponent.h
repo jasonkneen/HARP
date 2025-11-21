@@ -1084,9 +1084,15 @@ public:
         descriptionLabel.setMultiLine(true);
         descriptionLabel.setReadOnly(true);
         descriptionLabel.setScrollbarsShown(true);
-        descriptionLabel.setCaretVisible(false);
-        descriptionLabel.setPopupMenuEnabled(false);
-        descriptionLabel.setFont(Font(15.0f));
+        descriptionLabel.setCaretVisible(false);        // no blinking cursor
+        descriptionLabel.setPopupMenuEnabled(false);    // disable right-click menu
+        descriptionLabel.setFont(juce::Font(15.0f));
+
+        // Make it visually match the old TextLabel appearance
+        descriptionLabel.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
+        descriptionLabel.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+        descriptionLabel.setColour(juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
+
         addAndMakeVisible(descriptionLabel);
         // addAndMakeVisible(tagsLabel);
         // addAndMakeVisible(audioOrMidiLabel);
@@ -1104,6 +1110,9 @@ public:
 
         setOpaque(true);
         setSize(800, 2000);
+        if (auto* window = findParentComponentOfClass<DocumentWindow>())
+            window->setResizeLimits(900, 700, 20000, 20000);
+
         // set to full screen
         // setFullScreen(true);
         resized();
@@ -1329,26 +1338,32 @@ public:
         juce::FlexBox row1;
         row1.flexDirection = juce::FlexBox::Direction::row;
         row1.items.add(juce::FlexItem(modelPathComboBox).withFlex(8).withMargin(margin));
-        row1.items.add(juce::FlexItem(loadModelButton).withFlex(1).withMargin(margin));
+        row1.items.add(juce::FlexItem(loadModelButton).withMinWidth(150).withWidth(150).withMargin(margin));
         mainPanel.items.add(juce::FlexItem(row1).withHeight(30));
 
         // Row 2: ModelName / AuthorName Labels
         juce::FlexBox row2;
         row2.flexDirection = juce::FlexBox::Direction::row;
-        row2.items.add(juce::FlexItem(modelAuthorLabel).withFlex(0.5).withMargin(margin));
+        {
+            const int authorMinWidth = modelAuthorLabel.getAuthorFont().getStringWidth(modelAuthorLabel.getAuthorText()) + 12;
+
+            row2.items.add(
+                juce::FlexItem(modelAuthorLabel)
+                    .withMinWidth(authorMinWidth)
+                    .withFlex(0)
+                    .withMargin(margin)
+            );
+        }
         row2.items.add(juce::FlexItem().withFlex(0.5).withMargin(margin));
         mainPanel.items.add(juce::FlexItem(row2).withHeight(50).withMargin(margin));
 
         // Row 3: Description
-        if (model != nullptr && model->getStatus() != ModelStatus::INITIALIZED 
-            && !descriptionLabel.getText().isEmpty())
-        {
-            mainPanel.items.add(juce::FlexItem(descriptionLabel).withHeight(60).withMargin(margin));
-        }
-        else
-        {
-            descriptionLabel.setBounds(0, 0, 0, 0); // Hide it
-        }
+        mainPanel.items.add(
+            juce::FlexItem(descriptionLabel)
+                .withHeight(120)     
+                .withFlex(0)           
+                .withMargin(margin)
+        );
 
         // Row 4: Control Area Widget
         // TODO - set min/max height based on limits of control element scaling

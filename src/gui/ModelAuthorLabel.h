@@ -25,6 +25,12 @@ public:
         addAndMakeVisible(authorLabel);
     }
 
+    juce::Font getAuthorFont() const     { return authorLabel.getFont(); }
+    juce::String getAuthorText() const   { return authorLabel.getText(); }
+
+    juce::Font getNameFont() const       { return modelLabel.getFont(); }
+    juce::String getNameText() const     { return modelLabel.getText(); }
+
     void resized() override
     {
         auto area = getLocalBounds();
