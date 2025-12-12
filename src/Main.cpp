@@ -1,5 +1,5 @@
-#include "MainComponent.h"
 #include "AppSettings.h"
+#include "MainComponent.h"
 #include "windows/WelcomeWindow.h"
 
 using namespace juce;
@@ -67,7 +67,7 @@ public:
 
         bool showWelcome = true;
 
-        if (!forceShowWelcome)
+        if (! forceShowWelcome)
         {
             if (AppSettings::containsKey("showWelcomePopup"))
                 showWelcome = AppSettings::getIntValue("showWelcomePopup", 1) == 1;
@@ -75,19 +75,24 @@ public:
 
         if (showWelcome)
         {
-            MessageManager::callAsync([this]()
-            {
-                DialogWindow::LaunchOptions opts;
-                opts.dialogTitle = "Welcome";
-                opts.content.setOwned(new WelcomeWindow([this]()
+            MessageManager::callAsync(
+                [this]()
                 {
-                    if (auto* mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
-                        mainComp->showSettingsDialog();
-                }));
-                opts.content->setSize(480, 500);
-                opts.useNativeTitleBar = true;
-                opts.launchAsync();
-            });
+                    auto* mainComp =
+                        dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
+                    if (mainComp)
+                    {
+                        welcomeWindow.reset(new WelcomeWindow(mainComp));
+
+                        // Handle window closing
+                        welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
+
+                        // Position relative to main window or center
+                        welcomeWindow->centreWithSize(500, 420);
+                        welcomeWindow->setVisible(true);
+                        welcomeWindow->toFront(true);
+                    }
+                });
         }
 
         StringArray args;
@@ -526,6 +531,7 @@ private:
     }
 
     std::unique_ptr<HARPWindow> mainWindow;
+    std::unique_ptr<WelcomeWindow> welcomeWindow;
     Array<std::unique_ptr<HARPWindow>> additionalWindows;
 
     ApplicationProperties applicationProperties;

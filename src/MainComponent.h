@@ -12,11 +12,11 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include "ThreadPoolJob.h"
+#include "WebModel.h"
 #include "widgets/ControlAreaWidget.h"
 #include "widgets/MediaClipboardWidget.h"
-#include "ThreadPoolJob.h"
 #include "widgets/TrackAreaWidget.h"
-#include "WebModel.h"
 
 #include "gui/CustomPathDialog.h"
 #include "gui/HoverHandler.h"
@@ -535,18 +535,21 @@ public:
                             }
                             else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
                             {
-                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().huggingface;
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().huggingface;
                                 spaceUrl.launchInDefaultBrowser();
                             }
                             else if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
                             {
                                 // either choose hugingface or gradio, they are the same
-                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().huggingface;
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().huggingface;
                                 spaceUrl.launchInDefaultBrowser();
                             }
                             else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
                             {
-                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().stability;
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().stability;
                                 spaceUrl.launchInDefaultBrowser();
                             }
                             // URL spaceUrl =
@@ -1215,8 +1218,7 @@ public:
                 [this, localInputTrackFiles](String jobProcessID) { // &jobsFinished, totalJobs
                     // Individual job code for each iteration
                     // copy the audio file, with the same filename except for an added _harp to the stem
-                    OpResult processingResult =
-                        model->process(localInputTrackFiles);
+                    OpResult processingResult = model->process(localInputTrackFiles);
                     processMutex.lock();
                     if (jobProcessID != currentProcessID)
                     {
@@ -1298,6 +1300,90 @@ public:
     void paint(Graphics& g) override
     {
         g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
+    }
+
+    void paintOverChildren(Graphics& g) override
+    {
+        if (! tutorialHighlightRect.isEmpty())
+        {
+            auto area = getLocalBounds();
+
+            // Create a path for the background
+            Path backgroundPath;
+            backgroundPath.addRectangle(area.toFloat());
+
+            // Create a path for the highlight hole
+            // We use a rounded rectangle for a nicer look
+            Path highlightPath;
+            highlightPath.addRoundedRectangle(tutorialHighlightRect.toFloat(), 5.0f);
+
+            // Subtract the highlight from the background
+            backgroundPath.setUsingNonZeroWinding(false);
+            backgroundPath.addPath(highlightPath);
+
+            g.setColour(Colours::black.withAlpha(0.6f));
+            g.fillPath(backgroundPath);
+
+            // Optional: Draw a border around the highlight
+            g.setColour(Colours::white.withAlpha(0.8f));
+            g.strokePath(highlightPath, PathStrokeType(2.0f));
+        }
+    }
+
+    void setTutorialHighlight(Rectangle<int> bounds)
+    {
+        tutorialHighlightRect = bounds;
+        repaint();
+    }
+
+    // Bounds accessors for tutorial steps
+    Rectangle<int> getModelSelectBounds()
+    {
+        // Combine Combobox and Load Button (Row 1)
+        if (modelPathComboBox.isVisible())
+        {
+            auto bounds = modelPathComboBox.getBounds();
+            bounds = bounds.getUnion(loadModelButton.getBounds());
+            return bounds.expanded(5, 5);
+        }
+        return {};
+    }
+
+    Rectangle<int> getControlsBounds()
+    {
+        if (controlAreaWidget.isVisible())
+            return controlAreaWidget.getBounds().expanded(5, 5);
+        return {};
+    }
+
+    Rectangle<int> getTracksBounds()
+    {
+        auto bounds = inputTrackAreaWidget.getBounds();
+        if (outputTrackAreaWidget.isVisible())
+            bounds = bounds.getUnion(outputTrackAreaWidget.getBounds());
+
+        // Include labels if visible
+        if (inputTracksLabel.isVisible())
+            bounds = bounds.getUnion(inputTracksLabel.getBounds());
+        if (outputTracksLabel.isVisible())
+            bounds = bounds.getUnion(outputTracksLabel.getBounds());
+
+        return bounds.expanded(5, 5);
+    }
+
+    Rectangle<int> getInfoBarBounds()
+    {
+        auto bounds = instructionBox->getBounds();
+        if (statusBox->isVisible())
+            bounds = bounds.getUnion(statusBox->getBounds());
+        return bounds.expanded(5, 5);
+    }
+
+    Rectangle<int> getClipboardBounds()
+    {
+        if (showMediaClipboard && mediaClipboardWidget.isVisible())
+            return mediaClipboardWidget.getBounds().expanded(5, 5);
+        return {};
     }
 
     void resized() override
@@ -1751,4 +1837,6 @@ private:
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+
+    Rectangle<int> tutorialHighlightRect;
 };
