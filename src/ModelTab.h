@@ -8,15 +8,15 @@
 
 #include "juce_gui_basics/juce_gui_basics.h"
 
-#include "widgets/ModelSelectionWidget.h"
-#include "widgets/ModelDisplayWidget.h"
 #include "../utils.h"
+#include "widgets/ModelDisplayWidget.h"
+#include "widgets/ModelSelectionWidget.h"
 
 using namespace juce;
 
 class ModelTab : public Component
 {
-public:
+   public:
     ModelTab()
     {
         // TODO
@@ -37,8 +37,18 @@ public:
         // TODO
     }
 
-private:
+    void resetProcessingButtons()
+    {
+        processCancelButton.setMode(processButtonInfo.label);
+        processCancelButton.setEnabled(true);
+        // saveEnabled = true;
+        // isProcessing = false;
+        loadModelButton.setEnabled(true);
+        modelPathComboBox.setEnabled(true);
+        repaint();
+    }
 
+   private:
     ModelSelectionWidget modelSelectionWidget;
     ModelDisplayWidget modelDisplayWidget;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../pianoroll/PianoRollComponent.hpp"
-#include "../pianoroll/SynthAudioSource.h"
+#include "pianoroll/PianoRollComponent.hpp"
+#include "pianoroll/SynthAudioSource.h"
 #include "MediaDisplayComponent.h"
 
 class MidiDisplayComponent : public MediaDisplayComponent

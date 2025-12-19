@@ -72,57 +72,6 @@ enum ModelStatus
     ERROR
 };
 
-struct PyHarpComponentInfo
-{
-    Uuid id { "" };
-    std::string label { "" };
-    std::string info { "" };
-    virtual ~PyHarpComponentInfo() = default; // virtual destructor
-};
-
-struct SliderInfo : public PyHarpComponentInfo
-{
-    double minimum;
-    double maximum;
-    double step;
-    double value;
-};
-
-struct TextBoxInfo : public PyHarpComponentInfo
-{
-    std::string value;
-};
-
-struct AudioTrackInfo : public PyHarpComponentInfo
-{
-    std::string value;
-    bool required;
-};
-
-struct MidiTrackInfo : public PyHarpComponentInfo
-{
-    std::string value;
-    bool required;
-};
-
-struct NumberBoxInfo : public PyHarpComponentInfo
-{
-    double min;
-    double max;
-    double value;
-};
-
-struct ToggleInfo : public PyHarpComponentInfo
-{
-    bool value;
-};
-
-struct ComboBoxInfo : public PyHarpComponentInfo
-{
-    std::vector<std::string> options;
-    std::string value;
-};
-
 struct SpaceInfo
 {
     enum Status
@@ -209,40 +158,3 @@ struct SpaceInfo
         return "Unknown/Unknown";
     }
 };
-
-struct OutputLabel
-{
-    // required on pyharp side
-    float t;
-    String label;
-    // optional on pyharp side
-    std::optional<String> description;
-    std::optional<float> duration;
-    std::optional<int> color;
-    std::optional<String> link;
-    virtual ~OutputLabel() = default; // virtual destructor
-};
-
-struct AudioLabel : public OutputLabel
-{
-    // Optional on pyharp side
-    std::optional<float> amplitude;
-};
-
-struct SpectrogramLabel : public OutputLabel
-{
-    // Optional on pyharp side
-    std::optional<float> frequency;
-};
-
-struct MidiLabel : public OutputLabel
-{
-    // Optional on pyharp side
-    std::optional<float> pitch;
-};
-
-using ComponentInfo = std::pair<Uuid, std::shared_ptr<PyHarpComponentInfo>>;
-using ComponentInfoMap = std::map<Uuid, std::shared_ptr<PyHarpComponentInfo>>;
-using ComponentInfoList = std::vector<ComponentInfo>;
-
-using LabelList = std::vector<std::unique_ptr<OutputLabel>>;

@@ -8,17 +8,18 @@
 
 #include "juce_gui_basics/juce_gui_basics.h"
 
-#include "gui/StatusComponent.h"
 #include "../utils.h"
+#include "gui/StatusComponent.h"
 
 using namespace juce;
 
 class StatusAreaWidget : public Component
 {
-public:
+   public:
     StatusAreaWidget()
     {
-        // TODO
+        addAndMakeVisible(instructionBox);
+        addAndMakeVisible(statusBox);
     }
 
     ~StatusAreaWidget()
@@ -33,7 +34,13 @@ public:
 
     void resized() override
     {
-        // TODO
+        // Row 8: Instructions Area and Status Area
+        juce::FlexBox row8;
+        row8.flexDirection = juce::FlexBox::Direction::row;
+        row8.items.add(juce::FlexItem(*instructionBox).withFlex(1).withMargin(margin));
+        row8.items.add(juce::FlexItem(*statusBox).withFlex(1).withMargin(margin));
+        // TODO - fix maximum height?
+        mainPanel.items.add(juce::FlexItem(row8).withFlex(0.4f));
     }
 
     void setStatus(const ModelStatus& status)
@@ -50,8 +57,7 @@ public:
 
     void clearInstructions() { instructionBox->clearStatusMessage(); }
 
-private:
-
+   private:
     SharedResourcePointer<InstructionBox> instructionBox;
     SharedResourcePointer<StatusBox> statusBox;
 }

@@ -21,7 +21,7 @@ void MainComponent::processCallback()
     loadModelButton.setEnabled(false);
     modelPathComboBox.setEnabled(false);
     //saveEnabled = false;
-    //isProcessing = true;
+     //isProcessing = true;
 
     // mediaDisplay->addNewTempFile();
     auto& inputMediaDisplays = inputTrackAreaWidget.getMediaDisplays();

@@ -12,12 +12,15 @@
 // #include <juce_gui_basics/juce_gui_basics.h>
 // #include <juce_gui_extra/juce_gui_extra.h>
 
+#include "utils/Logging.h"
+#include "utils/Settings.h"
+
 #include "ModelTab.h"
 #include "widgets/MediaClipboardWidget.h"
 #include "widgets/StatusAreaWidget.h"
 
 #include "ThreadPoolJob.h"
-#include "WebModel.h"
+//#include "WebModel.h"
 
 // #include "gui/CustomPathDialog.h"
 // #include "gui/HoverHandler.h"
@@ -28,16 +31,12 @@
 
 // #include "client/Client.h"
 
-#include "HarpLogger.h"
-#include "external/magic_enum.hpp"
+//#include "external/magic_enum.hpp"
 // #include "media/AudioDisplayComponent.h"
 // #include "media/MediaDisplayComponent.h"
 // #include "media/MidiDisplayComponent.h"
 
-#include "AppSettings.h"
-#include "settings/SettingsBox.h"
 #include "utils.h"
-#include "windows/AboutWindow.h"
 
 using namespace juce;
 
@@ -131,14 +130,6 @@ class MainComponent : public Component,
 
     bool perform(const InvocationInfo& info) override;
 
-    /* Interface */
-
-    void initModelPathComboBox();
-    void resetModelPathComboBox();
-    void initLoadModelButton();
-    void initProcessCancelButton();
-    void resetUI();
-
     /* Callbacks */
 
     // File
@@ -176,8 +167,6 @@ class MainComponent : public Component,
     void resized() override;
 
    private:
-    void resetProcessingButtons();
-
     void changeListenerCallback(ChangeBroadcaster* source) override;
 
     void processLoadingResult(OpResult result);
