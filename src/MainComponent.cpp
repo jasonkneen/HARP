@@ -9,10 +9,11 @@ MainComponent::MainComponent()
     initializeMenuBar();
 
     // TODO - initialize model tab
+    addAndMakeVisible(mainModelTab);
 
     addAndMakeVisible(statusAreaWidget);
 
-    //showStatusArea = AppSettings::getBoolValue("showStatusArea", false);
+    showStatusArea = AppSettings::getBoolValue("showStatusArea", true);
 
     addAndMakeVisible(mediaClipboardWidget);
 
@@ -23,10 +24,12 @@ MainComponent::MainComponent()
 
     setSize(800, 2000);
 
-    setOpaque(true);
-    setWantsKeyboardFocus(true); // Remove focus from modelPathTextBox after clicking off
+    //setOpaque(true);
+    //setWantsKeyboardFocus(true); // Remove focus from modelPathTextBox after clicking off
 
-    resized();
+    //resized();
+
+    statusMessage->setMessage("Welcome to HARP!");
 }
 
 MainComponent::~MainComponent()
@@ -65,19 +68,18 @@ void MainComponent::resized()
     //mainPanel.alignItems = FlexBox::AlignItems::stretch;
     //mainPanel.justifyContent = FlexBox::JustifyContent::flexStart;
 
-    mainPanel.items.add(FlexItem(mainModelTab).withFlex(1));
+    mainPanel.items.add(FlexItem(mainModelTab).withFlex(1.0));
 
-    // TODO - status area
-    // TODO - fix maximum height for status area
+    if (showStatusArea)
+    {
+        mainPanel.items.add(FlexItem(statusAreaWidget).withHeight(100));
+    }
+    else
+    {
+        statusAreaWidget.setBounds(0, 0, 0, 0);
+    }
 
-    //if (showStatusArea)
-    //{
-    mainPanel.items.add(FlexItem(statusAreaWidget).withFlex(0.2));
-    //}
-    //else
-    //{
-    //    statusAreaWidget.setBounds(0, 0, 0, 0);
-    //}
+    fullWindow.items.add(FlexItem(mainPanel).withFlex(1.0));
 
     if (showMediaClipboard)
     {

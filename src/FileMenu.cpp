@@ -46,6 +46,7 @@ PopupMenu MainComponent::getMenuForIndex([[maybe_unused]] int menuIndex, const S
     }
     else if (menuName == "View")
     {
+        menu.addCommandItem(&commandManager, CommandIDs::viewStatusArea);
         menu.addCommandItem(&commandManager, CommandIDs::viewMediaClipboard);
     }
     else if (menuName == "Help")
@@ -93,7 +94,6 @@ void MainComponent::initializeMenuBar()
     menuItemsChanged();
 }
 
-// TODO - move to Interface.cpp?
 void MainComponent::deinitializeMenuBar()
 {
 #if JUCE_MAC

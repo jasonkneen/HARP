@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../gui/StatusComponent.h"
+#include "../widgets/StatusAreaWidget.h"
 
 using namespace juce;
 

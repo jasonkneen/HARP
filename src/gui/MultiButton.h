@@ -51,7 +51,7 @@
 #include "../external/fontaudio/src/FontAudio.h"
 #include "../external/fontawesome/src/FontAwesome.h"
 
-#include "StatusComponent.h"
+#include "../widgets/StatusAreaWidget.h"
 
 class MultiButton : public juce::TextButton
 {

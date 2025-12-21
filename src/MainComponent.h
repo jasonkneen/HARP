@@ -103,7 +103,8 @@ class MainComponent : public Component,
         redo = 0x1001,
 
         // View
-        viewMediaClipboard = 0x2000,
+        viewStatusArea = 0x2000,
+        viewMediaClipboard = 0x2001,
 
         // Help
         welcome = 0x3000,
@@ -144,6 +145,7 @@ class MainComponent : public Component,
     void redoCallback();
 
     // View
+    void viewStatusAreaCallback();
     void viewMediaClipboardCallback();
 
     // Help
@@ -173,7 +175,7 @@ class MainComponent : public Component,
     /* File Menu */
 
     std::unique_ptr<MenuBarComponent> menuBar;
-    // std::unique_ptr<PopupMenu> macExtraMenu;
+    //std::unique_ptr<PopupMenu> macExtraMenu; // TODO - is this actually used?
 
     /* Application */
 
@@ -181,12 +183,15 @@ class MainComponent : public Component,
 
     /* Interface */
 
+    bool showStatusArea;
+    bool showMediaClipboard;
+
     //ModelTab mainModelTab;
     Component mainModelTab;
     StatusAreaWidget statusAreaWidget;
     MediaClipboardWidget mediaClipboardWidget;
 
-    bool showMediaClipboard;
+    SharedResourcePointer<StatusMessage> statusMessage;
 
     /* Authentication */
 
@@ -208,12 +213,12 @@ class MainComponent : public Component,
 
     ThreadPool jobProcessorThread{10};
 
-    // bool isProcessing = false;
+    //bool isProcessing = false;
 
     /* Miscellaneous */
 
-    // std::shared_ptr<fontawesome::IconHelper> fontawesomeHelper;
-    // std::shared_ptr<fontaudio::IconHelper> fontaudioHelper;
+    //std::shared_ptr<fontawesome::IconHelper> fontawesomeHelper;
+    //std::shared_ptr<fontaudio::IconHelper> fontaudioHelper;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

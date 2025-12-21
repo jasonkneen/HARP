@@ -107,7 +107,6 @@ target_sources(${PROJECT_NAME}
         src/gui/ComboBoxWithLabel.h
         src/gui/HoverableLabel.h
         src/gui/HoverHandler.cpp
-        src/gui/StatusComponent.h
 
         # TODO - subject to change
         src/gui/CustomPathDialog.h
