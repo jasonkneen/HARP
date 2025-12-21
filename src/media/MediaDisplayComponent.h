@@ -1,12 +1,14 @@
 #pragma once
 
-#include "juce_core/juce_core.h"
-#include "juce_gui_basics/juce_gui_basics.h"
 #include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_core/juce_core.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../gui/MultiButton.h"
-#include "../utils.h"
 #include "OutputLabelComponent.h"
+
+#include "../utils/Labels.h"
+#include "../utils/Media.h"
 
 using namespace juce;
 
@@ -268,6 +270,6 @@ private:
 
     bool isLabelRepositioningScheduled = false;
 
-    SharedResourcePointer<InstructionBox> instructionBox;
-    SharedResourcePointer<StatusBox> statusBox;
+    SharedResourcePointer<InstructionsMessage> instructionsMessage;
+    SharedResourcePointer<StatusMessage> statusMessage;
 };

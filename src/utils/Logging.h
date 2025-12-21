@@ -5,20 +5,12 @@
 
 using namespace juce;
 
-/**
- * Helper function to simplify logging calls.
- */
-inline void LogAndDBG(const String& message)
+class HARPLogger : private DeletedAtShutdown
 {
-    Logger::getInstance()->LogAndDBG(message);
-}
+public:
+    JUCE_DECLARE_SINGLETON(HARPLogger, false)
 
-class Logger : private DeletedAtShutdown
-{
-   public:
-    JUCE_DECLARE_SINGLETON(Logger, false)
-
-    ~Logger()
+    ~HARPLogger()
     {
         logger.reset(); // Explicitly reset pointer to release FileLogger
 
@@ -26,9 +18,9 @@ class Logger : private DeletedAtShutdown
     }
 
     // Disable copy constructor
-    Logger(const Logger&) = delete;
+    HARPLogger(const HARPLogger&) = delete;
     // Disable assignment operator
-    Logger& operator=(const Logger&) = delete;
+    HARPLogger& operator=(const HARPLogger&) = delete;
 
     void initializeLogger()
     {
@@ -48,13 +40,15 @@ class Logger : private DeletedAtShutdown
         }
     }
 
-    File getLogFile() const
-    {
-        return logger->getLogFile();
-    }
+    File getLogFile() const { return logger->getLogFile(); }
 
-   private:
-    Logger() = default; // Prevents instantiation from outside
+private:
+    HARPLogger() = default; // Prevents instantiation from outside
 
-    std::unique_ptr<FileLogger> logger{nullptr};
+    std::unique_ptr<FileLogger> logger { nullptr };
 };
+
+/**
+ * Helper function to simplify logging calls.
+ */
+inline void LogAndDBG(const String& message) { HARPLogger::getInstance()->LogAndDBG(message); }

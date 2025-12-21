@@ -6,19 +6,19 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../utils.h"
-#include "gui/StatusComponent.h"
+#include "../gui/StatusComponent.h"
+//#include "../utils.h"
 
 using namespace juce;
 
 class StatusAreaWidget : public Component
 {
-   public:
+public:
     StatusAreaWidget()
     {
-        addAndMakeVisible(instructionBox);
+        addAndMakeVisible(instructionsBox);
         addAndMakeVisible(statusBox);
     }
 
@@ -34,30 +34,22 @@ class StatusAreaWidget : public Component
 
     void resized() override
     {
-        // Row 8: Instructions Area and Status Area
-        juce::FlexBox row8;
-        row8.flexDirection = juce::FlexBox::Direction::row;
-        row8.items.add(juce::FlexItem(*instructionBox).withFlex(1).withMargin(margin));
-        row8.items.add(juce::FlexItem(*statusBox).withFlex(1).withMargin(margin));
-        // TODO - fix maximum height?
-        mainPanel.items.add(juce::FlexItem(row8).withFlex(0.4f));
+        Rectangle<int> area = getLocalBounds();
+
+        statusArea.flexDirection = FlexBox::Direction::row;
+
+        statusArea.items.add(FlexItem(instructionsBox).withFlex(1).withMargin(marginSize));
+        statusArea.items.add(FlexItem(statusBox).withFlex(1).withMargin(marginSize));
+
+        statusArea.performLayout(area);
     }
 
-    void setStatus(const ModelStatus& status)
-    {
-        String statusName = std::string(magic_enum::enum_name(status)).c_str();
-        statusBox->setStatusMessage("ModelStatus::" + statusName);
-    }
+private:
+    const float marginSize = 2;
 
-    void setStatus(const String& message) { statusBox->setStatusMessage(message); }
+    // Flex for status area
+    FlexBox statusArea;
 
-    void clearStatus() { statusBox->clearStatusMessage(); }
-
-    void setInstructions(const String& message) { instructionBox->setStatusMessage(message); }
-
-    void clearInstructions() { instructionBox->clearStatusMessage(); }
-
-   private:
-    SharedResourcePointer<InstructionBox> instructionBox;
-    SharedResourcePointer<StatusBox> statusBox;
-}
+    InstructionsBox instructionsBox;
+    StatusBox statusBox;
+};

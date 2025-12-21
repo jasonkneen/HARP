@@ -9,9 +9,9 @@
 #include "juce_core/juce_core.h"
 #include <fstream>
 
-#include "../HarpLogger.h"
-#include "../errors.h"
-#include "../utils.h"
+#include "../utils/Logging.h"
+#include "../utils/Errors.h"
+//#include "../utils.h"
 #include "Client.h"
 
 using namespace juce;

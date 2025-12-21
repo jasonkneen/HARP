@@ -118,9 +118,9 @@ void OutputLabelComponent::mouseEnter(const juce::MouseEvent& /*e*/)
 
     String desc = getDescription();
 
-    if (desc.isNotEmpty() && instructionBox != nullptr)
+    if (desc.isNotEmpty() && instructionsMessage != nullptr)
     {
-        instructionBox->setStatusMessage(desc);
+        instructionsMessage->setMessage(desc);
     }
 }
 
@@ -131,9 +131,9 @@ void OutputLabelComponent::mouseExit(const juce::MouseEvent& /*e*/)
 
     String desc = getDescription();
 
-    if (desc.isNotEmpty() && instructionBox != nullptr)
+    if (desc.isNotEmpty() && instructionsMessage != nullptr)
     {
-        instructionBox->setStatusMessage("");
+        instructionsMessage->clearMessage();
     }
 }
 

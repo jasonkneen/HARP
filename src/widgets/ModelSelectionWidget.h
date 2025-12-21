@@ -6,16 +6,16 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../utils.h"
+//#include "../utils.h"
 
 using namespace juce;
 
 // this is the callback for the add new path popup alert
 class CustomPathAlertCallback : public juce::ModalComponentManager::Callback
 {
-   public:
+public:
     CustomPathAlertCallback(std::function<void(int)> const& callback) : userCallback(callback) {}
 
     void modalStateFinished(int result) override
@@ -26,20 +26,19 @@ class CustomPathAlertCallback : public juce::ModalComponentManager::Callback
         }
     }
 
-   private:
+private:
     std::function<void(int)> userCallback;
 };
 
 class ModelSelectionWidget : public Component
 {
-   public:
+public:
     ModelSelectionWidget()
     {
-        loadButtonInfo = MultiButton::Mode{
+        loadButtonInfo = MultiButton::Mode {
             // "Load Model",
             "Load",
-            [this]
-            { loadModelCallback(); },
+            [this] { loadModelCallback(); },
             Colours::lightgrey,
             "Click to load the selected model path",
             MultiButton::DrawingMode::TextOnly
@@ -65,6 +64,8 @@ class ModelSelectionWidget : public Component
 
     void resized() override
     {
+        int margin = 2;
+
         juce::FlexBox row1;
         row1.flexDirection = juce::FlexBox::Direction::row;
         row1.items.add(juce::FlexItem(modelPathComboBox).withFlex(8).withMargin(margin));
@@ -72,7 +73,7 @@ class ModelSelectionWidget : public Component
         mainPanel.items.add(juce::FlexItem(row1).withHeight(30));
     }
 
-    void MainComponent::initModelPathComboBox()
+    void initModelPathComboBox()
     {
         // TODO - make this a shared resource pointer?
         std::vector<std::string> savedModelPaths = {
@@ -108,8 +109,7 @@ class ModelSelectionWidget : public Component
             setInstructions(
                 "A drop-down menu with some available models. Any new model you add will automatically be added to the list");
         };
-        modelPathComboBoxHandler.onMouseExit = [this]()
-        { clearInstructions(); };
+        modelPathComboBoxHandler.onMouseExit = [this]() { clearInstructions(); };
         modelPathComboBoxHandler.attach();
 
         // Usage within your existing onChange handler
@@ -130,7 +130,7 @@ class ModelSelectionWidget : public Component
         addAndMakeVisible(modelPathComboBox);
     }
 
-    void MainComponent::resetModelPathComboBox()
+    void resetModelPathComboBox()
     {
         // cb: why do we resetUI inside a function named resetModelPathComboBox ?
         resetUI();
@@ -156,6 +156,252 @@ class ModelSelectionWidget : public Component
             modelPathComboBox.addItem(options[i], static_cast<int>(i) + 1);
         }
         lastSelectedItemIndex = -1;
+    }
+
+    void loadModelCallback()
+    {
+        // Get the URL/path the user provided in the comboBox
+        std::string pathURL;
+        if (modelPathComboBox.getSelectedItemIndex() == 0)
+            pathURL = customPath;
+        else
+            pathURL = modelPathComboBox.getText().toStdString();
+
+        std::map<std::string, std::any> params = {
+            { "url", pathURL },
+        };
+        // resetUI();
+
+        // disable the load button until the model is loaded
+        loadModelButton.setEnabled(false);
+        modelPathComboBox.setEnabled(false);
+        loadModelButton.setButtonText("loading...");
+
+        // disable the process button until the model is loaded
+        processCancelButton.setEnabled(false);
+
+        // loading happens asynchronously.
+        threadPool.addJob(
+            [this, params]
+            {
+                try
+                {
+                    juce::String loadingError;
+
+                    // set the last status to the current status
+                    // If loading of the new model fails,
+                    // we want to go back to the status we had before the failed attempt
+                    model->setLastStatus(model->getStatus());
+
+                    OpResult loadingResult = model->load(params);
+                    if (loadingResult.failed())
+                    {
+                        throw loadingResult.getError();
+                    }
+
+                    // loading succeeded
+                    // Do some UI stuff to add the new model to the comboBox
+                    // if it's not already there
+                    // and update the lastSelectedItemIndex and lastLoadedModelItemIndex
+                    MessageManager::callAsync(
+                        [this, loadingResult]
+                        {
+                            resetUI();
+                            if (modelPathComboBox.getSelectedItemIndex() == 0)
+                            {
+                                bool alreadyInComboBox = false;
+
+                                for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+                                {
+                                    if (modelPathComboBox.getItemText(i)
+                                        == (juce::String) customPath)
+                                    {
+                                        alreadyInComboBox = true;
+                                        modelPathComboBox.setSelectedId(i + 1);
+                                        lastSelectedItemIndex = i;
+                                        lastLoadedModelItemIndex = i;
+                                    }
+                                }
+
+                                if (! alreadyInComboBox)
+                                {
+                                    int new_id = modelPathComboBox.getNumItems() + 1;
+                                    modelPathComboBox.addItem(customPath, new_id);
+                                    modelPathComboBox.setSelectedId(new_id);
+                                    lastSelectedItemIndex = new_id - 1;
+                                    lastLoadedModelItemIndex = new_id - 1;
+                                }
+                            }
+                            else
+                            {
+                                lastLoadedModelItemIndex = modelPathComboBox.getSelectedItemIndex();
+                            }
+                            processLoadingResult(loadingResult);
+                        });
+                }
+                catch (Error& loadingError)
+                {
+                    Error::fillUserMessage(loadingError);
+                    LogAndDBG("Error in Model Loading:\n" + loadingError.devMessage);
+                    auto msgOpts =
+                        MessageBoxOptions()
+                            .withTitle("Loading Error")
+                            .withIconType(AlertWindow::WarningIcon)
+                            .withTitle("Error")
+                            .withMessage("An error occurred while loading the WebModel: \n"
+                                         + loadingError.userMessage);
+                    // if (! String(e.what()).contains("404")
+                    //     && ! String(e.what()).contains("Invalid URL"))
+                    if (loadingError.type != ErrorType::InvalidURL)
+                    {
+                        msgOpts = msgOpts.withButton("Open Space URL");
+                    }
+
+                    msgOpts = msgOpts.withButton("Open HARP Logs").withButton("Ok");
+                    auto alertCallback = [this, msgOpts, loadingError](int result)
+                    {
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                        // NOTE (hugo): there's something weird about the button indices assigned by the msgOpts here
+                        // DBG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
+                        // auto chosen = msgOpts.getButtonText(result);
+                        // they're not the same as the order of the buttons in the alert
+                        // this is the order that I actually observed them to be.
+                        // UPDATE/TODO (xribene): This should be fixed in Juce v8
+                        // see: https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                        std::map<int, std::string> observedButtonIndicesMap = {};
+                        if (msgOpts.getNumButtons() == 3)
+                        {
+                            observedButtonIndicesMap.insert(
+                                { 1, "Open Space URL" }); // should actually be 0 right?
+                        }
+                        observedButtonIndicesMap.insert(
+                            { msgOpts.getNumButtons() - 1,
+                              "Open HARP Logs" }); // should actually be 1
+                        observedButtonIndicesMap.insert({ 0, "Ok" }); // should be 2
+
+                        auto chosen = observedButtonIndicesMap[result];
+
+                        if (chosen == "Open HARP Logs")
+                        {
+                            HarpLogger::getInstance()->getLogFile().revealToUser();
+                        }
+                        else if (chosen == "Open Space URL")
+                        {
+                            // get the spaceInfo
+                            SpaceInfo spaceInfo = model->getTempClient().getSpaceInfo();
+                            if (spaceInfo.status == SpaceInfo::Status::GRADIO)
+                            {
+                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().gradio;
+                                spaceUrl.launchInDefaultBrowser();
+                            }
+                            else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
+                            {
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().huggingface;
+                                spaceUrl.launchInDefaultBrowser();
+                            }
+                            else if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
+                            {
+                                // either choose hugingface or gradio, they are the same
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().huggingface;
+                                spaceUrl.launchInDefaultBrowser();
+                            }
+                            else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
+                            {
+                                URL spaceUrl =
+                                    this->model->getTempClient().getSpaceInfo().stability;
+                                spaceUrl.launchInDefaultBrowser();
+                            }
+                            // URL spaceUrl =
+                            //     this->model->getGradioClient().getSpaceInfo().huggingface;
+                            // spaceUrl.launchInDefaultBrowser();
+                        }
+
+                        if (lastLoadedModelItemIndex == -1)
+                        {
+                            // If before the failed attempt to load a new model, we HAD NO model loaded
+                            // TODO: these two functions we call here might be an overkill for this case
+                            // we need to simplify
+                            MessageManager::callAsync(
+                                [this, loadingError]
+                                {
+                                    resetModelPathComboBox();
+                                    model->setStatus(ModelStatus::INITIALIZED);
+                                    processLoadingResult(OpResult::fail(loadingError));
+                                });
+                        }
+                        else
+                        {
+                            // If before the failed attempt to load a new model, we HAD a model loaded
+                            MessageManager::callAsync(
+                                [this, loadingError]
+                                {
+                                    // We set the status to
+                                    // the status of the model before the failed attempt
+                                    model->setStatus(model->getLastStatus());
+                                    processLoadingResult(OpResult::fail(loadingError));
+                                });
+                        }
+
+                        // This if/elseif/else block is responsible for setting the selected item
+                        // in the modelPathComboBox to the correct item (i.e the model/path/app that
+                        // was selected before the failed attempt to load a new model)
+                        // cb: sometimes setSelectedId it doesn't work and I dont know why.
+                        // I've tried nesting it in MessageManage::callAsync, but still nothing.
+                        if (lastLoadedModelItemIndex != -1)
+                        {
+                            modelPathComboBox.setSelectedId(lastLoadedModelItemIndex + 1);
+                        }
+                        else if (lastLoadedModelItemIndex == -1 && lastSelectedItemIndex != -1)
+                        {
+                            modelPathComboBox.setSelectedId(lastSelectedItemIndex + 1);
+                        }
+                        else
+                        {
+                            resetModelPathComboBox();
+                            MessageManager::callAsync([this, loadingError]
+                                                      { loadModelButton.setEnabled(false); });
+                        }
+                        /*
+                        if (loadingError.userMessage.containsIgnoreCase("sleeping"))
+                        {
+                            MessageManager::callAsync(
+                                [this]
+                                {
+                                    addCustomPathToDropdown(customPath, true); // mark as sleeping
+                                });
+                        }
+                        //NEW: reopen custom path dialog if sleeping or 404
+                        if (loadingError.type == ErrorType::InvalidURL
+                            || loadingError.devMessage.contains("404")
+                            || loadingError.userMessage.containsIgnoreCase("sleeping"))
+                        {
+                            MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
+                        }
+                        */
+                    };
+
+                    AlertWindow::showAsync(msgOpts, alertCallback);
+                    //saveEnabled = false;
+                }
+                catch (const std::exception& e)
+                {
+                    // Catch any other standard exceptions (like std::runtime_error)
+                    DBG("Caught std::exception: " << e.what());
+                    AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
+                                                     "Error",
+                                                     "An unexpected error occurred: "
+                                                         + juce::String(e.what()));
+                }
+                catch (...) // Catch any other exceptions
+                {
+                    DBG("Caught unknown exception");
+                    AlertWindow::showMessageBoxAsync(
+                        AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
+                }
+            });
     }
 
     /*
@@ -186,7 +432,7 @@ class ModelSelectionWidget : public Component
     }
     */
 
-   private:
+private:
     ComboBox modelPathComboBox;
     std::string customPath;
     // Two usefull variables to keep track of the selected item in the modelPathComboBox
@@ -195,7 +441,7 @@ class ModelSelectionWidget : public Component
     // after a failed attempt to load a new model
     int lastSelectedItemIndex = -1;
     int lastLoadedModelItemIndex = -1;
-    HoverHandler modelPathComboBoxHandler{modelPathComboBox};
+    HoverHandler modelPathComboBoxHandler { modelPathComboBox };
 
     MultiButton loadModelButton;
     MultiButton::Mode loadButtonInfo;

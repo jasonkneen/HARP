@@ -6,13 +6,17 @@
 
 #pragma once
 
-#include "juce_core/juce_core.h"
 #include <fstream>
+#include <BinaryData.h>
 
-#include "../HarpLogger.h"
-#include "../errors.h"
-#include "../utils.h"
+#include <juce_core/juce_core.h>
+
+#include "../external/magic_enum.hpp"
+
 #include "Client.h"
+
+#include "../utils/Logging.h"
+#include "../utils/Errors.h"
 
 using namespace juce;
 

@@ -47,7 +47,12 @@ void MultiButton::mouseEnter(const juce::MouseEvent& event)
 {
     // First call the base class method
     juce::TextButton::mouseEnter(event);
-    instructionBox->setStatusMessage(modes[currentMode].instructionMessage);
+
+    if (instructionsMessage != nullptr)
+    {
+        instructionsMessage->setMessage(modes[currentMode].instructionMessage);
+    }
+
     if (onMouseEnter)
     {
         onMouseEnter();
@@ -58,7 +63,12 @@ void MultiButton::mouseExit(const juce::MouseEvent& event)
 {
     // First call the base class method
     juce::TextButton::mouseExit(event);
-    instructionBox->clearStatusMessage();
+
+    if (instructionsMessage != nullptr)
+    {
+        instructionsMessage->clearMessage();
+    }
+
     if (onMouseExit)
     {
         onMouseExit();

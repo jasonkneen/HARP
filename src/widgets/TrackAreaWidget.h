@@ -6,12 +6,14 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../media/AudioDisplayComponent.h"
 #include "../media/MediaDisplayComponent.h"
 #include "../media/MidiDisplayComponent.h"
-#include "../utils.h"
+
+#include "../utils/Interface.h"
+#include "../utils/Controls.h"
 
 using namespace juce;
 

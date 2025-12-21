@@ -1,7 +1,11 @@
 #pragma once
 
-#include "MediaDisplayComponent.h"
 #include <juce_audio_utils/juce_audio_utils.h>
+
+#include "MediaDisplayComponent.h"
+
+#include "../utils/Labels.h"
+#include "../utils/Media.h"
 
 class AudioThumbnailWrapper : public Component
 {

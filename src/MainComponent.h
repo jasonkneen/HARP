@@ -12,14 +12,14 @@
 // #include <juce_gui_basics/juce_gui_basics.h>
 // #include <juce_gui_extra/juce_gui_extra.h>
 
-#include "utils/Logging.h"
-#include "utils/Settings.h"
+#include "windows/AboutWindow.h"
+#include "windows/settings/SettingsWindow.h"
 
-#include "ModelTab.h"
+//#include "ModelTab.h"
 #include "widgets/MediaClipboardWidget.h"
 #include "widgets/StatusAreaWidget.h"
 
-#include "ThreadPoolJob.h"
+//#include "ThreadPoolJob.h"
 //#include "WebModel.h"
 
 // #include "gui/CustomPathDialog.h"
@@ -36,7 +36,9 @@
 // #include "media/MediaDisplayComponent.h"
 // #include "media/MidiDisplayComponent.h"
 
-#include "utils.h"
+#include "utils/Logging.h"
+#include "utils/Settings.h"
+#include "utils/Interface.h"
 
 using namespace juce;
 
@@ -79,8 +81,7 @@ class TimedCallback : public Timer
 
 class MainComponent : public Component,
                       public MenuBarModel,
-                      public ApplicationCommandTarget,
-                      private ChangeListener
+                      public ApplicationCommandTarget
 
 {
    public:
@@ -89,11 +90,13 @@ class MainComponent : public Component,
 
     enum CommandIDs
     {
+        // invalid = 0x0000,
+
         // File
-        open = 0x0000,
-        save = 0x0001,
-        saveAs = 0x0002,
-        settings = 0x0003,
+        open = 0x0001,
+        save = 0x0002,
+        saveAs = 0x0003,
+        settings = 0x0004,
 
         // Edit
         undo = 0x1000,
@@ -167,10 +170,6 @@ class MainComponent : public Component,
     void resized() override;
 
    private:
-    void changeListenerCallback(ChangeBroadcaster* source) override;
-
-    void processLoadingResult(OpResult result);
-
     /* File Menu */
 
     std::unique_ptr<MenuBarComponent> menuBar;
@@ -182,7 +181,8 @@ class MainComponent : public Component,
 
     /* Interface */
 
-    ModelTab mainModelTab;
+    //ModelTab mainModelTab;
+    Component mainModelTab;
     StatusAreaWidget statusAreaWidget;
     MediaClipboardWidget mediaClipboardWidget;
 

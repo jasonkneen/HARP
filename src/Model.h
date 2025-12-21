@@ -13,10 +13,10 @@
 #include <string>
 #include <unordered_map>
 
-#include "errors.h"
-#include "juce_audio_basics/juce_audio_basics.h"
-#include "juce_events/juce_events.h"
-#include "utils.h"
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_events/juce_events.h>
+
+#include "utils/Errors.h"
 
 using std::any;
 using std::map;
@@ -37,6 +37,24 @@ struct ModelCard
     std::string description;
     std::string author;
     std::vector<std::string> tags;
+};
+
+enum ModelStatus
+{
+    INITIALIZED,
+
+    LOADING,
+    GETTING_CONTROLS,
+    LOADED,
+
+    STARTING,
+    SENDING,
+    PROCESSING,
+    FINISHED,
+    CANCELLED,
+    CANCELLING,
+
+    ERROR
 };
 
 /**

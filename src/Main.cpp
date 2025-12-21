@@ -1,6 +1,7 @@
-#include "AppSettings.h"
 #include "MainComponent.h"
 #include "windows/WelcomeWindow.h"
+
+#include "utils/Settings.h"
 
 using namespace juce;
 
@@ -70,7 +71,7 @@ public:
 
         bool showWelcome = true;
 
-        if (!forceShowWelcome)
+        if (! forceShowWelcome)
         {
             if (AppSettings::containsKey("showWelcomePopup"))
                 showWelcome = AppSettings::getIntValue("showWelcomePopup", 1) == 1;
@@ -78,19 +79,22 @@ public:
 
         if (showWelcome)
         {
-            MessageManager::callAsync([this]()
-            {
-                DialogWindow::LaunchOptions opts;
-                opts.dialogTitle = "Welcome";
-                opts.content.setOwned(new WelcomeWindow([this]()
+            MessageManager::callAsync(
+                [this]()
                 {
-                    if (auto* mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
-                        mainComp->showSettingsDialog();
-                }));
-                opts.content->setSize(480, 500);
-                opts.useNativeTitleBar = true;
-                opts.launchAsync();
-            });
+                    DialogWindow::LaunchOptions opts;
+                    opts.dialogTitle = "Welcome";
+                    opts.content.setOwned(new WelcomeWindow(
+                        [this]()
+                        {
+                            if (auto* mainComp =
+                                    dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
+                                mainComp->showSettingsDialog();
+                        }));
+                    opts.content->setSize(480, 500);
+                    opts.useNativeTitleBar = true;
+                    opts.launchAsync();
+                });
         }
 
         StringArray args;

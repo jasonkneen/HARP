@@ -723,10 +723,10 @@ void MediaDisplayComponent::saveFileCallback()
 
                                 //saveFileButton.setMode(saveButtonInactiveInfo.label);
 
-                                if (statusBox != nullptr)
+                                if (statusMessage != nullptr)
                                 {
-                                    statusBox->setStatusMessage("File successfully saved to "
-                                                                + chosenFile.getFullPathName());
+                                    statusMessage->setMessage("File successfully saved to "
+                                                              + chosenFile.getFullPathName());
                                 }
                             }
                             else
@@ -1034,18 +1034,18 @@ void MediaDisplayComponent::updateCursorPosition()
 void MediaDisplayComponent::mouseEnter(const MouseEvent& e)
 {
     if (! isThumbnailTrack() && e.eventComponent == getMediaComponent()
-        && instructionBox != nullptr)
+        && instructionsMessage != nullptr)
     {
-        instructionBox->setStatusMessage(mediaInstructions);
+        instructionsMessage->setMessage(mediaInstructions);
     }
 }
 
 void MediaDisplayComponent::mouseExit(const MouseEvent& e)
 {
     if (! isThumbnailTrack() && e.eventComponent == getMediaComponent()
-        && instructionBox != nullptr)
+        && instructionsMessage != nullptr)
     {
-        instructionBox->setStatusMessage("");
+        instructionsMessage->clearMessage();
     }
 }
 

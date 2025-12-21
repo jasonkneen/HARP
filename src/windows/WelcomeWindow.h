@@ -1,7 +1,8 @@
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
-#include "../AppSettings.h"
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "../utils/Settings.h"
 
 using namespace juce;
 

@@ -1,10 +1,15 @@
 #pragma once
 
-#include "../WebModel.h"
-#include "../client/GradioClient.h"
-#include "../client/StabilityClient.h"
-#include "../external/magic_enum.hpp"
 #include <JuceHeader.h>
+
+#include "../../external/magic_enum.hpp"
+
+//#include "../../WebModel.h"
+#include "../../client/GradioClient.h"
+#include "../../client/StabilityClient.h"
+
+#include "../../utils/Logging.h"
+#include "../../utils/Settings.h"
 
 class LoginTab : public juce::Component
 {
@@ -16,7 +21,8 @@ public:
         UNKNOWN
     };
 
-    LoginTab(const juce::String& providerName, WebModel* m);
+    //LoginTab(const juce::String& providerName, WebModel* m);
+    LoginTab(const juce::String& providerName);
     ~LoginTab() override = default;
 
     void resized() override;
@@ -28,7 +34,7 @@ private:
     juce::Label registerLabel;
     juce::HyperlinkButton linkLabel;
 
-    WebModel* currentlyLoadedModel;
+    //WebModel* currentlyLoadedModel;
 
     juce::Label statusLabel;
     LoginTab::Provider provider;

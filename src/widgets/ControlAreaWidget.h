@@ -1,4 +1,4 @@
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../WebModel.h"
 #include "../gui/SliderWithLabel.h"
@@ -6,7 +6,8 @@
 #include "../gui/ComboBoxWithLabel.h"
 #include "../gui/StatusComponent.h"
 #include "../gui/HoverHandler.h"
-#include "../utils.h"
+
+#include "../utils/Controls.h"
 
 class ControlAreaWidget : public juce::Component,
                           public Button::Listener,

@@ -92,11 +92,11 @@ struct Error
     }
 };
 // type: HttpRequestError - Failed to create input stream for POST request to controls
+
 /*
 * Wrapper class for operation results
 * This class wraps JUCE's Result class and adds an Error object
 */
-
 class OpResult
 {
 public:

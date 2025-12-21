@@ -6,9 +6,12 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
 #include <functional>
-#include "../utils.h"
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "../utils/Interface.h"
+
+using namespace juce;
 
 class CustomPathComponent : public Component, public juce::TextEditor::Listener
 {

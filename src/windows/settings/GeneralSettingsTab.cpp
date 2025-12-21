@@ -1,6 +1,4 @@
 #include "GeneralSettingsTab.h"
-#include "../AppSettings.h"
-#include "../HarpLogger.h"
 
 GeneralSettingsTab::GeneralSettingsTab()
 {
@@ -32,7 +30,7 @@ void GeneralSettingsTab::paint(juce::Graphics& g)
 
 void GeneralSettingsTab::handleOpenLogFolder()
 {
-    HarpLogger::getInstance()->getLogFile().revealToUser();
+    HARPLogger::getInstance()->getLogFile().revealToUser();
 }
 
 void GeneralSettingsTab::handleOpenSettings()

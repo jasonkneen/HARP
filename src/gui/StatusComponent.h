@@ -1,45 +1,82 @@
 /**
  * @file StatusComponent.h
- * @brief Instructions and status components for the GUI
- * @author xribene
- * 
- * Both are identical. The reason is in order for them to be sharedResources
- * they can't inherit from the same class. This is a workaround.
- * There is probably a better way to do this.
+ * @brief Defines shared resources and components for instructions and status.
+ * @author xribene, cwitkowitz
  */
+
 #pragma once
+
 #include "juce_gui_basics/juce_gui_basics.h"
 
-class InstructionBox : public juce::Component
+using namespace juce;
+
+struct SharedMessage : public ChangeBroadcaster
 {
-public:
-    InstructionBox(float fontSize = 15.0f,
-                   juce::Justification justification = juce::Justification::centred);
-    void paint(juce::Graphics& g) override;
-    void resized() override;
-    void setStatusMessage(const juce::String& message);
-    void clearStatusMessage();
+    void setMessage(const String& m)
+    {
+        message = m;
+        sendChangeMessage();
+    }
 
-protected:
-    juce::Label statusLabel;
+    void clearMessage()
+    {
+        message.clear();
+        sendChangeMessage();
+    }
 
-private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(InstructionBox)
+    String message;
 };
 
-class StatusBox : public juce::Component
+struct StatusMessage : SharedMessage
+{
+};
+struct InstructionsMessage : SharedMessage
+{
+};
+
+template <typename MessageType>
+class MessageBox : public Component, ChangeListener
 {
 public:
-    StatusBox(float fontSize = 15.0f,
-              juce::Justification justification = juce::Justification::centred);
-    void paint(juce::Graphics& g) override;
-    void resized() override;
-    void setStatusMessage(const juce::String& message);
-    void clearStatusMessage();
+    MessageBox(float fontSize = 15.0f, Justification justification = Justification::centred)
+    {
+        messageLabel.setFont(fontSize);
+        messageLabel.setColour(Label::textColourId, Colour(0xE0, 0xE0, 0xE0));
 
-protected:
-    juce::Label statusLabel;
+        messageLabel.setJustificationType(justification);
+        addAndMakeVisible(messageLabel);
+
+        sharedMessage->addChangeListener(this);
+    }
+
+    ~MessageBox() override { sharedMessage->removeChangeListener(this); }
+
+    void paint(Graphics& g)
+    {
+        g.setColour(Colour(0x33, 0x33, 0x33));
+        g.fillAll();
+
+        g.setColour(Colour(0x44, 0x44, 0x44));
+        g.drawRect(getLocalBounds(), 1);
+    }
+
+    void resized() { messageLabel.setBounds(getLocalBounds()); }
+
+    void changeListenerCallback(ChangeBroadcaster* /*source*/)
+    {
+        messageLabel.setText(sharedMessage->message, juce::dontSendNotification);
+    }
 
 private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StatusBox)
+    SharedResourcePointer<MessageType> sharedMessage;
+    Label messageLabel;
 };
+
+using StatusBox = MessageBox<StatusMessage>;
+using InstructionsBox = MessageBox<InstructionsMessage>;
+
+/*void setStatus(const ModelStatus& status)
+{
+    String statusName = std::string(magic_enum::enum_name(status)).c_str();
+    statusBox->setStatusMessage("ModelStatus::" + statusName);
+}*/

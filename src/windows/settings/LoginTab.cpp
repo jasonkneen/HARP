@@ -1,13 +1,12 @@
 #include "LoginTab.h"
-#include "../AppSettings.h"
-#include "../HarpLogger.h"
 
-LoginTab::LoginTab(const juce::String& providerName, WebModel* m)
+//LoginTab::LoginTab(const juce::String& providerName, WebModel* m)
+LoginTab::LoginTab(const juce::String& providerName)
 {
     // Setup toggle button
     provider = getProvider(providerName);
 
-    currentlyLoadedModel = m;
+    //currentlyLoadedModel = m;
 
     if (provider == LoginTab::Provider::UNKNOWN)
     {
@@ -163,7 +162,7 @@ void LoginTab::handleSubmit()
         }
         else
         {
-            if (currentlyLoadedModel->ready())
+            /*if (currentlyLoadedModel->ready())
             {
                 auto& client = currentlyLoadedModel->getClient();
 
@@ -181,7 +180,7 @@ void LoginTab::handleSubmit()
                         client.setToken(token);
                     }
                 }
-            }
+            }*/
 
             AppSettings::setValue(getStorageKey(), token);
             AppSettings::saveIfNeeded();

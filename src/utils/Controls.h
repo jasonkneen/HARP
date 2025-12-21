@@ -1,4 +1,6 @@
-#include "juce_core/juce_core.h"
+#pragma once
+
+#include <juce_core/juce_core.h>
 
 using namespace juce;
 

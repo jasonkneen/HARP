@@ -2,6 +2,9 @@
 
 #include <JuceHeader.h>
 
+#include "../../utils/Logging.h"
+#include "../../utils/Settings.h"
+
 class GeneralSettingsTab : public juce::Component
 {
 public:

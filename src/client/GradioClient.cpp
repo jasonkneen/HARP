@@ -1,6 +1,7 @@
 #include "GradioClient.h"
-#include "../errors.h"
-#include "../external/magic_enum.hpp"
+
+#include "../utils/Enums.h"
+#include "../utils/Errors.h"
 
 GradioClient::GradioClient() { tokenValidationURL = URL("https://huggingface.co/api/whoami-v2"); }
 

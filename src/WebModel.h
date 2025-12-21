@@ -8,14 +8,16 @@
 
 #pragma once
 
-#include "HarpLogger.h"
+#include <fstream>
+
+#include <juce_core/juce_core.h>
+
 #include "Model.h"
 #include "client/Client.h"
 #include "client/GradioClient.h"
 #include "client/StabilityClient.h"
-#include "juce_core/juce_core.h"
-#include "utils.h"
-#include <fstream>
+
+#include "utils/Logging.h"
 
 class WebModel : public Model
 {

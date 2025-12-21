@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../utils.h"
 #include "widgets/ModelDisplayWidget.h"
 #include "widgets/ModelSelectionWidget.h"
+
+//#include "../utils.h"
 
 using namespace juce;
 

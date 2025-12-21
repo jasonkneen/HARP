@@ -41,13 +41,18 @@
  * The MultiButton class is very flexible, allowing for multiple modes, hover-on instructions, 
  * and icons.
  */
+
 #pragma once
-#include "../external/fontaudio/src/FontAudio.h"
-#include "../external/fontawesome/src/FontAwesome.h"
-#include "StatusComponent.h"
-#include "juce_gui_basics/juce_gui_basics.h"
+
+#include <juce_gui_basics/juce_gui_basics.h>
 #include <string>
 #include <unordered_map>
+
+#include "../external/fontaudio/src/FontAudio.h"
+#include "../external/fontawesome/src/FontAwesome.h"
+
+#include "StatusComponent.h"
+
 class MultiButton : public juce::TextButton
 {
 public:
@@ -156,6 +161,8 @@ private:
     // juce::Drawable* currentIcon = nullptr;
     std::shared_ptr<fontawesome::IconHelper> fontawesomeHelper;
     std::shared_ptr<fontaudio::IconHelper> fontaudioHelper;
-    SharedResourcePointer<InstructionBox> instructionBox;
+
+    SharedResourcePointer<InstructionsMessage> instructionsMessage;
+
     // DrawingMode drawingMode;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../gui/StatusComponent.h"
 
@@ -86,7 +86,7 @@ private:
     TimeMarkerComponent rightMarker;
     TimeMarkerComponent durationFill;
 
-    SharedResourcePointer<InstructionBox> instructionBox;
+    SharedResourcePointer<InstructionsMessage> instructionsMessage;
 };
 
 class OverheadLabelComponent : public OutputLabelComponent

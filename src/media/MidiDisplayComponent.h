@@ -1,8 +1,11 @@
 #pragma once
 
+#include "MediaDisplayComponent.h"
 #include "pianoroll/PianoRollComponent.hpp"
 #include "pianoroll/SynthAudioSource.h"
-#include "MediaDisplayComponent.h"
+
+#include "../utils/Labels.h"
+#include "../utils/Media.h"
 
 class MidiDisplayComponent : public MediaDisplayComponent
 {

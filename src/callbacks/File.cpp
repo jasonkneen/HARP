@@ -17,7 +17,8 @@ void MainComponent::showSettingsDialog()
 {
     juce::DialogWindow::LaunchOptions options;
     options.dialogTitle = "Settings";
-    options.content.setOwned(new SettingsBox(model.get()));
+    //options.content.setOwned(new SettingsWindow(model.get()));
+    options.content.setOwned(new SettingsWindow());
     options.useNativeTitleBar = true;
     options.resizable = true;
     options.escapeKeyTriggersCloseButton = true;

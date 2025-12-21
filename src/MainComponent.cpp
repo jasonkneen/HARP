@@ -1,15 +1,18 @@
 #include "MainComponent.h"
 
-JUCE_IMPLEMENT_SINGLETON(Logger)
+JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
 MainComponent::MainComponent()
 {
-    Logger::getInstance()->initializeLogger();
+    HARPLogger::getInstance()->initializeLogger();
 
     initializeMenuBar();
 
     // TODO - initialize model tab
-    // TODO - initialize status area widget
+
+    addAndMakeVisible(statusAreaWidget);
+
+    //showStatusArea = AppSettings::getBoolValue("showStatusArea", false);
 
     addAndMakeVisible(mediaClipboardWidget);
 
@@ -21,17 +24,13 @@ MainComponent::MainComponent()
     setSize(800, 2000);
 
     setOpaque(true);
-    setWantsKeyboardFocus(true); // Remove focus from modelPathTextBox when clicking off of it
+    setWantsKeyboardFocus(true); // Remove focus from modelPathTextBox after clicking off
 
     resized();
 }
 
 MainComponent::~MainComponent()
 {
-    // remove listeners
-    loadBroadcaster.removeChangeListener(this);
-    processBroadcaster.removeChangeListener(this);
-
     // jobProcessorThread.signalThreadShouldExit();
     // This will not actually run any processing task
     // It'll just make sure that the thread is not waiting
@@ -50,35 +49,44 @@ void MainComponent::paint(Graphics& g)
 
 void MainComponent::resized()
 {
-    auto mainArea = getLocalBounds();
+    Rectangle<int> fullArea = getLocalBounds();
 
 #if not JUCE_MAC
     menuBar->setBounds(
-        mainArea.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
+        fullArea.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
 #endif
-    auto margin = 2; // Adjusted margin value for top and bottom spacing
 
-    juce::FlexBox fullWindow;
-    fullWindow.flexDirection = juce::FlexBox::Direction::row;
+    FlexBox fullWindow;
+    fullWindow.flexDirection = FlexBox::Direction::row;
 
-    juce::FlexBox mainPanel;
-    mainPanel.flexDirection = juce::FlexBox::Direction::column;
-    mainPanel.alignContent = juce::FlexBox::AlignContent::flexStart;
-    mainPanel.alignItems = juce::FlexBox::AlignItems::stretch;
-    mainPanel.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    FlexBox mainPanel;
+    mainPanel.flexDirection = FlexBox::Direction::column;
+    //mainPanel.alignContent = FlexBox::AlignContent::flexStart;
+    //mainPanel.alignItems = FlexBox::AlignItems::stretch;
+    //mainPanel.justifyContent = FlexBox::JustifyContent::flexStart;
 
-    fullWindow.items.add(juce::FlexItem(mainPanel).withFlex(1));
+    mainPanel.items.add(FlexItem(mainModelTab).withFlex(1));
 
-    // Right Column: Media Clipboard Area
+    // TODO - status area
+    // TODO - fix maximum height for status area
+
+    //if (showStatusArea)
+    //{
+    mainPanel.items.add(FlexItem(statusAreaWidget).withFlex(0.2));
+    //}
+    //else
+    //{
+    //    statusAreaWidget.setBounds(0, 0, 0, 0);
+    //}
+
     if (showMediaClipboard)
     {
-        fullWindow.items.add(juce::FlexItem(mediaClipboardWidget).withFlex(0.4));
+        fullWindow.items.add(FlexItem(mediaClipboardWidget).withFlex(0.4));
     }
     else
     {
         mediaClipboardWidget.setBounds(0, 0, 0, 0);
     }
 
-    // Apply the FlexBox layout to the full area
-    fullWindow.performLayout(mainArea);
+    fullWindow.performLayout(fullArea);
 }
