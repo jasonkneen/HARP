@@ -88,23 +88,25 @@ public:
     {
         addAndMakeVisible(instructionsBox);
         addAndMakeVisible(statusBox);
-
-        statusArea.flexDirection = FlexBox::Direction::row;
-        statusArea.items.add(FlexItem(instructionsBox).withFlex(1).withMargin(marginSize));
-        statusArea.items.add(FlexItem(statusBox).withFlex(1).withMargin(marginSize));
     }
 
     ~StatusAreaWidget() {}
 
     //void paint(Graphics& g) {}
 
-    void resized() override { statusArea.performLayout(getLocalBounds()); }
+    void resized() override
+    {
+        FlexBox statusArea;
+        statusArea.flexDirection = FlexBox::Direction::row;
+
+        statusArea.items.add(FlexItem(instructionsBox).withFlex(1).withMargin(marginSize));
+        statusArea.items.add(FlexItem(statusBox).withFlex(1).withMargin(marginSize));
+
+        statusArea.performLayout(getLocalBounds());
+    }
 
 private:
     const float marginSize = 2;
-
-    // Flex for status area
-    FlexBox statusArea;
 
     InstructionsBox instructionsBox;
     StatusBox statusBox;

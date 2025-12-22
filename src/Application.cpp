@@ -1,5 +1,128 @@
 #include "MainComponent.h"
 
+enum CommandIDs
+{
+    // invalid = 0x0000,
+
+    // File
+    open = 0x0001,
+    save = 0x0002,
+    saveAs = 0x0003,
+    settings = 0x0004,
+
+    // Edit
+    undo = 0x1000,
+    redo = 0x1001,
+
+    // View
+    viewStatusArea = 0x2000,
+    viewMediaClipboard = 0x2001,
+
+    // Help
+    welcome = 0x3000,
+    about = 0x3001
+};
+
+StringArray MainComponent::getMenuBarNames()
+{
+    StringArray menuBarNames;
+
+    menuBarNames.add("File");
+    //menuBarNames.add("Edit");
+    menuBarNames.add("View");
+    menuBarNames.add("Help");
+
+    return menuBarNames;
+}
+
+/**
+ * Place certain commands in the application menu ("HARP" tab) for MacOS.
+ */
+std::unique_ptr<PopupMenu> MainComponent::getMacExtraMenu()
+{
+    auto menu = std::make_unique<PopupMenu>();
+
+    menu->addCommandItem(&commandManager, CommandIDs::about);
+    menu->addCommandItem(&commandManager, CommandIDs::settings);
+
+    return menu;
+}
+
+PopupMenu MainComponent::getMenuForIndex([[maybe_unused]] int menuIndex, const String& menuName)
+{
+    PopupMenu menu;
+
+    if (menuName == "File")
+    {
+        menu.addCommandItem(&commandManager, CommandIDs::open);
+        //menu.addCommandItem(&commandManager, CommandIDs::save);
+        menu.addCommandItem(&commandManager, CommandIDs::saveAs);
+
+        menu.addSeparator();
+
+        menu.addCommandItem(&commandManager, CommandIDs::settings);
+    }
+    else if (menuName == "Edit")
+    {
+        //menu.addCommandItem(&commandManager, CommandIDs::undo);
+        //menu.addCommandItem(&commandManager, CommandIDs::redo);
+    }
+    else if (menuName == "View")
+    {
+        menu.addCommandItem(&commandManager, CommandIDs::viewStatusArea);
+        menu.addCommandItem(&commandManager, CommandIDs::viewMediaClipboard);
+    }
+    else if (menuName == "Help")
+    {
+        menu.addCommandItem(&commandManager, CommandIDs::about);
+        menu.addCommandItem(&commandManager, CommandIDs::welcome);
+    }
+    else
+    {
+        DBG("MainComponent::getMenuForIndex: Unknown menu name: " << menuName << ".");
+    }
+
+    return menu;
+}
+
+void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex)
+{
+    DBG("MainComponent::menuItemSelected: Selected ID " << menuItemID << " and index "
+                                                        << topLevelMenuIndex << ".");
+}
+
+void MainComponent::initializeMenuBar()
+{
+    // init the menu bar
+    menuBar.reset(new MenuBarComponent(this));
+    addAndMakeVisible(menuBar.get());
+    setApplicationCommandManagerToWatch(&commandManager);
+
+    // Register commands
+    commandManager.registerAllCommandsForTarget(this);
+    commandManager.setFirstCommandTarget(this);
+
+    // commandManager.setFirstCommandTarget(this);
+    addKeyListener(commandManager.getKeyMappings());
+
+#if JUCE_MAC
+    // TODO - is this actually used?
+    macExtraMenu = getMacExtraMenu();
+
+    MenuBarModel::setMacMainMenu(this, macExtraMenu.get());
+#endif
+
+    menuBar->setVisible(true);
+    menuItemsChanged();
+}
+
+void MainComponent::deinitializeMenuBar()
+{
+#if JUCE_MAC
+    MenuBarModel::setMacMainMenu(nullptr);
+#endif
+}
+
 /**
  * Fills commands array with commands this component/target supports.
  */
@@ -134,13 +257,13 @@ bool MainComponent::perform(const InvocationInfo& info)
         /* --Edit-- */
         case CommandIDs::undo:
             DBG("MainComponent::perform: \"undo\" command invoked.");
-            undoCallback();
+            // TODO - undoCallback();
 
             break;
 
         case CommandIDs::redo:
             DBG("MainComponent::perform: \"redo\" command invoked.");
-            redoCallback();
+            // TODO - redoCallback();
 
             break;
 
@@ -151,7 +274,7 @@ bool MainComponent::perform(const InvocationInfo& info)
 
             break;
 
-                    case CommandIDs::viewStatusArea:
+        case CommandIDs::viewStatusArea:
             DBG("MainComponent::perform: \"viewStatusArea\" command invoked.");
             viewStatusAreaCallback();
 
@@ -175,4 +298,170 @@ bool MainComponent::perform(const InvocationInfo& info)
     }
 
     return true;
+}
+
+/* --File-- */
+
+/**
+ * Entry point for importing new files into HARP.
+ */
+void MainComponent::importNewFile(File mediaFile, bool fromDAW)
+{
+    mediaClipboardWidget.addTrackFromFilePath(URL(mediaFile), fromDAW);
+
+    if (! showMediaClipboard)
+    {
+        viewMediaClipboardCallback();
+    }
+}
+
+void MainComponent::showSettingsDialog()
+{
+    juce::DialogWindow::LaunchOptions options;
+    options.dialogTitle = "Settings";
+    //options.content.setOwned(new SettingsWindow(model.get()));
+    options.content.setOwned(new SettingsWindow());
+    options.useNativeTitleBar = true;
+    options.resizable = true;
+    options.escapeKeyTriggersCloseButton = true;
+    options.dialogBackgroundColour = juce::Colours::darkgrey;
+    options.launchAsync();
+}
+
+/* --Help-- */
+
+void MainComponent::showAboutDialog()
+{
+    auto aboutComponent = std::make_unique<AboutWindow>();
+
+    DialogWindow::LaunchOptions dialog;
+    dialog.content.setOwned(aboutComponent.release());
+    dialog.dialogTitle = "About " + String(APP_NAME);
+    dialog.dialogBackgroundColour = Colours::grey;
+    dialog.escapeKeyTriggersCloseButton = true;
+    dialog.useNativeTitleBar = true;
+    dialog.resizable = false;
+
+    dialog.launchAsync();
+}
+
+// void MainComponent::showWelcomeDialog() {}
+
+/* --View-- */
+
+void MainComponent::viewStatusAreaCallback()
+{
+    // Toggle status Area visibility state
+    showStatusArea = ! showStatusArea;
+
+    // Find top-level window for resizing
+    if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+    {
+        // Determine which display contains HARP
+        auto* currentDisplay =
+            juce::Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+
+        int currentDisplayHeight;
+
+        if (currentDisplay != nullptr)
+        {
+            if (window->isFullScreen())
+            {
+                currentDisplayHeight = currentDisplay->totalArea.getHeight();
+            }
+            else
+            {
+                currentDisplayHeight = currentDisplay->userArea.getHeight();
+            }
+        }
+
+        // Get current bounds of top-level window
+        Rectangle<int> windowBounds = window->getBounds();
+
+        if (showStatusArea)
+        {
+            // Scale bounds to extend window by height of status area
+            windowBounds.setHeight(jmin(currentDisplayHeight, windowBounds.getHeight() + 100));
+        }
+        else
+        {
+            if (! window->isFullScreen())
+            {
+                // Scale bounds to reduce window to main height
+                windowBounds.setHeight(windowBounds.getHeight() - 100);
+            }
+        }
+
+        // Set extended or reduced bounds
+        window->setBounds(windowBounds);
+    }
+
+    // Add view preference to persistent settings
+    AppSettings::setValue("showStatusArea", showStatusArea ? "1" : "0");
+    AppSettings::saveIfNeeded();
+
+    // Send status message to add check to file menu
+    commandManager.commandStatusChanged();
+
+    resized();
+}
+
+void MainComponent::viewMediaClipboardCallback()
+{
+    // Toggle media clipboard visibility state
+    showMediaClipboard = ! showMediaClipboard;
+
+    // Find top-level window for resizing
+    if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+    {
+        // Determine which display contains HARP
+        auto* currentDisplay =
+            juce::Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+
+        int currentDisplayWidth;
+
+        if (currentDisplay != nullptr)
+        {
+            if (window->isFullScreen())
+            {
+                currentDisplayWidth = currentDisplay->totalArea.getWidth();
+            }
+            else
+            {
+                currentDisplayWidth = currentDisplay->userArea.getWidth();
+            }
+        }
+
+        //int totalDesktopWidth = juce::Desktop::getInstance().getDisplays().getDisplayForRect(getBounds())->totalArea.getWidth();
+
+        // Get current bounds of top-level window
+        Rectangle<int> windowBounds = window->getBounds();
+
+        if (showMediaClipboard)
+        {
+            // Scale bounds to extend window by 40% of main width
+            windowBounds.setWidth(
+                jmin(currentDisplayWidth, static_cast<int>(1.4 * windowBounds.getWidth())));
+        }
+        else
+        {
+            if (! window->isFullScreen())
+            {
+                // Scale bounds to reduce window to main width
+                windowBounds.setWidth(static_cast<int>(windowBounds.getWidth() / 1.4));
+            }
+        }
+
+        // Set extended or reduced bounds
+        window->setBounds(windowBounds);
+    }
+
+    // Add view preference to persistent settings
+    AppSettings::setValue("showMediaClipboard", showMediaClipboard ? "1" : "0");
+    AppSettings::saveIfNeeded();
+
+    // Send status message to add check to file menu
+    commandManager.commandStatusChanged();
+
+    resized();
 }

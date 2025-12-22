@@ -66,9 +66,8 @@ juce_generate_juce_header(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        src/Main.cpp
-        src/Application.cpp
-        src/FileMenu.cpp
+        src/Main.cpp #
+        src/Application.cpp #
         src/MainComponent.cpp
         #src/ModelTab.cpp
 
@@ -78,10 +77,7 @@ target_sources(${PROJECT_NAME}
         #src/ThreadPoolJob.h
 
         # TODO - subject to change
-        src/callbacks/File.cpp
-        src/callbacks/Edit.cpp
-        src/callbacks/View.cpp
-        src/callbacks/Help.cpp
+        #src/callbacks/Edit.cpp
         #src/callbacks/Authenticate.cpp
         #src/callbacks/Load.cpp
         #src/callbacks/Process.cpp
@@ -97,9 +93,9 @@ target_sources(${PROJECT_NAME}
         #src/widgets/ModelSelectionWidget.h
         #src/widgets/ModelDisplayWidget.h
         #src/widgets/ControlAreaWidget.h
-        #src/widgets/TrackAreaWidget.h
-        src/widgets/StatusAreaWidget.h
-        src/widgets/MediaClipboardWidget.h
+        src/widgets/TrackAreaWidget.h #
+        src/widgets/StatusAreaWidget.h #
+        src/widgets/MediaClipboardWidget.h #
 
         src/gui/MultiButton.cpp
         src/gui/TitledTextBox.h

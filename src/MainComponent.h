@@ -88,29 +88,6 @@ class MainComponent : public Component,
     MainComponent();
     ~MainComponent() override;
 
-    enum CommandIDs
-    {
-        // invalid = 0x0000,
-
-        // File
-        open = 0x0001,
-        save = 0x0002,
-        saveAs = 0x0003,
-        settings = 0x0004,
-
-        // Edit
-        undo = 0x1000,
-        redo = 0x1001,
-
-        // View
-        viewStatusArea = 0x2000,
-        viewMediaClipboard = 0x2001,
-
-        // Help
-        welcome = 0x3000,
-        about = 0x3001
-    };
-
     /* File Menu */
 
     StringArray getMenuBarNames() override;

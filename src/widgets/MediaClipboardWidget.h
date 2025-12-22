@@ -6,11 +6,10 @@
 
 #pragma once
 
-#include "juce_gui_basics/juce_gui_basics.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
-#include "TrackAreaWidget.h"
 #include "../gui/MultiButton.h"
-//#include "../utils.h"
+#include "TrackAreaWidget.h"
 
 using namespace juce;
 
@@ -27,18 +26,9 @@ public:
 
         resetState();
 
-        controlsFlexBox.flexDirection = FlexBox::Direction::row;
-        controlsFlexBox.alignItems = FlexBox::AlignItems::stretch;
-
-        buttonsFlexBox.flexDirection = FlexBox::Direction::row;
-        buttonsFlexBox.alignItems = FlexBox::AlignItems::center;
-        buttonsFlexBox.justifyContent = FlexBox::JustifyContent::center;
-
         trackAreaWidget.addChangeListener(this);
         trackArea.setViewedComponent(&trackAreaWidget, false);
         addAndMakeVisible(trackArea);
-
-        mainFlexBox.flexDirection = FlexBox::Direction::column;
     }
 
     ~MediaClipboardWidget() { trackAreaWidget.removeChangeListener(this); }
@@ -49,8 +39,9 @@ public:
     {
         Rectangle<int> totalBounds = getLocalBounds();
 
-        // Remove existing items in main flex
-        mainFlexBox.items.clear();
+        // Flex for whole media clipboard
+        FlexBox mainFlexBox;
+        mainFlexBox.flexDirection = FlexBox::Direction::column;
 
         // Add control bar and track area to flex
         mainFlexBox.items.add(
@@ -62,8 +53,10 @@ public:
 
         mainFlexBox.performLayout(totalBounds);
 
-        // Remove existing items in main flex
-        controlsFlexBox.items.clear();
+        // Flex for controls area (text box and buttons)
+        FlexBox controlsFlexBox;
+        controlsFlexBox.flexDirection = FlexBox::Direction::row;
+        controlsFlexBox.alignItems = FlexBox::AlignItems::stretch;
 
         // Add control elements to control flex
         controlsFlexBox.items.add(FlexItem(selectionTextBox).withFlex(1));
@@ -72,8 +65,11 @@ public:
 
         controlsFlexBox.performLayout(controlsComponent.getLocalBounds());
 
-        // Remove existing items in button flex
-        buttonsFlexBox.items.clear();
+        // Flex for buttons
+        FlexBox buttonsFlexBox;
+        buttonsFlexBox.flexDirection = FlexBox::Direction::row;
+        buttonsFlexBox.alignItems = FlexBox::AlignItems::center;
+        buttonsFlexBox.justifyContent = FlexBox::JustifyContent::center;
 
         // Add buttons to flex with equal width
         /*buttonsFlexBox.items.add(FlexItem(renameSelectionButton)
@@ -444,7 +440,7 @@ private:
         buttonsComponent.addAndMakeVisible(sendToDAWButton);
     }
 
-    void changeListenerCallback(ChangeBroadcaster* source) override
+    void changeListenerCallback(ChangeBroadcaster* /*source*/) override
     {
         MediaDisplayComponent* mediaDisplay = trackAreaWidget.getCurrentlySelectedDisplay();
 
@@ -615,13 +611,6 @@ private:
 
     Viewport trackArea;
     TrackAreaWidget trackAreaWidget { DisplayMode::Thumbnail, 75 };
-
-    // Flex for whole media clipboard
-    FlexBox mainFlexBox;
-    // Flex for controls area (text box and buttons)
-    FlexBox controlsFlexBox;
-    // Flex for buttons
-    FlexBox buttonsFlexBox;
 
     std::unique_ptr<FileChooser> chooseFileBrowser;
 
