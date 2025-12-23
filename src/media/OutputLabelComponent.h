@@ -4,6 +4,8 @@
 
 #include "../widgets/StatusAreaWidget.h"
 
+#include "../utils/Logging.h"
+
 using namespace juce;
 
 class TimeMarkerComponent : public Component

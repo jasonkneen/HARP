@@ -193,7 +193,7 @@ public:
             }
             else
             {
-                // DBG("No hyphen found in the subdomain." << subdomain);
+                // DBG_AND_LOG("No hyphen found in the subdomain." << subdomain);
                 // Even though the spaceAddress is supposed to be a gradio URL, we
                 // return it as the huggingface URL because result.huggingface is
                 // used for the  "Open Space URL" button in the error dialog box
@@ -243,7 +243,7 @@ public:
             return OpResult::fail(error);
         }
 
-        LogAndDBG(spaceInfo.toString());
+        DBG_AND_LOG(spaceInfo.toString());
         return OpResult::ok();
     }
 
@@ -282,7 +282,7 @@ public:
 
         tempClient->setSpaceInfo(spaceInfo);
 
-        LogAndDBG(tempClient->getSpaceInfo().toString());
+        DBG_AND_LOG(tempClient->getSpaceInfo().toString());
 
         // The input components defined in PyHARP include
         // both the input tracks (audio or midi) and the controls (sliders, text boxes, etc)
@@ -351,7 +351,7 @@ public:
                     audio_in->required = stringToBool(pyharpComponent["required"].toString());
                     inputTracksInfo.push_back({ audio_in->id, audio_in });
                     uuidsInOrder.push_back(audio_in->id);
-                    LogAndDBG("Audio In: " + audio_in->label + " added");
+                    DBG_AND_LOG("Audio In: " + audio_in->label + " added");
                 }
                 else if (type == "midi_track")
                 {
@@ -362,7 +362,7 @@ public:
                     midi_in->required = stringToBool(pyharpComponent["required"].toString());
                     inputTracksInfo.push_back({ midi_in->id, midi_in });
                     uuidsInOrder.push_back(midi_in->id);
-                    LogAndDBG("MIDI In: " + midi_in->label + " added");
+                    DBG_AND_LOG("MIDI In: " + midi_in->label + " added");
                 }
                 else if (type == "slider")
                 {
@@ -377,7 +377,7 @@ public:
 
                     controlsInfo.push_back({ slider->id, slider });
                     uuidsInOrder.push_back(slider->id);
-                    LogAndDBG("Slider: " + slider->label + " added");
+                    DBG_AND_LOG("Slider: " + slider->label + " added");
                 }
                 else if (type == "text_box")
                 {
@@ -389,7 +389,7 @@ public:
 
                     controlsInfo.push_back({ text->id, text });
                     uuidsInOrder.push_back(text->id);
-                    LogAndDBG("Text: " + text->label + " added");
+                    DBG_AND_LOG("Text: " + text->label + " added");
                 }
                 else if (type == "number_box")
                 {
@@ -403,7 +403,7 @@ public:
 
                     controlsInfo.push_back({ number_box->id, number_box });
                     uuidsInOrder.push_back(number_box->id);
-                    LogAndDBG("Number Box: " + number_box->label + " added");
+                    DBG_AND_LOG("Number Box: " + number_box->label + " added");
                 }
                 else if (type == "toggle")
                 {
@@ -414,7 +414,7 @@ public:
                     toggle->value = ("1" == pyharpComponent["value"].toString().toStdString());
                     controlsInfo.push_back({ toggle->id, toggle });
                     uuidsInOrder.push_back(toggle->id);
-                    LogAndDBG("Toggle: " + toggle->label + " added");
+                    DBG_AND_LOG("Toggle: " + toggle->label + " added");
                 }
                 else if (type == "dropdown")
                 {
@@ -441,7 +441,7 @@ public:
                     if (dropdown->options.empty())
                     {
                         // Don't fail here, just log a warning
-                        LogAndDBG("Dropdown control has no options.");
+                        DBG_AND_LOG("Dropdown control has no options.");
                     }
                     else
                     {
@@ -461,7 +461,7 @@ public:
                     }
                 }
                 else
-                    LogAndDBG("failed to parse control with unknown type: " + type);
+                    DBG_AND_LOG("failed to parse control with unknown type: " + type);
             }
             catch (const char* e)
             {
@@ -495,7 +495,7 @@ public:
                     audio_out->info = pyharpComponent["info"].toString().toStdString();
 
                     outputTracksInfo.push_back({ audio_out->id, audio_out });
-                    LogAndDBG("Audio Out: " + audio_out->label + " added");
+                    DBG_AND_LOG("Audio Out: " + audio_out->label + " added");
                 }
                 else if (type == "midi_track")
                 {
@@ -505,7 +505,7 @@ public:
                     midi_out->info = pyharpComponent["info"].toString().toStdString();
 
                     outputTracksInfo.push_back({ midi_out->id, midi_out });
-                    LogAndDBG("MIDI Out: " + midi_out->label + " added");
+                    DBG_AND_LOG("MIDI Out: " + midi_out->label + " added");
                 }
             }
             catch (const char* e)
@@ -764,7 +764,7 @@ private:
         dataObject->setProperty("data", jsonControlsArray);
 
         payloadJson = juce::JSON::toString(juce::var(dataObject), true);
-        DBG("prepareProcessingPayload: " + payloadJson);
+        DBG_AND_LOG("prepareProcessingPayload: " + payloadJson);
 
         return OpResult::ok();
     }
@@ -810,7 +810,7 @@ public:
     {
         // get the status of the model
         ModelStatus status = m_model->getStatus();
-        // DBG("ModelStatusTimer::timerCallback status: " + std::to_string(status)
+        // DBG_AND_LOG("ModelStatusTimer::timerCallback status: " + std::to_string(status)
         //     + " lastStatus: " + std::to_string(lastStatus));
 
         // if the status has changed, broadcast a change

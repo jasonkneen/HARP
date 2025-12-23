@@ -5,7 +5,6 @@
 #include "MediaDisplayComponent.h"
 
 #include "../utils/Labels.h"
-#include "../utils/Media.h"
 
 class AudioThumbnailWrapper : public Component
 {

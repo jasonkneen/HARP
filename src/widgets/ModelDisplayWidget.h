@@ -68,7 +68,7 @@ public:
         // TODO: what happens if the model is nullptr rn?
         if (model == nullptr)
         {
-            DBG("FATAL HARPProcessorEditor::HARPProcessorEditor: model is null");
+            DBG_AND_LOG("FATAL HARPProcessorEditor::HARPProcessorEditor: model is null");
             jassertfalse;
             return;
         }
@@ -311,13 +311,13 @@ public:
         if (source == mModelStatusTimer.get())
         {
             // update the status label
-            DBG("HARPProcessorEditor::changeListenerCallback: updating status label");
+            DBG_AND_LOG("HARPProcessorEditor::changeListenerCallback: updating status label");
             // statusLabel.setText(model->getStatus(), dontSendNotification);
             setStatus(model->getStatus());
             return;
         }
 
-        DBG("HARPProcessorEditor::changeListenerCallback: unhandled change broadcaster");
+        DBG_AND_LOG("HARPProcessorEditor::changeListenerCallback: unhandled change broadcaster");
         return;
     }
 

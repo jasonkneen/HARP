@@ -2,6 +2,8 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include "../../utils/Logging.h"
+
 struct SineWaveSound : public SynthesiserSound
 {
     SineWaveSound() {}
@@ -122,8 +124,8 @@ public:
 
     void prepareToPlay(int samplesPerBlockExpected, double sr) override
     {
-        //DBG("SynthAudioSource::prepareToPlay: Sample rate being set to " << sr << ".");
-        //DBG("SynthAudioSource::prepareToPlay: Samples per block being set to "
+        //DBG_AND_LOG("SynthAudioSource::prepareToPlay: Sample rate being set to " << sr << ".");
+        //DBG_AND_LOG("SynthAudioSource::prepareToPlay: Samples per block being set to "
         //    << samplesPerBlockExpected << ".");
 
         synth.setCurrentPlaybackSampleRate(sr);
@@ -165,7 +167,7 @@ public:
             }
         }
 
-        //DBG("SynthAudioSource::useSequence Max voices set to " << maxVoices << ".");
+        //DBG_AND_LOG("SynthAudioSource::useSequence Max voices set to " << maxVoices << ".");
 
         synth.clearVoices();
 

@@ -13,7 +13,7 @@ void MainComponent::processCallback()
     String processID = juce::Uuid().toString();
     processMutex.lock();
     currentProcessID = processID;
-    DBG("Set Process ID: " + processID);
+    DBG_AND_LOG("Set Process ID: " + processID);
     processMutex.unlock();
 
     processCancelButton.setEnabled(true);
@@ -67,9 +67,9 @@ void MainComponent::processCallback()
                     processMutex.lock();
                     if (jobProcessID != currentProcessID)
                     {
-                        DBG("ProcessID " + jobProcessID + " not found");
-                        DBG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
-                        DBG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
+                        DBG_AND_LOG("ProcessID " + jobProcessID + " not found");
+                        DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
+                        DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
                         processMutex.unlock();
                         return;
                     }
@@ -77,7 +77,7 @@ void MainComponent::processCallback()
                     {
                         Error processingError = processingResult.getError();
                         Error::fillUserMessage(processingError);
-                        LogAndDBG("Error in Processing:\n"
+                        DBG_AND_LOG("Error in Processing:\n"
                                   + processingError.devMessage.toStdString());
                         AlertWindow::showMessageBoxAsync(
                             AlertWindow::WarningIcon,
@@ -97,7 +97,7 @@ void MainComponent::processCallback()
                         return;
                     }
                     // load the audio file again
-                    DBG("ProcessID " + jobProcessID + " succeed");
+                    DBG_AND_LOG("ProcessID " + jobProcessID + " succeed");
                     currentProcessID = "";
                     model->setStatus(ModelStatus::FINISHED);
                     processBroadcaster.sendChangeMessage();
@@ -105,19 +105,19 @@ void MainComponent::processCallback()
                 },
                 processID),
             true);
-    DBG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
-    DBG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
+    DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
+    DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
 }
 
 void MainComponent::cancelCallback()
 {
-    DBG("HARPProcessorEditor::buttonClicked cancel button listener activated");
+    DBG_AND_LOG("HARPProcessorEditor::buttonClicked cancel button listener activated");
 
     OpResult cancelResult = model->cancel();
 
     if (cancelResult.failed())
     {
-        LogAndDBG(cancelResult.getError().devMessage.toStdString());
+        DBG_AND_LOG(cancelResult.getError().devMessage.toStdString());
         AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                          "Cancel Error",
                                          "An error occurred while cancelling the processing: \n"
@@ -126,7 +126,7 @@ void MainComponent::cancelCallback()
     }
     // Update current process to empty
     processMutex.lock();
-    DBG("Cancel ProcessID: " + currentProcessID);
+    DBG_AND_LOG("Cancel ProcessID: " + currentProcessID);
     currentProcessID = "";
     processMutex.unlock();
     // We already added a temp file, so we need to undo that

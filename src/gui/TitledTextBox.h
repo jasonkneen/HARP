@@ -25,7 +25,7 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
-        // DBG("My bounds are " + getBounds().toString());
+        // DBG_AND_LOG("My bounds are " + getBounds().toString());
         auto topArea = area.removeFromTop((int) (area.getHeight() * 0.25f));
         // auto topArea = area.removeFromTop(20);
         titleLabel.setBounds(topArea);

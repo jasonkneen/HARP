@@ -28,7 +28,7 @@ public:
         auto bounds = getLocalBounds();
         label.setBounds(bounds.removeFromTop(bounds.getHeight() / 6));
         slider.setBounds(bounds);
-        // DBG("Slider bounds now considered " + getBounds().toString());
+        // DBG_AND_LOG("Slider bounds now considered " + getBounds().toString());
     }
 
     void setThumbColor(juce::Colour colour)

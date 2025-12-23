@@ -10,7 +10,7 @@ public:
     {
     }
 
-    ~CustomThreadPoolJob() override { DBG("Job Stopped"); }
+    ~CustomThreadPoolJob() override { DBG_AND_LOG("Job Stopped"); }
 
     JobStatus runJob() override
     {

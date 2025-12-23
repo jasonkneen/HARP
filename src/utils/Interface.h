@@ -8,7 +8,9 @@ inline Colour getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour uiCo
                                      Colour fallback = Colour(0xff4d4d4d)) noexcept
 {
     if (auto* v4 = dynamic_cast<LookAndFeel_V4*>(&LookAndFeel::getDefaultLookAndFeel()))
+    {
         return v4->getCurrentColourScheme().getUIColour(uiColour);
+    }
 
     return fallback;
 }

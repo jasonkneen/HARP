@@ -525,12 +525,12 @@ void MediaDisplayComponent::setOriginalFilePath(URL filePath)
 
     if (! targetFile.copyFileTo(tempFile))
     {
-        DBG("MediaDisplayComponent::addNewTempFile: Failed to copy file "
+        DBG_AND_LOG("MediaDisplayComponent::addNewTempFile: Failed to copy file "
             << targetFile.getFullPathName() << " to " << tempFile.getFullPathName() << ".");
     }
     else
     {
-        DBG("MediaDisplayComponent::addNewTempFile: Copied file "
+        DBG_AND_LOG("MediaDisplayComponent::addNewTempFile: Copied file "
             << targetFile.getFullPathName() << " to " << tempFile.getFullPathName() << ".");
     }
 
@@ -593,23 +593,23 @@ void MediaDisplayComponent::overwriteOriginalFile()
 
     if (targetFile.copyFileTo(backupFile))
     {
-        DBG("MediaDisplayComponent::overwriteOriginalFile: Created backup of file "
+        DBG_AND_LOG("MediaDisplayComponent::overwriteOriginalFile: Created backup of file "
             << targetFile.getFullPathName() << " at " << backupFile.getFullPathName() << ".");
     }
     else
     {
-        DBG("MediaDisplayComponent::overwriteOriginalFile: Failed to create backup of file "
+        DBG_AND_LOG("MediaDisplayComponent::overwriteOriginalFile: Failed to create backup of file "
             << targetFile.getFullPathName() << " at " << backupFile.getFullPathName() << ".");
     }
 
     if (tempFile.copyFileTo(targetFile))
     {
-        DBG("MediaDisplayComponent::overwriteOriginalFile: Overwriting file "
+        DBG_AND_LOG("MediaDisplayComponent::overwriteOriginalFile: Overwriting file "
             << targetFile.getFullPathName() << " with " << tempFile.getFullPathName() << ".");
     }
     else
     {
-        DBG("MediaDisplayComponent::overwriteOriginalFile: Failed to overwrite file "
+        DBG_AND_LOG("MediaDisplayComponent::overwriteOriginalFile: Failed to overwrite file "
             << targetFile.getFullPathName() << " with " << tempFile.getFullPathName() << ".");
     }
 }*/
@@ -624,14 +624,15 @@ void MediaDisplayComponent::filesDropped(const StringArray& files, int /*x*/, in
 {
     for (int i = 1; i < files.size(); i++)
     {
-        DBG("MediaDisplayComponent::filesDropped: Ignoring additional file " << files[i] << ".");
+        DBG_AND_LOG("MediaDisplayComponent::filesDropped: Ignoring additional file " << files[i]
+                                                                                     << ".");
     }
 
     File mediaFile = File(files[0]);
 
     if (isDuplicateFile(URL(mediaFile)))
     {
-        DBG("MediaDisplayComponent::filesDropped: Ignoring self-drag.");
+        DBG_AND_LOG("MediaDisplayComponent::filesDropped: Ignoring self-drag.");
         return;
     }
 
@@ -750,7 +751,7 @@ void MediaDisplayComponent::saveFileCallback()
                     }
                     else
                     {
-                        //DBG("MediaDisplayComponent::saveFileCallback: Save operation canceled.");
+                        //DBG_AND_LOG("MediaDisplayComponent::saveFileCallback: Save operation canceled.");
                     }
                 });
         }

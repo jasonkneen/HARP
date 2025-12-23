@@ -12,8 +12,9 @@
 #include "../media/MediaDisplayComponent.h"
 #include "../media/MidiDisplayComponent.h"
 
-#include "../utils/Interface.h"
 #include "../utils/Controls.h"
+#include "../utils/Interface.h"
+#include "../utils/Logging.h"
 
 using namespace juce;
 
@@ -181,7 +182,8 @@ public:
         }
         else
         {
-            DBG("TrackAreaWidget::addTrackFromComponentInfo: Invalid ComponentInfo received.");
+            DBG_AND_LOG(
+                "TrackAreaWidget::addTrackFromComponentInfo: Invalid ComponentInfo received.");
         }
 
         if (m)
@@ -215,7 +217,8 @@ public:
             {
                 m->selectTrack();
 
-                DBG("TrackAreaWidget::addTrackFromFilePath: Selecting existing track containing "
+                DBG_AND_LOG(
+                    "TrackAreaWidget::addTrackFromFilePath: Selecting existing track containing "
                     << f.getFullPathName() << " instead of creating new track.");
 
                 return;
@@ -247,8 +250,8 @@ public:
         }
         else
         {
-            DBG("TrackAreaWidget::addTrackFromFilePath: Tried to add file "
-                << f.getFullPathName() << " with unsupported type.");
+            DBG_AND_LOG("TrackAreaWidget::addTrackFromFilePath: Tried to add file "
+                        << f.getFullPathName() << " with unsupported type.");
 
             validExt = false;
         }

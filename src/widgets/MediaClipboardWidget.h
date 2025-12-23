@@ -11,6 +11,8 @@
 #include "../gui/MultiButton.h"
 #include "TrackAreaWidget.h"
 
+#include "../utils/Logging.h"
+
 using namespace juce;
 
 class MediaClipboardWidget : public Component, public ChangeListener
@@ -255,7 +257,8 @@ public:
                                     {
                                         if (selectedFile.copyFileTo(originalFile))
                                         {
-                                            DBG("MediaClipboardWidget::sendToDAWCallback: Overwriting file "
+                                            DBG_AND_LOG(
+                                                "MediaClipboardWidget::sendToDAWCallback: Overwriting file "
                                                 << originalFile.getFullPathName() << " with "
                                                 << selectedFile.getFullPathName() << ".");
 
@@ -271,7 +274,8 @@ public:
                                         }
                                         else
                                         {
-                                            DBG("MediaClipboardWidget::sendToDAWCallback: Failed to overwrite file "
+                                            DBG_AND_LOG(
+                                                "MediaClipboardWidget::sendToDAWCallback: Failed to overwrite file "
                                                 << originalFile.getFullPathName() << " with "
                                                 << selectedFile.getFullPathName() << ".");
                                         }

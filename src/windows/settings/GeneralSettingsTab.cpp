@@ -15,7 +15,7 @@ GeneralSettingsTab::GeneralSettingsTab()
 
 void GeneralSettingsTab::resized()
 {
-    //DBG("GeneralSettingsTab::resized()");
+    //DBG_AND_LOG("GeneralSettingsTab::resized()");
     auto area = getLocalBounds().reduced(10);
     openLogFolderButton.setBounds(area.removeFromTop(30));
     area.removeFromTop(10); // Spacer
@@ -24,7 +24,7 @@ void GeneralSettingsTab::resized()
 
 void GeneralSettingsTab::paint(juce::Graphics& g)
 {
-    //DBG("GeneralSettingsTab::paint()");
+    //DBG_AND_LOG("GeneralSettingsTab::paint()");
     // g.fillAll(juce::Colours::lightgrey);
 }
 

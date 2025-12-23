@@ -104,8 +104,8 @@ void OutputLabelComponent::mouseUp(const juce::MouseEvent& /*e*/)
             }
             else
             {
-                DBG("OutputLabelComponent::mouseUp: label link \'" << lnk
-                                                                   << "\' appears malformed.");
+                DBG_AND_LOG("OutputLabelComponent::mouseUp: label link \'"
+                            << lnk << "\' appears malformed.");
             }
         }
     }

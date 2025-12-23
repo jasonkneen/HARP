@@ -28,7 +28,7 @@ public:
 
         if (mModel == nullptr)
         {
-            DBG("populate gui called, but model is null");
+            DBG_AND_LOG("populate gui called, but model is null");
             return;
         }
 
@@ -64,7 +64,7 @@ public:
                 sliderHandler->onMouseExit = [this]() { updateInstructionBox(""); };
                 sliderHandler->attach();
                 handlers.push_back(std::move(sliderHandler));
-                DBG("Slider: " + sliderCtrl->label + " added");
+                DBG_AND_LOG("Slider: " + sliderCtrl->label + " added");
 
                 // ToggleCtrl
             }
@@ -85,7 +85,7 @@ public:
                 toggleHandler->attach();
                 handlers.push_back(std::move(toggleHandler));
                 toggles.push_back(std::move(toggle));
-                DBG("Toggle: " + toggleCtrl->label + " added");
+                DBG_AND_LOG("Toggle: " + toggleCtrl->label + " added");
 
                 // TextBoxCtrl
             }
@@ -105,7 +105,7 @@ public:
                 textHandler->attach();
                 handlers.push_back(std::move(textHandler));
                 textCtrls.push_back(std::move(textCtrl));
-                DBG("Text Box: " + textBoxCtrl->label + " added");
+                DBG_AND_LOG("Text Box: " + textBoxCtrl->label + " added");
 
                 // ComboBoxCtrl
             }
@@ -146,7 +146,7 @@ public:
                 comboHandler->attach();
                 handlers.push_back(std::move(comboHandler));
                 optionCtrls.push_back(std::move(comboBoxWithLabel));
-                DBG("Combo Box: " + comboBoxCtrl->label + " added");
+                DBG_AND_LOG("Combo Box: " + comboBoxCtrl->label + " added");
             }
             // TODO: NumberBox (check class HarpNumberBox in pyharp)
         }
@@ -157,7 +157,7 @@ public:
 
     void resetUI()
     {
-        DBG("ControlAreaWidget::resetUI called");
+        DBG_AND_LOG("ControlAreaWidget::resetUI called");
         mModel.reset();
         // remove all the widgets and empty the vectors
         for (auto& ctrl : sliders)
@@ -215,7 +215,7 @@ public:
         sliderBox.flexDirection = juce::FlexBox::Direction::row;
         for (auto& sliderWithLabel : sliders)
         {
-            // DBG("Adding slider with name: " + sliderWithLabel->getSlider().getName()
+            // DBG_AND_LOG("Adding slider with name: " + sliderWithLabel->getSlider().getName()
             //     + " to sliderBox");
             sliderBox.items.add(juce::FlexItem(*sliderWithLabel)
                                     .withFlex(1)
@@ -229,7 +229,7 @@ public:
         toggleBox.flexDirection = juce::FlexBox::Direction::row;
         for (auto& toggle : toggles)
         {
-            // DBG("Adding toggle with name: " + toggle->getName() + " to toggleBox");
+            // DBG_AND_LOG("Adding toggle with name: " + toggle->getName() + " to toggleBox");
             toggleBox.items.add(
                 juce::FlexItem(*toggle).withFlex(1).withMinWidth(40).withMaxHeight(20).withMargin(
                     margin));
@@ -240,7 +240,7 @@ public:
         optionBox.flexDirection = juce::FlexBox::Direction::row;
         for (auto& optionCtrl : optionCtrls)
         {
-            // DBG("Adding option control with name: " + optionCtrl->getName() + " to optionBox");
+            // DBG_AND_LOG("Adding option control with name: " + optionCtrl->getName() + " to optionBox");
             optionBox.items.add(juce::FlexItem(*optionCtrl)
                                     .withFlex(1)
                                     .withMinWidth(40)
@@ -253,7 +253,7 @@ public:
         textBox.flexDirection = juce::FlexBox::Direction::row;
         for (auto& textCtrl : textCtrls)
         {
-            // DBG("Adding text control with name: " + textCtrl->getName() + " to textBox");
+            // DBG_AND_LOG("Adding text control with name: " + textCtrl->getName() + " to textBox");
             textBox.items.add(juce::FlexItem(*textCtrl)
                                   .withFlex(1)
                                   .withMinWidth(80)
@@ -295,7 +295,7 @@ public:
         auto componentInfo = mModel->findComponentInfoByUuid(id);
         if (componentInfo == nullptr)
         {
-            DBG("buttonClicked: ctrl not found");
+            DBG_AND_LOG("buttonClicked: ctrl not found");
             return;
         }
         if (auto toggleInfo = dynamic_cast<ToggleInfo*>(componentInfo.get()))
@@ -304,7 +304,7 @@ public:
         }
         else
         {
-            DBG("buttonClicked: ctrl is not a toggle");
+            DBG_AND_LOG("buttonClicked: ctrl is not a toggle");
         }
     }
 
@@ -316,7 +316,7 @@ public:
         auto componentInfo = mModel->findComponentInfoByUuid(id);
         if (componentInfo == nullptr)
         {
-            DBG("comboBoxChanged: ctrl not found");
+            DBG_AND_LOG("comboBoxChanged: ctrl not found");
             return;
         }
         if (auto comboBoxInfo = dynamic_cast<ComboBoxInfo*>(componentInfo.get()))
@@ -325,7 +325,7 @@ public:
         }
         else
         {
-            DBG("comboBoxChanged: ctrl is not a combobox");
+            DBG_AND_LOG("comboBoxChanged: ctrl is not a combobox");
         }
     }
 
@@ -337,7 +337,7 @@ public:
         auto componentInfo = mModel->findComponentInfoByUuid(id);
         if (componentInfo == nullptr)
         {
-            DBG("textEditorTextChanged: ctrl not found");
+            DBG_AND_LOG("textEditorTextChanged: ctrl not found");
             return;
         }
         if (auto textBoxInfo = dynamic_cast<TextBoxInfo*>(componentInfo.get()))
@@ -346,7 +346,7 @@ public:
         }
         else
         {
-            DBG("textEditorTextChanged: ctrl is not a text box");
+            DBG_AND_LOG("textEditorTextChanged: ctrl is not a text box");
         }
     }
 
@@ -361,7 +361,7 @@ public:
         // Check if pair is nullptr
         if (componentInfo == nullptr)
         {
-            DBG("sliderDragEnded: ctrl not found");
+            DBG_AND_LOG("sliderDragEnded: ctrl not found");
             return;
         }
         if (auto sliderInfo = dynamic_cast<SliderInfo*>(componentInfo.get()))
@@ -374,7 +374,7 @@ public:
         }
         else
         {
-            DBG("sliderDragEnded: ctrl is not a slider");
+            DBG_AND_LOG("sliderDragEnded: ctrl is not a slider");
         }
     }
 

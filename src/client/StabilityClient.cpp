@@ -46,20 +46,20 @@ OpResult StabilityClient::uploadFileRequest(const File& fileToUpload,
 
     uploadedFilePath = fileToUpload.getFullPathName();
 
-    DBG("uploadFileRequest: returning uploadedFilePath = " + uploadedFilePath);
+    DBG_AND_LOG("uploadFileRequest: returning uploadedFilePath = " + uploadedFilePath);
     return OpResult::ok();
 }
 
 String StabilityClient::getControlValue(const String& label, const Array<var>* dataArray)
 {
-    DBG("[getControlValue] Searching for label: " + label);
+    DBG_AND_LOG("[getControlValue] Searching for label: " + label);
     for (const auto& item : *dataArray)
     {
         if (! item.isObject())
             continue;
 
         const auto itemStr = JSON::toString(item);
-        DBG("[getControlValue] Scanning item: " + itemStr);
+        DBG_AND_LOG("[getControlValue] Scanning item: " + itemStr);
 
         if (item.hasProperty("label") && item.hasProperty("value"))
         {
@@ -67,12 +67,12 @@ String StabilityClient::getControlValue(const String& label, const Array<var>* d
             if (itemLabel == label)
             {
                 String value = item["value"].toString();
-                DBG("[getControlValue] Found label: " + itemLabel + " => value: " + value);
+                DBG_AND_LOG("[getControlValue] Found label: " + itemLabel + " => value: " + value);
                 return value;
             }
         }
     }
-    DBG("[getControlValue] Label not found: " + label);
+    DBG_AND_LOG("[getControlValue] Label not found: " + label);
     return {};
 }
 
@@ -253,12 +253,12 @@ OpResult StabilityClient::processAudioToAudio(const Array<var>* dataArray,
 
     //if (prompt.isEmpty())
     //  {
-    //     DBG("WARNING: 'Text Prompt' is empty. Using fallback.");
+    //     DBG_AND_LOG("WARNING: 'Text Prompt' is empty. Using fallback.");
     //     prompt = "cheerful acoustic track";
     //  }
     //  else
     //  {
-    //   DBG("Resolved Prompt = " + prompt);
+    //   DBG_AND_LOG("Resolved Prompt = " + prompt);
     //}
 
     // --- Step 3: Construct multipart body ---
@@ -327,7 +327,7 @@ OpResult StabilityClient::processAudioToAudio(const Array<var>* dataArray,
 
     // --- Step 4: Build and send POST request ---
     MemoryBlock blob = body.getMemoryBlock();
-    //DBG("Multipart preview (first 512 bytes):\n" +
+    //DBG_AND_LOG("Multipart preview (first 512 bytes):\n" +
     //String::fromUTF8((const char*)blob.getData(), (int)jmin(blob.getSize(), (size_t)512)));
 
     URL url("https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio");
@@ -443,12 +443,12 @@ OpResult StabilityClient::processRequest(Error& error,
         error.devMessage = "Missing or empty 'data' array in processingPayload.";
         return OpResult::fail(error);
     }
-    //DBG("==== BEGIN: dataArray contents ====");
+    //DBG_AND_LOG("==== BEGIN: dataArray contents ====");
     //for (const auto& item : *dataArray)
     //{
-    //   DBG(JSON::toString(item));
+    //   DBG_AND_LOG(JSON::toString(item));
     //}
-    //DBG("==== END: dataArray contents ====");
+    //DBG_AND_LOG("==== END: dataArray contents ====");
 
     // Dispatch to correct model endpoint
     const String modelName = spaceInfo.modelName.trim().toLowerCase();
@@ -571,7 +571,7 @@ OpResult StabilityClient::getControls(Array<var>& inputComponents,
 
 OpResult StabilityClient::cancel()
 {
-    DBG("[StabilityClient] Cancel request received.");
+    DBG_AND_LOG("[StabilityClient] Cancel request received.");
     shouldCancel.store(true);
     return OpResult::ok();
 }

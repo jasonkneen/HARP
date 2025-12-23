@@ -145,7 +145,7 @@ public:
         {
             String itemText = modelPathComboBox.getItemText(i);
             options.push_back(itemText.toStdString());
-            DBG("Item index" << i << ": " << itemText);
+            DBG_AND_LOG("Item index" << i << ": " << itemText);
         }
 
         modelPathComboBox.clear();
@@ -242,7 +242,7 @@ public:
                 catch (Error& loadingError)
                 {
                     Error::fillUserMessage(loadingError);
-                    LogAndDBG("Error in Model Loading:\n" + loadingError.devMessage);
+                    DBG_AND_LOG("Error in Model Loading:\n" + loadingError.devMessage);
                     auto msgOpts =
                         MessageBoxOptions()
                             .withTitle("Loading Error")
@@ -262,7 +262,7 @@ public:
                     {
                         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                         // NOTE (hugo): there's something weird about the button indices assigned by the msgOpts here
-                        // DBG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
+                        // DBG_AND_LOG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
                         // auto chosen = msgOpts.getButtonText(result);
                         // they're not the same as the order of the buttons in the alert
                         // this is the order that I actually observed them to be.
@@ -389,7 +389,7 @@ public:
                 catch (const std::exception& e)
                 {
                     // Catch any other standard exceptions (like std::runtime_error)
-                    DBG("Caught std::exception: " << e.what());
+                    DBG_AND_LOG("Caught std::exception: " << e.what());
                     AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                                      "Error",
                                                      "An unexpected error occurred: "
@@ -397,7 +397,7 @@ public:
                 }
                 catch (...) // Catch any other exceptions
                 {
-                    DBG("Caught unknown exception");
+                    DBG_AND_LOG("Caught unknown exception");
                     AlertWindow::showMessageBoxAsync(
                         AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
                 }

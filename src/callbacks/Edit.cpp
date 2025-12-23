@@ -2,21 +2,21 @@
 
 void MainComponent::undoCallback()
 {
-    // DBG("Undoing last edit");
+    // DBG_AND_LOG("Undoing last edit");
 
     // // check if the audio file is loaded
     // if (! mediaDisplay->isFileLoaded())
     // {
     //     // TODO - gray out undo option in this case?
     //     // Fail with beep, we should just ignore this if it doesn't make sense
-    //     DBG("No file loaded to perform operation on");
+    //     DBG_AND_LOG("No file loaded to perform operation on");
     //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
     //     return;
     // }
 
     /*if (isProcessing)
     {
-        DBG("Can't undo while processing occurring!");
+        DBG_AND_LOG("Can't undo while processing occurring!");
         juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
         return;
     }*/
@@ -28,34 +28,34 @@ void MainComponent::undoCallback()
         {
             if (! inputMediaDisplay->iteratePreviousTempFile())
             {
-                DBG("Nothing to undo!");
+                DBG_AND_LOG("Nothing to undo!");
                 // juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
             }
             else
             {
                 saveEnabled = true;
-                DBG("Undo callback completed successfully");
+                DBG_AND_LOG("Undo callback completed successfully");
             }
         }*/
 }
 
 void MainComponent::redoCallback()
 {
-    // DBG("Redoing last edit");
+    // DBG_AND_LOG("Redoing last edit");
 
     // // check if the audio file is loaded
     // if (! mediaDisplay->isFileLoaded())
     // {
     //     // TODO - gray out undo option in this case?
     //     // Fail with beep, we should just ignore this if it doesn't make sense
-    //     DBG("No file loaded to perform operation on");
+    //     DBG_AND_LOG("No file loaded to perform operation on");
     //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
     //     return;
     // }
 
     /*if (isProcessing)
     {
-        DBG("Can't redo while processing occurring!");
+        DBG_AND_LOG("Can't redo while processing occurring!");
         juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
         return;
     }*/
@@ -67,13 +67,13 @@ void MainComponent::redoCallback()
         {
             if (! inputMediaDisplay->iterateNextTempFile())
             {
-                DBG("Nothing to redo!");
+                DBG_AND_LOG("Nothing to redo!");
                 // juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
             }
             else
             {
                 saveEnabled = true;
-                DBG("Redo callback completed successfully");
+                DBG_AND_LOG("Redo callback completed successfully");
             }
         }*/
 }

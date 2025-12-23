@@ -8,9 +8,17 @@
 #include "OutputLabelComponent.h"
 
 #include "../utils/Labels.h"
-#include "../utils/Media.h"
+#include "../utils/Logging.h"
 
 using namespace juce;
+
+enum DisplayMode
+{
+    Input,
+    Output,
+    Hybrid, // All functionality
+    Thumbnail // Reduced functionality
+};
 
 class ColorablePanel : public Component
 {

@@ -6,9 +6,9 @@ using namespace juce;
 
 struct PyHarpComponentInfo
 {
-    Uuid id{""};
-    std::string label{""};
-    std::string info{""};
+    Uuid id { "" };
+    std::string label { "" };
+    std::string info { "" };
 
     virtual ~PyHarpComponentInfo() = default; // Virtual destructor
 };

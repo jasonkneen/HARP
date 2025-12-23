@@ -79,7 +79,7 @@ PopupMenu MainComponent::getMenuForIndex([[maybe_unused]] int menuIndex, const S
     }
     else
     {
-        DBG("MainComponent::getMenuForIndex: Unknown menu name: " << menuName << ".");
+        DBG_AND_LOG("MainComponent::getMenuForIndex: Unknown menu name: " << menuName << ".");
     }
 
     return menu;
@@ -87,8 +87,8 @@ PopupMenu MainComponent::getMenuForIndex([[maybe_unused]] int menuIndex, const S
 
 void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex)
 {
-    DBG("MainComponent::menuItemSelected: Selected ID " << menuItemID << " and index "
-                                                        << topLevelMenuIndex << ".");
+    DBG_AND_LOG("MainComponent::menuItemSelected: Selected ID " << menuItemID << " and index "
+                                                                << topLevelMenuIndex << ".");
 }
 
 void MainComponent::initializeMenuBar()
@@ -231,64 +231,64 @@ bool MainComponent::perform(const InvocationInfo& info)
     {
         /* --File-- */
         case CommandIDs::open:
-            DBG("MainComponent::perform: \"open\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"open\" command invoked.");
             mediaClipboardWidget.addFileCallback();
 
             break;
 
         case CommandIDs::save:
-            DBG("MainComponent::perform: \"save\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"save\" command invoked.");
             // TODO - saveCallback();
 
             break;
 
         case CommandIDs::saveAs:
-            DBG("MainComponent::perform: \"saveAs\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"saveAs\" command invoked.");
             mediaClipboardWidget.saveFileCallback();
 
             break;
 
         case CommandIDs::settings:
-            DBG("MainComponent::perform: \"settings\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"settings\" command invoked.");
             showSettingsDialog();
 
             break;
 
         /* --Edit-- */
         case CommandIDs::undo:
-            DBG("MainComponent::perform: \"undo\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"undo\" command invoked.");
             // TODO - undoCallback();
 
             break;
 
         case CommandIDs::redo:
-            DBG("MainComponent::perform: \"redo\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"redo\" command invoked.");
             // TODO - redoCallback();
 
             break;
 
         /* --View-- */
         case CommandIDs::viewMediaClipboard:
-            DBG("MainComponent::perform: \"viewMediaClipboard\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"viewMediaClipboard\" command invoked.");
             viewMediaClipboardCallback();
 
             break;
 
         case CommandIDs::viewStatusArea:
-            DBG("MainComponent::perform: \"viewStatusArea\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"viewStatusArea\" command invoked.");
             viewStatusAreaCallback();
 
             break;
 
         /* --Help-- */
         case CommandIDs::welcome:
-            DBG("MainComponent::perform: \"welcome\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"welcome\" command invoked.");
             // TODO - showWelcomeDialog();
 
             break;
 
         case CommandIDs::about:
-            DBG("MainComponent::perform: \"about\" command invoked.");
+            DBG_AND_LOG("MainComponent::perform: \"about\" command invoked.");
             showAboutDialog();
 
             break;

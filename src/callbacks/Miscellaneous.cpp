@@ -25,12 +25,12 @@ void MainComponent::focusCallback()
                     {
                         if (result == 1)
                         { // Yes was clicked
-                            DBG("Reloading file");
+                            DBG_AND_LOG("Reloading file");
                             loadMediaDisplay(mediaDisplay->getTargetFilePath().getLocalFile());
                         }
                         else
                         { // No was clicked or the window was closed
-                            DBG("Not reloading file");
+                            DBG_AND_LOG("Not reloading file");
                             lastLoadTime =
                                 Time::getCurrentTime(); //Reset time so we stop asking
                         }

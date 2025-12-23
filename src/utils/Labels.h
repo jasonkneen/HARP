@@ -21,19 +21,19 @@ struct OutputLabel
 
 struct AudioLabel : public OutputLabel
 {
-    // Optional on pyharp side
+    // Additional fields
     std::optional<float> amplitude;
 };
 
 struct SpectrogramLabel : public OutputLabel
 {
-    // Optional on pyharp side
+    // Additional fields
     std::optional<float> frequency;
 };
 
 struct MidiLabel : public OutputLabel
 {
-    // Optional on pyharp side
+    // Additional fields
     std::optional<float> pitch;
 };
 

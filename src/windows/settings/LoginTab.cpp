@@ -10,7 +10,7 @@ LoginTab::LoginTab(const juce::String& providerName)
 
     if (provider == LoginTab::Provider::UNKNOWN)
     {
-        DBG("Invalid provider name passed to loginToProvider()");
+        DBG_AND_LOG("Invalid provider name passed to loginToProvider()");
         return;
     }
 
@@ -143,7 +143,7 @@ void LoginTab::handleSubmit()
         {
             Error err = result.getError();
             Error::fillUserMessage(err);
-            LogAndDBG("Invalid token:\n" + err.devMessage.toStdString());
+            DBG_AND_LOG("Invalid token:\n" + err.devMessage.toStdString());
             AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                              "Invalid Token",
                                              "The provided token is invalid:\n" + err.userMessage);
@@ -214,7 +214,7 @@ juce::URL LoginTab::getTokenURL()
 
 void LoginTab::resized()
 {
-    //DBG("LoginTab::resized()");
+    //DBG_AND_LOG("LoginTab::resized()");
     auto area = getLocalBounds().reduced(10);
     const int rowH = 26;
     const int gap = 10;
@@ -247,7 +247,7 @@ void LoginTab::resized()
 
 void LoginTab::paint(juce::Graphics& g)
 {
-    //DBG("LoginTab::paint()");
+    //DBG_AND_LOG("LoginTab::paint()");
     // g.fillAll(juce::Colours::lightgrey);
 }
 

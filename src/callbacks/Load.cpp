@@ -5,7 +5,7 @@ void MainComponent::openCustomPathDialog(const std::string& prefillPath = "")
     // Create and show the custom path dialog with a callback
     std::function<void(const juce::String&)> loadCallback = [this](const juce::String& customPath2)
     {
-        DBG("Custom path entered: " + customPath2);
+        DBG_AND_LOG("Custom path entered: " + customPath2);
         this->customPath = customPath2.toStdString(); // Store the custom path
         loadModelButton.triggerClick(); // Trigger the load model button click
     };

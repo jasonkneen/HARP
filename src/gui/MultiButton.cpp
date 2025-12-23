@@ -1,5 +1,8 @@
 #include "MultiButton.h"
 #include "CustomPathDialog.h"
+
+#include "../utils/Logging.h"
+
 // MultiButton::MultiButton(const Mode& mode1, const Mode& mode2)
 // {
 //     addMode(mode1);
@@ -26,7 +29,7 @@ void MultiButton::addMode(const Mode& mode)
     if (modes.find(mode.label) != modes.end())
     {
         // If it does, print a warning
-        DBG("Mode with label " + mode.label + " already exists. Overwriting.");
+        DBG_AND_LOG("Mode with label " + mode.label + " already exists. Overwriting.");
     }
     modes[mode.label] = mode;
 }
@@ -142,8 +145,8 @@ void MultiButton::paintButton(juce::Graphics& g,
     }
     // int shouldDrawButtonAsHighlightedInt = shouldDrawButtonAsHighlighted ? 1 : 0;
     // int shouldDrawButtonAsDownInt = shouldDrawButtonAsDown ? 1 : 0;
-    // DBG("shouldDrawButtonAsHighlighted: " + juce::String(shouldDrawButtonAsHighlightedInt));
-    // DBG("shouldDrawButtonAsDown: " + juce::String(shouldDrawButtonAsDownInt));
+    // DBG_AND_LOG("shouldDrawButtonAsHighlighted: " + juce::String(shouldDrawButtonAsHighlightedInt));
+    // DBG_AND_LOG("shouldDrawButtonAsDown: " + juce::String(shouldDrawButtonAsDownInt));
 }
 
 void MultiButton::paint(juce::Graphics& g)

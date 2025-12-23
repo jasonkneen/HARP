@@ -30,7 +30,7 @@ public:
         logger.reset(juce::FileLogger::createDefaultAppLogger("HARP", "main.log", ""));
     }
 
-    void LogAndDBG(const String& message) const
+    void debugAndLog(const String& message) const
     {
         DBG(message); // Write to console
 
@@ -51,4 +51,11 @@ private:
 /**
  * Helper function to simplify logging calls.
  */
-inline void LogAndDBG(const String& message) { HARPLogger::getInstance()->LogAndDBG(message); }
+inline void debugAndLog(const String& message) { HARPLogger::getInstance()->debugAndLog(message); }
+
+/**
+ * Macro to match the behavior of DBG().
+ */
+#define DBG_AND_LOG(textToWrite)                                                   \
+    JUCE_BLOCK_WITH_FORCED_SEMICOLON(String tempDbgBuf; tempDbgBuf << textToWrite; \
+                                     debugAndLog(tempDbgBuf);)

@@ -224,7 +224,7 @@ OpResult GradioClient::processRequest(Error& error,
                     if (labelPyharp->getProperty("label").isString())
                     {
                         label->label = labelPyharp->getProperty("label").toString();
-                        DBG("label: " + label->label);
+                        DBG_AND_LOG("label: " + label->label);
                     }
                 }
                 if (labelPyharp->hasProperty("duration"))
@@ -271,8 +271,8 @@ OpResult GradioClient::processRequest(Error& error,
         }
         else
         {
-            LogAndDBG("The pyharp Gradio app returned a " + procObjType
-                      + " object, that we don't yet support in HARP.");
+            DBG_AND_LOG("The pyharp Gradio app returned a " + procObjType
+                        + " object, that we don't yet support in HARP.");
         }
     }
     return result;
@@ -369,7 +369,7 @@ OpResult GradioClient::uploadFileRequest(const File& fileToUpload,
         return OpResult::fail(error);
     }
 
-    // DBG("File uploaded successfully, path: " + uploadedFilePath);
+    // DBG_AND_LOG("File uploaded successfully, path: " + uploadedFilePath);
     return OpResult::ok();
 }
 
@@ -392,9 +392,9 @@ OpResult GradioClient::makePostRequestForEventID(const String endpoint,
     // String jsonBody = R"({"data": []})";
     URL postEndpoint = requestEndpoint.withPOSTData(jsonBody);
 
-    DBG("POST URL: " + postEndpoint.toString(true));
-    DBG("JSON body: " + jsonBody);
-    DBG("Headers: " + createJsonHeaders());
+    DBG_AND_LOG("POST URL: " + postEndpoint.toString(true));
+    DBG_AND_LOG("JSON body: " + jsonBody);
+    DBG_AND_LOG("Headers: " + createJsonHeaders());
 
     StringPairArray responseHeaders;
     int statusCode = 0;
@@ -450,7 +450,7 @@ OpResult GradioClient::makePostRequestForEventID(const String endpoint,
         return OpResult::fail(error);
     }
 
-    DBG(eventID);
+    DBG_AND_LOG(eventID);
 
     return OpResult::ok();
 }
@@ -473,8 +473,8 @@ OpResult GradioClient::getResponseFromEventID(const String callID,
                           .getChildURL(callID)
                           .getChildURL(eventID);
 
-    DBG("GET URL: " + getEndpoint.toString(true));
-    DBG("Headers: " + createCommonHeaders());
+    DBG_AND_LOG("GET URL: " + getEndpoint.toString(true));
+    DBG_AND_LOG("Headers: " + createCommonHeaders());
 
     StringPairArray responseHeaders;
     int statusCode = 0;
@@ -486,10 +486,10 @@ OpResult GradioClient::getResponseFromEventID(const String callID,
                        .withNumRedirectsToFollow(5);
     //  .withHttpRequestCmd ("POST");
     std::unique_ptr<InputStream> stream(getEndpoint.createInputStream(options));
-    DBG("Input stream created");
+    DBG_AND_LOG("Input stream created");
 
-    DBG("Status code: " + String(statusCode));
-    DBG("Response headers:\n" + responseHeaders.getDescription());
+    DBG_AND_LOG("Status code: " + String(statusCode));
+    DBG_AND_LOG("Response headers:\n" + responseHeaders.getDescription());
 
     if (stream == nullptr)
     {
@@ -504,9 +504,9 @@ OpResult GradioClient::getResponseFromEventID(const String callID,
     {
         response = stream->readNextLine();
 
-        DBG(eventID);
-        DBG(response);
-        DBG(response.length());
+        DBG_AND_LOG(eventID);
+        DBG_AND_LOG(response);
+        DBG_AND_LOG(response.length());
 
         if (response.contains(enumToString(GradioEvents::complete)))
         {

@@ -5,7 +5,6 @@
 #include "pianoroll/SynthAudioSource.h"
 
 #include "../utils/Labels.h"
-#include "../utils/Media.h"
 
 class MidiDisplayComponent : public MediaDisplayComponent
 {

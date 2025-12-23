@@ -107,38 +107,40 @@ target_sources(${PROJECT_NAME}
         # TODO - subject to change
         src/gui/CustomPathDialog.h
 
-        src/media/MediaDisplayComponent.cpp
-        src/media/AudioDisplayComponent.cpp
-        src/media/MidiDisplayComponent.cpp
-        src/media/OutputLabelComponent.cpp
+        src/media/MediaDisplayComponent.cpp #
+        src/media/AudioDisplayComponent.cpp #
+        src/media/MidiDisplayComponent.cpp #
+        src/media/OutputLabelComponent.cpp #
 
-        src/media/pianoroll/KeyboardComponent.cpp
-        src/media/pianoroll/NoteGridComponent.cpp
-        src/media/pianoroll/PianoRollComponent.cpp
-        src/media/pianoroll/SynthAudioSource.h
+        src/media/pianoroll/KeyboardComponent.cpp #
+        src/media/pianoroll/NoteGridComponent.cpp #
+        src/media/pianoroll/PianoRollComponent.cpp #
+        src/media/pianoroll/SynthAudioSource.h #
 
         src/client/Client.cpp
         src/client/GradioClient.cpp
         src/client/StabilityClient.cpp
 
-        src/utils/Logging.h
+        src/utils/Logging.h #
         src/utils/Settings.h
-        src/utils/Interface.h
+        src/utils/Interface.h #
         src/utils/Controls.h
-        src/utils/Media.h
-        src/utils/Labels.h
+        src/utils/Labels.h #
         src/utils/Clients.h
         src/utils/Errors.h
         src/utils/Enums.h
 
+        # TODO - add as a submodule
         src/external/magic_enum.hpp
 
+        # TODO - add as a submodule
         src/external/fontaudio/src/FontAudio.h
         src/external/fontaudio/src/FontAudio.cpp
         src/external/fontaudio/data/FontAudioData.h
         src/external/fontaudio/data/FontAudioData.cpp
         src/external/fontaudio/data/FontAudioIcons.h
 
+        # TODO - add as a submodule
         src/external/fontawesome/src/FontAwesome.h
         src/external/fontawesome/src/FontAwesome.cpp
         src/external/fontawesome/data/FontAwesomeData.h
