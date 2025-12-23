@@ -59,7 +59,7 @@ LoginTab::LoginTab(const juce::String& providerName)
     // rememberTokenToggle.setSize(200, 24);
     // addAndMakeVisible(rememberTokenToggle);
 
-    juce::String savedToken = AppSettings::getString(getStorageKey());
+    juce::String savedToken = Settings::getString(getStorageKey());
     if (savedToken.isNotEmpty())
     {
         OpResult result = validateToken(savedToken);
@@ -147,7 +147,7 @@ void LoginTab::handleSubmit()
             AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                              "Invalid Token",
                                              "The provided token is invalid:\n" + err.userMessage);
-            juce::String savedToken = AppSettings::getString(getStorageKey());
+            juce::String savedToken = Settings::getString(getStorageKey());
             if (savedToken.isNotEmpty())
             {
                 userToken.setText(savedToken);
@@ -182,8 +182,7 @@ void LoginTab::handleSubmit()
                 }
             }*/
 
-            AppSettings::setValue(getStorageKey(), token);
-            AppSettings::saveIfNeeded();
+            Settings::setValue(getStorageKey(), token, true);
             setStatus("Token verified and saved.");
             forgetButton.setEnabled(true);
         }
@@ -258,7 +257,7 @@ void LoginTab::setStatus(juce::String text)
 
 void LoginTab::handleForget()
 {
-    AppSettings::removeValue(getStorageKey());
+    Settings::removeValue(getStorageKey(), true);
     forgetButton.setEnabled(false);
     userToken.clear();
     submitButton.setEnabled(false);

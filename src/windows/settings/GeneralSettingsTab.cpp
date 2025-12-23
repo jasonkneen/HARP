@@ -35,5 +35,12 @@ void GeneralSettingsTab::handleOpenLogFolder()
 
 void GeneralSettingsTab::handleOpenSettings()
 {
-    AppSettings::getUserSettings()->getFile().startAsProcess();
+    if (auto* settings = Settings::getUserSettings())
+    {
+        settings->getFile().startAsProcess();
+    }
+    else
+    {
+        // TODO - popup
+    }
 }

@@ -13,11 +13,11 @@ MainComponent::MainComponent()
 
     addAndMakeVisible(statusAreaWidget);
 
-    showStatusArea = AppSettings::getBoolValue("showStatusArea", true);
+    showStatusArea = Settings::getBoolValue("showStatusArea", true);
 
     addAndMakeVisible(mediaClipboardWidget);
 
-    showMediaClipboard = AppSettings::getBoolValue("showMediaClipboard", false);
+    showMediaClipboard = Settings::getBoolValue("showMediaClipboard", false);
 
     //fontaudioHelper = std::make_shared<fontaudio::IconHelper>();
     //fontawesomeHelper = std::make_shared<fontawesome::IconHelper>();

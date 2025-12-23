@@ -1,6 +1,13 @@
-#include "juce_core/juce_core.h"
-#include "juce_events/juce_events.h"
+#pragma once
+
+#include <juce_core/juce_core.h>
+#include <juce_events/juce_events.h>
+
+#include "Logging.h"
+
 using namespace juce;
+
+// TODO - is this really even needed?
 
 class CustomThreadPoolJob : public ThreadPoolJob
 {

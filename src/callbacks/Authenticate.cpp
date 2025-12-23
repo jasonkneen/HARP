@@ -11,7 +11,7 @@ void MainComponent::tryLoadSavedToken()
     if (spaceInfo.status == SpaceInfo::Status::GRADIO
         || spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
     {
-        auto token = AppSettings::getString("huggingFaceToken", "");
+        auto token = Settings::getString("huggingFaceToken", "");
         if (! token.isEmpty())
         {
             client.setToken(token);
@@ -20,7 +20,7 @@ void MainComponent::tryLoadSavedToken()
     }
     else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
     {
-        auto token = AppSettings::getString("stabilityToken", "");
+        auto token = Settings::getString("stabilityToken", "");
         if (! token.isEmpty())
         {
             client.setToken(token);

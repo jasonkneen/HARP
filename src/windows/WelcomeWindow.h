@@ -61,8 +61,7 @@ public:
         continueButton.onClick = [this]()
         {
             const bool dontShow = dontShowAgain.getToggleState();
-            AppSettings::setValue("showWelcomePopup", dontShow ? 0 : 1);
-            AppSettings::saveIfNeeded();
+            Settings::setValue("showWelcomePopup", dontShow ? 0 : 1, true);
 
             if (auto* window = findParentComponentOfClass<DialogWindow>())
                 window->closeButtonPressed();
@@ -76,7 +75,7 @@ public:
         addAndMakeVisible(docsLink);
 
         // --- Footer ---
-        footerLabel.setText("Copyright 2025 TEAMuP. All rights reserved.",
+        footerLabel.setText("Copyright 2026 TEAMuP. All rights reserved.",
                             dontSendNotification);
         footerLabel.setJustificationType(Justification::centred);
         footerLabel.setFont(Font(13.0f));

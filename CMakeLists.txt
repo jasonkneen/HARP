@@ -74,7 +74,6 @@ target_sources(${PROJECT_NAME}
         # TODO - subject to change
         #src/Model.h
         #src/WebModel.h
-        #src/ThreadPoolJob.h
 
         # TODO - subject to change
         #src/callbacks/Edit.cpp
@@ -122,11 +121,12 @@ target_sources(${PROJECT_NAME}
         src/client/StabilityClient.cpp
 
         src/utils/Logging.h #
-        src/utils/Settings.h
+        src/utils/Settings.h #
         src/utils/Interface.h #
         src/utils/Controls.h
         src/utils/Labels.h #
         src/utils/Clients.h
+        #src/utils/Threading.h
         src/utils/Errors.h
         src/utils/Enums.h
 
@@ -171,7 +171,7 @@ target_compile_definitions(${PROJECT_NAME}
         APP_VERSION="${CURRENT_VERSION}"
         APP_COMPANY="TEAMuP"
         APP_NAME="HARP"
-        APP_COPYRIGHT="Copyright 2025 TEAMuP. All rights reserved."    
+        APP_COPYRIGHT="Copyright 2026 TEAMuP. All rights reserved."    
 )
 
 # If your target needs extra binary assets, you can add them here. The first argument is the name of
