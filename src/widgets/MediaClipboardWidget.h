@@ -8,8 +8,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../gui/MultiButton.h"
 #include "TrackAreaWidget.h"
+
+#include "../gui/MultiButton.h"
 
 #include "../utils/Logging.h"
 
@@ -318,7 +319,7 @@ private:
             "AddFile",
             [this] { addFileCallback(); },
             Colours::lightblue,
-            "Click to add a file to the media clipboard",
+            "Click to add a file to the media clipboard.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::Folder,
         };
@@ -330,7 +331,7 @@ private:
             "RemoveSelection-Active",
             [this] { removeSelectionCallback(); },
             Colours::orangered,
-            "Click to remove the currently selected track from the media clipboard",
+            "Click to remove the currently selected track from the media clipboard.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::Remove,
         };
@@ -339,7 +340,7 @@ private:
             "RemoveSelection-Inactive",
             [this] {},
             Colours::lightgrey,
-            "No track selected",
+            "No track selected.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::Remove,
         };
@@ -352,7 +353,7 @@ private:
             "Play-Active",
             [this] { playCallback(); },
             Colours::limegreen,
-            "Click to start playback",
+            "Click to start playback.",
             MultiButton::DrawingMode::IconOnly,
             fontaudio::Play,
         };
@@ -361,7 +362,7 @@ private:
             "Play-Inactive",
             [this] {},
             Colours::lightgrey,
-            "Nothing to play",
+            "Nothing to play.",
             MultiButton::DrawingMode::IconOnly,
             fontaudio::Play,
         };
@@ -370,7 +371,7 @@ private:
             "Stop",
             [this] { stopCallback(); },
             Colours::orangered,
-            "Click to stop playback",
+            "Click to stop playback.",
             MultiButton::DrawingMode::IconOnly,
             fontaudio::Stop,
         };
@@ -384,7 +385,7 @@ private:
             "Save-Active",
             [this] { saveFileCallback(); },
             Colours::lightblue,
-            "Click to save the currently selected media file",
+            "Click to save the currently selected media file.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::Save,
         };
@@ -393,7 +394,7 @@ private:
             "Save-Inactive",
             [this] {},
             Colours::lightgrey,
-            "Nothing to save",
+            "Nothing to save.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::Save,
         };
@@ -406,7 +407,7 @@ private:
             "SendToDAW-Active",
             [this] { sendToDAWCallback(); },
             Colours::orange,
-            "Click to overwrite an existing DAW-linked file with the selected media file",
+            "Click to overwrite an existing DAW-linked file with the selected media file.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::ArrowCircleORight,
         };
@@ -415,7 +416,7 @@ private:
             "SendToDAW-Selected",
             [this] {},
             Colours::lightgrey,
-            "This track is already DAW-linked - select another one",
+            "This track is already DAW-linked. Select another one.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::ArrowCircleORight,
         };
@@ -424,7 +425,7 @@ private:
             "SendToDAW-Inactive1",
             [this] {},
             Colours::lightgrey,
-            "No track selected",
+            "No track selected.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::ArrowCircleORight,
         };
@@ -433,7 +434,7 @@ private:
             "SendToDAW-Inactive2",
             [this] {},
             Colours::lightgrey,
-            "No DAW-linked files in media clipboard",
+            "No DAW-linked files in media clipboard.",
             MultiButton::DrawingMode::IconOnly,
             fontawesome::ArrowCircleORight,
         };

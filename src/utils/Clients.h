@@ -4,6 +4,12 @@
 
 using namespace juce;
 
+// TODO - the following patterns should be supported
+// "xribene/midi_pitch_shifter",
+// "http://localhost:7860",
+// "https://xribene-midi-pitch-shifter.hf.space/",
+// "https://huggingface.co/spaces/xribene/midi_pitch_shifter"
+
 enum GradioEvents
 {
     complete,

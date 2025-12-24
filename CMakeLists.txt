@@ -70,6 +70,7 @@ target_sources(${PROJECT_NAME}
         src/Application.cpp #
         src/MainComponent.cpp
         #src/ModelTab.cpp
+        src/ModelTab.h
 
         # TODO - subject to change
         #src/Model.h
@@ -89,7 +90,7 @@ target_sources(${PROJECT_NAME}
         src/windows/settings/GeneralSettingsTab.cpp
         src/windows/settings/LoginTab.cpp
 
-        #src/widgets/ModelSelectionWidget.h
+        src/widgets/ModelSelectionWidget.h
         #src/widgets/ModelDisplayWidget.h
         #src/widgets/ControlAreaWidget.h
         src/widgets/TrackAreaWidget.h #

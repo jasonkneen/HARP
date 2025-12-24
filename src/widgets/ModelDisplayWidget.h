@@ -258,6 +258,17 @@ public:
         setStatus(currentStatus);
     }
 
+    void resetProcessingButtons()
+    {
+        processCancelButton.setMode(processButtonInfo.label);
+        processCancelButton.setEnabled(true);
+        // saveEnabled = true;
+        // isProcessing = false;
+        loadModelButton.setEnabled(true);
+        modelPathComboBox.setEnabled(true);
+        repaint();
+    }
+
     void resetUI()
     {
         controlAreaWidget.resetUI();

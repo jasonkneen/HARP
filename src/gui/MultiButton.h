@@ -85,10 +85,12 @@ public:
         fontawesome::IconName awesomeIcon {}; // For FontAwesome
         fontaudio::IconName audioIcon {};
 
+        // TODO - separate "inactive" state or disabling? should try to be consisten across codebase
+
         // 1) Constructor for text-only
-        Mode(const juce::String& lbl,
+        Mode(const juce::String& lbl, // TODO - separate reference label from display label
              std::function<void()> cb,
-             juce::Colour col,
+             juce::Colour col, // TODO - color doesn't seem to affect text button
              const juce::String& instr,
              DrawingMode dm)
             : label(lbl),

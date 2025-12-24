@@ -12,29 +12,13 @@
 // #include <juce_gui_basics/juce_gui_basics.h>
 // #include <juce_gui_extra/juce_gui_extra.h>
 
-#include "windows/AboutWindow.h"
-#include "windows/settings/SettingsWindow.h"
+#include "ModelTab.h"
 
-//#include "ModelTab.h"
 #include "widgets/MediaClipboardWidget.h"
 #include "widgets/StatusAreaWidget.h"
 
-//#include "ThreadPoolJob.h"
-//#include "WebModel.h"
-
-// #include "gui/CustomPathDialog.h"
-// #include "gui/HoverHandler.h"
-// #include "gui/ModelAuthorLabel.h"
-// #include "gui/MultiButton.h"
-// #include "gui/StatusComponent.h"
-// #include "gui/TitledTextBox.h"
-
-// #include "client/Client.h"
-
-//#include "external/magic_enum.hpp"
-// #include "media/AudioDisplayComponent.h"
-// #include "media/MediaDisplayComponent.h"
-// #include "media/MidiDisplayComponent.h"
+#include "windows/AboutWindow.h"
+#include "windows/settings/SettingsWindow.h"
 
 #include "utils/Logging.h"
 #include "utils/Settings.h"
@@ -163,8 +147,7 @@ class MainComponent : public Component,
     bool showStatusArea;
     bool showMediaClipboard;
 
-    //ModelTab mainModelTab;
-    Component mainModelTab;
+    ModelTab mainModelTab;
     StatusAreaWidget statusAreaWidget;
     MediaClipboardWidget mediaClipboardWidget;
 

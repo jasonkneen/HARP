@@ -8,8 +8,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "widgets/ModelDisplayWidget.h"
 #include "widgets/ModelSelectionWidget.h"
+//#include "widgets/ModelDisplayWidget.h"
 
 //#include "../utils.h"
 
@@ -17,10 +17,11 @@ using namespace juce;
 
 class ModelTab : public Component
 {
-   public:
+public:
     ModelTab()
     {
-        // TODO
+        addAndMakeVisible(modelSelectionWidget);
+        //addAndMakeVisible(modelDisplayWidget);
     }
 
     ~ModelTab()
@@ -28,28 +29,21 @@ class ModelTab : public Component
         // TODO
     }
 
-    void paint(Graphics& g)
-    {
-        // TODO
-    }
+    //void paint(Graphics& g) {}
 
     void resized() override
     {
-        // TODO
+        FlexBox tabArea;
+        tabArea.flexDirection = FlexBox::Direction::column;
+
+        tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
+
+        tabArea.performLayout(getLocalBounds());
     }
 
-    void resetProcessingButtons()
-    {
-        processCancelButton.setMode(processButtonInfo.label);
-        processCancelButton.setEnabled(true);
-        // saveEnabled = true;
-        // isProcessing = false;
-        loadModelButton.setEnabled(true);
-        modelPathComboBox.setEnabled(true);
-        repaint();
-    }
+private:
+    const float marginSize = 2;
 
-   private:
     ModelSelectionWidget modelSelectionWidget;
-    ModelDisplayWidget modelDisplayWidget;
-}
+    //ModelDisplayWidget modelDisplayWidget;
+};

@@ -8,15 +8,11 @@ MainComponent::MainComponent()
 
     initializeMenuBar();
 
-    // TODO - initialize model tab
     addAndMakeVisible(mainModelTab);
-
     addAndMakeVisible(statusAreaWidget);
-
-    showStatusArea = Settings::getBoolValue("showStatusArea", true);
-
     addAndMakeVisible(mediaClipboardWidget);
 
+    showStatusArea = Settings::getBoolValue("showStatusArea", true);
     showMediaClipboard = Settings::getBoolValue("showMediaClipboard", false);
 
     //fontaudioHelper = std::make_shared<fontaudio::IconHelper>();
