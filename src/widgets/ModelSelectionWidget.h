@@ -13,6 +13,8 @@
 #include "../gui/HoverHandler.h"
 #include "../gui/MultiButton.h"
 
+#include "../gui/CustomPathDialog.h" // TODO - move to this file
+
 #include "../utils/Logging.h"
 
 using namespace juce;
@@ -50,7 +52,7 @@ struct SharedChoices //: public ChangeBroadcaster
 };
 
 // this is the callback for the add new path popup alert
-/*class CustomPathAlertCallback : public juce::ModalComponentManager::Callback
+/*class CustomPathAlertCallback : public ModalComponentManager::Callback
 {
 public:
     CustomPathAlertCallback(std::function<void(int)> const& callback) : userCallback(callback) {}
@@ -96,34 +98,6 @@ public:
         selectionArea.performLayout(getLocalBounds());
     }
 
-    /*
-    // Adds a path to the model dropdown if it's not already present
-    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
-    {
-        juce::String displayStr(path);
-        if (wasSleeping)
-            displayStr += " (sleeping)";
-
-        bool alreadyExists = false;
-        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-        {
-            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
-            {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (! alreadyExists)
-        {
-            int newID = modelPathComboBox.getNumItems() + 1;
-            modelPathComboBox.addItem(displayStr, newID);
-        }
-
-        modelPathComboBox.setText(displayStr, juce::dontSendNotification);
-    }
-    */
-
 private:
     void initializeModelPathComboBox()
     {
@@ -147,7 +121,7 @@ private:
                 {
                     DBG_AND_LOG("modelPathComboBox::onChange: Custom path selected.");
 
-                    //openCustomPathDialog("");  // TODO
+                    openCustomPathPopup();
                 }
                 else
                 {
@@ -186,15 +160,14 @@ private:
     void initializeLoadModelButton()
     {
         // Mode when a model is selected and not currently being loaded (load enabled)
-        loadButtonActiveInfo =
-            MultiButton::Mode { "Load",
-                                //[this] { loadModelCallback(); }, // TODO
-                                [this] { resetState(); },
-                                Colours::lightgrey,
-                                "Click to load currently selected model path.",
-                                MultiButton::DrawingMode::TextOnly };
+        loadButtonActiveInfo = MultiButton::Mode { "Load",
+                                                   //[this] { loadModelCallback(); }, // TODO
+                                                   [this] { resetState(); },
+                                                   Colours::lightgrey,
+                                                   "Click to load currently selected model path.",
+                                                   MultiButton::DrawingMode::TextOnly };
         // Mode when a model has not been selected or is currently being loaded (load disabled)
-        /*loadButtonInactiveInfo = MultiButton::Mode { "Load", // Cannot 
+        /*loadButtonInactiveInfo = MultiButton::Mode { "Load",
                                                      [this] {},
                                                      Colours::darkgrey,
                                                      "No model is currently selected.",
@@ -209,12 +182,99 @@ private:
 
     void resetState()
     {
+        lastLoadedPathIndex = -1;
         lastSelectedPathIndex = -1;
         modelPathComboBox.setSelectedId(lastSelectedPathIndex);
 
         //loadModelButton.setMode(loadButtonInactiveInfo.label);
         loadModelButton.setEnabled(false);
     }
+
+    /**
+     * Create callbacks for and launch the custom path popup.
+     */
+    void openCustomPathPopup(const String& prefillText = "")
+    {
+        std::function<void(String)> loadCallback = [this](String path)
+        {
+            DBG_AND_LOG("ModelSelectionWidget::openCustomPathPopup::loadCallback: "
+                        << "Custom path \"" << path << "\" entered.");
+
+            //loadModelCallback(textEntered); // TODO
+        };
+
+        std::function<void()> cancelCallback = [this]()
+        {
+            DBG_AND_LOG("ModelSelectionWidget::openCustomPathPopup::cancelCallback: "
+                        << "Custom path selection canceled.");
+
+            if (lastLoadedPathIndex >= 0)
+            {
+                // Set combo box selection to last successfully loaded model
+                modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
+            }
+            else if (lastSelectedPathIndex >= 0)
+            {
+                // Set combo box selection to previous valid selection
+                modelPathComboBox.setSelectedId(lastSelectedPathIndex + 1);
+            }
+            else
+            {
+                resetState();
+            }
+        };
+
+        CustomPathComponent* content =
+            new CustomPathComponent(std::move(loadCallback), std::move(cancelCallback));
+
+        if (prefillText.isNotEmpty())
+        {
+            content->setTextFieldValue(prefillText);
+        }
+
+        DialogWindow::LaunchOptions options;
+        options.dialogTitle = "Enter Custom Path";
+        options.dialogBackgroundColour = Colours::darkgrey;
+        options.content.setOwned(content);
+
+        options.useNativeTitleBar = false;
+        options.resizable = false;
+        options.escapeKeyTriggersCloseButton = true;
+        options.componentToCentreAround =
+            getParentComponent(); // TODO - center around MainComponent
+
+        options.launchAsync();
+        /*options.launchAsync( // newer version of JUCE?
+            ModalCallbackFunction::create([cancelCallback](int) { cancelCallback(); }));*/
+    }
+
+    /* TODO
+    // Adds a path to the model dropdown if it's not already present
+    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
+    {
+        String displayStr(path);
+        if (wasSleeping)
+            displayStr += " (sleeping)";
+
+        bool alreadyExists = false;
+        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+        {
+            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
+            {
+                alreadyExists = true;
+                break;
+            }
+        }
+
+        if (! alreadyExists)
+        {
+            int newID = modelPathComboBox.getNumItems() + 1;
+            modelPathComboBox.addItem(displayStr, newID);
+        }
+
+        modelPathComboBox.setText(displayStr, dontSendNotification);
+    }
+    */
 
     const float marginSize = 2;
 
@@ -223,6 +283,7 @@ private:
     ComboBox modelPathComboBox;
     HoverHandler modelPathComboBoxHandler { modelPathComboBox };
 
+    int lastLoadedPathIndex; // Keep track of last loaded index for load failure cases
     int lastSelectedPathIndex;
 
     MultiButton loadModelButton;
@@ -231,13 +292,11 @@ private:
 
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
 
-    // --
+    // TODO - below
 
     //std::string customPath;
 
-    // Two usefull variables to keep track of the selected item in the modelPathComboBox
-    // and the item index of the last loaded model
-    // These are used to restore the selected item in the modelPathComboBox
-    // after a failed attempt to load a new model
-    //int lastLoadedModelItemIndex = -1;
+    //ChangeBroadcaster loadBroadcaster;
+
+    //ThreadPool threadPool { 1 };
 };

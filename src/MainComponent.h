@@ -20,9 +20,9 @@
 #include "windows/AboutWindow.h"
 #include "windows/settings/SettingsWindow.h"
 
+#include "utils/Interface.h"
 #include "utils/Logging.h"
 #include "utils/Settings.h"
-#include "utils/Interface.h"
 
 using namespace juce;
 
@@ -62,13 +62,10 @@ class TimedCallback : public Timer
     return url.createOutputStream();
 }*/
 
-
-class MainComponent : public Component,
-                      public MenuBarModel,
-                      public ApplicationCommandTarget
+class MainComponent : public Component, public MenuBarModel, public ApplicationCommandTarget
 
 {
-   public:
+public:
     MainComponent();
     ~MainComponent() override;
 
@@ -81,9 +78,6 @@ class MainComponent : public Component,
     PopupMenu getMenuForIndex([[maybe_unused]] int menuIndex, const String& menuName) override;
 
     void menuItemSelected(int menuItemID, int topLevelMenuIndex) override;
-
-    void initializeMenuBar();
-    void deinitializeMenuBar();
 
     /* Application */
 
@@ -99,41 +93,30 @@ class MainComponent : public Component,
 
     // File
     void importNewFile(File mediaFile, bool fromDAW = false);
-    void showSettingsDialog();
+    void openSettingsWindow();
 
     // Edit
-    void undoCallback();
-    void redoCallback();
+    //void undoCallback();
+    //void redoCallback();
 
     // View
     void viewStatusAreaCallback();
     void viewMediaClipboardCallback();
 
     // Help
-    void showAboutDialog();
-    // void showWelcomeDialog();
-
-    // Authenticate
-    void tryLoadSavedToken();
-
-    // Load
-    void openCustomPathDialog(const std::string& prefillPath = "");
-    void loadModelCallback();
-
-    // Process
-    void processCallback();
-    void cancelCallback();
-
-    // Miscellaneous
-    void focusCallback();
+    void openAboutWindow();
+    //void openWelcomeWindow();
 
     /* Component */
 
     void paint(Graphics& g) override;
     void resized() override;
 
-   private:
+private:
     /* File Menu */
+
+    void initializeMenuBar();
+    void deinitializeMenuBar();
 
     std::unique_ptr<MenuBarComponent> menuBar;
     //std::unique_ptr<PopupMenu> macExtraMenu; // TODO - is this actually used?
@@ -141,6 +124,14 @@ class MainComponent : public Component,
     /* Application */
 
     ApplicationCommandManager commandManager;
+
+    /* Callbacks */
+
+    // Authenticate
+    //void tryLoadSavedToken();
+
+    // Miscellaneous
+    void focusCallback();
 
     /* Interface */
 
@@ -153,15 +144,11 @@ class MainComponent : public Component,
 
     SharedResourcePointer<StatusMessage> statusMessage;
 
+    // ---
+
     /* Authentication */
 
     String savedStabilityToken;
-
-    /* Loading */
-
-    ChangeBroadcaster loadBroadcaster;
-
-    ThreadPool threadPool{1};
 
     /* Processing */
 
@@ -171,7 +158,7 @@ class MainComponent : public Component,
 
     ChangeBroadcaster processBroadcaster;
 
-    ThreadPool jobProcessorThread{10};
+    ThreadPool jobProcessorThread { 10 };
 
     //bool isProcessing = false;
 

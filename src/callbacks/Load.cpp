@@ -1,38 +1,6 @@
 #include "../MainComponent.h"
 
-void MainComponent::openCustomPathDialog(const std::string& prefillPath = "")
-{
-    // Create and show the custom path dialog with a callback
-    std::function<void(const juce::String&)> loadCallback = [this](const juce::String& customPath2)
-    {
-        DBG_AND_LOG("Custom path entered: " + customPath2);
-        this->customPath = customPath2.toStdString(); // Store the custom path
-        loadModelButton.triggerClick(); // Trigger the load model button click
-    };
-    std::function<void()> cancelCallback = [this]()
-    {
-        // modelPathComboBox.setSelectedId(lastSelectedItemIndex);
-        if (lastLoadedModelItemIndex != -1)
-        {
-            modelPathComboBox.setSelectedId(lastLoadedModelItemIndex + 1);
-        }
-        else if (lastLoadedModelItemIndex == -1 && lastSelectedItemIndex != -1)
-        {
-            modelPathComboBox.setSelectedId(lastSelectedItemIndex + 1);
-        }
-        else
-        {
-            resetModelPathComboBox();
-            MessageManager::callAsync([this] { loadModelButton.setEnabled(false); });
-        }
-    };
-
-    CustomPathDialog* dialog = new CustomPathDialog(loadCallback, cancelCallback);
-    if (! prefillPath.empty())
-        dialog->setTextFieldValue(prefillPath);
-}
-
-void MainComponent::loadModelCallback()
+void MainComponent::loadModelCallback(String pathToLoad = "")
 {
     // Get the URL/path the user provided in the comboBox
     std::string pathURL;

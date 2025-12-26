@@ -45,10 +45,10 @@ public:
     /// Called when app is invoked
     void initialise(const String& commandLine) override
     {
-        writeDebugLog("GuiAppApplication::initialise: Invoked with command line \"" + commandLine
-                      + "\".");
-        writeDebugLog("GuiAppApplication::getCommandLineParameters(): \""
-                      + getCommandLineParameters() + "\".");
+        debugAndLog("GuiAppApplication::initialise: Invoked with command line \"" + commandLine
+                    + "\".");
+        debugAndLog("GuiAppApplication::getCommandLineParameters(): \"" + getCommandLineParameters()
+                    + "\".");
 
         appJustLaunched = true;
         originalCommandLine = commandLine;
@@ -91,7 +91,7 @@ public:
                         {
                             if (auto* mainComp =
                                     dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
-                                mainComp->showSettingsDialog();
+                                mainComp->openSettingsWindow();
                         }));
                     opts.content->setSize(480, 500);
                     opts.useNativeTitleBar = true;
@@ -155,7 +155,7 @@ public:
         {
             if (! commandLine.isEmpty() && originalCommandLine.isEmpty())
             {
-                writeDebugLog(
+                debugAndLog(
                     "GuiAppApplication::anotherInstanceStarted: Handling subsequent invocation with command line \""
                     + commandLine + "\".");
 
@@ -164,14 +164,14 @@ public:
                 return;
             }
 
-            writeDebugLog(
+            debugAndLog(
                 "GuiAppApplication::anotherInstanceStarted: Ignoring spurious invocation with command line \""
                 + commandLine + "\".");
 
             return;
         }
 
-        writeDebugLog(
+        debugAndLog(
             "GuiAppApplication::anotherInstanceStarted: Another instance started with command line \""
             + commandLine + "\".");
 
@@ -394,7 +394,7 @@ private:
         - Windows: C:\Users\<username>\AppData\Roaming\HARP\launch.log
         - Linux: ~/.config/HARP/launch.log
     */
-    void writeDebugLog(const String& message)
+    void debugAndLog(const String& message)
     {
         // Write message to standard error stream
         DBG(message);
@@ -427,7 +427,7 @@ private:
                 // Update pointer to most recently focused HARP window
                 lastFocusedWindow = focusedWindow;
 
-                writeDebugLog(
+                debugAndLog(
                     "GuiAppApplication::globalFocusChanged: Last focused window updated to \""
                     + focusedWindow->getName() + "\".");
             }
@@ -566,7 +566,7 @@ private:
                 }
                 else
                 {
-                    writeDebugLog(
+                    debugAndLog(
                         "GuiAppApplication::handleFileOpenChoice: No window currently focused. Importing file to main window.");
 
                     windowForFileImport = mainWindow.get();

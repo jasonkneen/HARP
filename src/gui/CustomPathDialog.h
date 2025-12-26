@@ -7,58 +7,112 @@
 #pragma once
 
 #include <functional>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../utils/Interface.h"
 
 using namespace juce;
 
-class CustomPathComponent : public Component, public juce::TextEditor::Listener
+class CustomPathComponent : public Component
 {
 public:
-    CustomPathComponent(std::function<void(const String&)> onLoadCallback,
-                        std::function<void()> onCancelCallback)
+    CustomPathComponent(std::function<void(String)> onLoad, std::function<void()> onCancel)
+        : onLoadCallback(std::move(onLoad)), onCancelCallback(std::move(onCancel))
     {
-        // Set up the TextEditor for path input
-        addAndMakeVisible(customPathEditor);
-        customPathEditor.setMultiLine(false);
-        customPathEditor.setReturnKeyStartsNewLine(false);
-        customPathEditor.onTextChange = [this]()
-        { loadButton.setEnabled(customPathEditor.getText().isNotEmpty()); };
+        pathEditor.setMultiLine(false);
+        pathEditor.setReturnKeyStartsNewLine(false);
+        pathEditor.onTextChange = [this] { loadButton.setEnabled(! pathEditor.isEmpty()); };
+        pathEditor.onReturnKey = [this]
+        {
+            if (loadButton.isEnabled())
+            {
+                loadButton.triggerClick();
+            }
+        };
+        addAndMakeVisible(pathEditor);
 
-        customPathEditor.addListener(this); //listen for the enter key press
+        //loadButton.setButtonText("Load");
+        loadButton.setEnabled(false);
+        /*loadButton.onClick = [this]
+        {
+            if (onLoadCallback)
+            {
+                onLoadCallback(pathEditor.getText());
+            }
+        };*/
+        loadButton.onClick = [this]
+        {
+            wasLoadPressed = true;
 
-        // Set up the Load button
+            if (onLoadCallback)
+            {
+                onLoadCallback(pathEditor.getText());
+            }
+
+            closeDialog();
+        };
         addAndMakeVisible(loadButton);
-        loadButton.setButtonText("Load");
-        loadButton.setEnabled(false); // Initially disabled
-        loadButton.onClick = [this, onLoadCallback]()
-        { onLoadCallback(customPathEditor.getText()); };
 
-        // Set up the Cancel button
+        //cancelButton.setButtonText("Cancel");
+        /*cancelButton.onClick = [this]
+        {
+            if (onCancelCallback)
+            {
+                onCancelCallback();
+            }
+        };*/
+        cancelButton.onClick = [this] { closeDialog(); };
         addAndMakeVisible(cancelButton);
-        cancelButton.setButtonText("Cancel");
-        cancelButton.onClick = [onCancelCallback]() { onCancelCallback(); };
 
-        setSize(400, 150); // Set a fixed size for the component
+        setSize(400, 80);
+    }
+
+    ~CustomPathComponent() override
+    {
+        if (! wasLoadPressed && onCancelCallback)
+        {
+            // Treat as cancel if closed without load
+            onCancelCallback();
+        }
     }
 
     void visibilityChanged() override
     {
         if (isVisible())
         {
-            MessageManager::callAsync([this] { customPathEditor.grabKeyboardFocus(); });
+            MessageManager::callAsync([this] { pathEditor.grabKeyboardFocus(); });
         }
     }
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced(10);
-        customPathEditor.setBounds(area.removeFromTop(40));
-        // button area
-        auto buttonArea = area.removeFromBottom(40);
-        loadButton.setBounds(buttonArea.removeFromLeft(buttonArea.getWidth() / 2));
-        cancelButton.setBounds(buttonArea);
+        /*Rectangle<int> totalArea = getLocalBounds().reduced(10);
+
+        pathEditor.setBounds(totalArea.removeFromTop(40));
+
+        Rectangle<int> buttonsArea = totalArea.removeFromBottom(40);
+
+        loadButton.setBounds(buttonsArea.removeFromLeft(buttonsArea.getWidth() / 2));
+        cancelButton.setBounds(buttonsArea);*/
+
+        Rectangle<int> fullArea = getLocalBounds();
+
+        FlexBox fullPopup;
+        fullPopup.flexDirection = FlexBox::Direction::column;
+
+        fullPopup.items.add(FlexItem(pathEditor).withHeight(30).withMargin(2));
+
+        FlexBox buttonsArea;
+        buttonsArea.flexDirection = FlexBox::Direction::row;
+
+        buttonsArea.items.add(FlexItem(loadButton).withFlex(1).withMargin(10));
+        buttonsArea.items.add(FlexItem().withFlex(0.25));
+        buttonsArea.items.add(FlexItem(cancelButton).withFlex(1).withMargin(10));
+
+        fullPopup.items.add(FlexItem(buttonsArea).withFlex(1));
+
+        fullPopup.performLayout(fullArea);
     }
 
     void paint(Graphics& g) override
@@ -66,25 +120,32 @@ public:
         g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
     }
 
-    void textEditorReturnKeyPressed(juce::TextEditor&) override
+    void setTextFieldValue(const String& text)
     {
-        if (loadButton.isEnabled())
-            loadButton.triggerClick();
-    }
-
-    void setTextFieldValue(const std::string& path)
-    {
-        customPathEditor.setText(path, juce::dontSendNotification);
-        customPathEditor.selectAll();
+        pathEditor.setText(text, dontSendNotification);
+        pathEditor.selectAll();
     }
 
 private:
-    TextEditor customPathEditor;
-    TextButton loadButton, cancelButton;
-    CustomPathComponent* pathComponent = nullptr;
+    void closeDialog()
+    {
+        if (auto* popup = findParentComponentOfClass<DialogWindow>())
+        {
+            popup->exitModalState(0);
+        }
+    }
+
+    TextEditor pathEditor;
+    TextButton loadButton { "Load" };
+    TextButton cancelButton { "Cancel" };
+
+    bool wasLoadPressed = false;
+
+    std::function<void(String)> onLoadCallback;
+    std::function<void()> onCancelCallback;
 };
 
-class CustomPathDialog : public DialogWindow
+/*class CustomPathDialog : public DialogWindow
 {
 public:
     CustomPathDialog(std::function<void(const String&)> onLoadCallback,
@@ -156,4 +217,4 @@ private:
     std::function<void(const String&)> m_onLoadCallback;
     std::function<void()> m_onCancelCallback;
     CustomPathComponent* pathComponent = nullptr;
-};
+};*/

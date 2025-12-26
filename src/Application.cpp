@@ -93,12 +93,11 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex)
 
 void MainComponent::initializeMenuBar()
 {
-    // init the menu bar
     menuBar.reset(new MenuBarComponent(this));
     addAndMakeVisible(menuBar.get());
+
     setApplicationCommandManagerToWatch(&commandManager);
 
-    // Register commands
     commandManager.registerAllCommandsForTarget(this);
     commandManager.setFirstCommandTarget(this);
 
@@ -250,7 +249,7 @@ bool MainComponent::perform(const InvocationInfo& info)
 
         case CommandIDs::settings:
             DBG_AND_LOG("MainComponent::perform: \"settings\" command invoked.");
-            showSettingsDialog();
+            openSettingsWindow();
 
             break;
 
@@ -283,13 +282,13 @@ bool MainComponent::perform(const InvocationInfo& info)
         /* --Help-- */
         case CommandIDs::welcome:
             DBG_AND_LOG("MainComponent::perform: \"welcome\" command invoked.");
-            // TODO - showWelcomeDialog();
+            // TODO - openWelcomeWindow();
 
             break;
 
         case CommandIDs::about:
             DBG_AND_LOG("MainComponent::perform: \"about\" command invoked.");
-            showAboutDialog();
+            openAboutWindow();
 
             break;
 
@@ -315,37 +314,40 @@ void MainComponent::importNewFile(File mediaFile, bool fromDAW)
     }
 }
 
-void MainComponent::showSettingsDialog()
+void MainComponent::openSettingsWindow()
 {
-    juce::DialogWindow::LaunchOptions options;
+    DialogWindow::LaunchOptions options;
     options.dialogTitle = "Settings";
+    options.dialogBackgroundColour = Colours::darkgrey;
     //options.content.setOwned(new SettingsWindow(model.get()));
     options.content.setOwned(new SettingsWindow());
+
     options.useNativeTitleBar = true;
     options.resizable = true;
     options.escapeKeyTriggersCloseButton = true;
-    options.dialogBackgroundColour = juce::Colours::darkgrey;
+
     options.launchAsync();
 }
 
 /* --Help-- */
 
-void MainComponent::showAboutDialog()
+void MainComponent::openAboutWindow()
 {
     auto aboutComponent = std::make_unique<AboutWindow>();
 
-    DialogWindow::LaunchOptions dialog;
-    dialog.content.setOwned(aboutComponent.release());
-    dialog.dialogTitle = "About " + String(APP_NAME);
-    dialog.dialogBackgroundColour = Colours::grey;
-    dialog.escapeKeyTriggersCloseButton = true;
-    dialog.useNativeTitleBar = true;
-    dialog.resizable = false;
+    DialogWindow::LaunchOptions options;
+    options.dialogTitle = "About " + String(APP_NAME);
+    options.dialogBackgroundColour = Colours::grey;
+    options.content.setOwned(aboutComponent.release());
 
-    dialog.launchAsync();
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.escapeKeyTriggersCloseButton = true;
+
+    options.launchAsync();
 }
 
-// void MainComponent::showWelcomeDialog() {}
+// void MainComponent::openWelcomeWindow() {}
 
 /* --View-- */
 
@@ -355,11 +357,11 @@ void MainComponent::viewStatusAreaCallback()
     showStatusArea = ! showStatusArea;
 
     // Find top-level window for resizing
-    if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+    if (auto* window = findParentComponentOfClass<DocumentWindow>())
     {
         // Determine which display contains HARP
         auto* currentDisplay =
-            juce::Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
 
         int currentDisplayHeight;
 
@@ -411,11 +413,11 @@ void MainComponent::viewMediaClipboardCallback()
     showMediaClipboard = ! showMediaClipboard;
 
     // Find top-level window for resizing
-    if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+    if (auto* window = findParentComponentOfClass<DocumentWindow>())
     {
         // Determine which display contains HARP
         auto* currentDisplay =
-            juce::Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
 
         int currentDisplayWidth;
 
@@ -431,7 +433,7 @@ void MainComponent::viewMediaClipboardCallback()
             }
         }
 
-        //int totalDesktopWidth = juce::Desktop::getInstance().getDisplays().getDisplayForRect(getBounds())->totalArea.getWidth();
+        //int totalDesktopWidth = Desktop::getInstance().getDisplays().getDisplayForRect(getBounds())->totalArea.getWidth();
 
         // Get current bounds of top-level window
         Rectangle<int> windowBounds = window->getBounds();

@@ -66,87 +66,87 @@ juce_generate_juce_header(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        src/Main.cpp #
-        src/Application.cpp #
-        src/MainComponent.cpp
-        #src/ModelTab.cpp
-        src/ModelTab.h
+        src/Main.cpp
+        src/Application.cpp
+        src/MainComponent.cpp #
+        #src/ModelTab.cpp #
+        src/ModelTab.h #
 
         # TODO - subject to change
-        #src/Model.h
-        #src/WebModel.h
+        #src/Model.h #
+        #src/WebModel.h #
 
         # TODO - subject to change
-        #src/callbacks/Edit.cpp
-        #src/callbacks/Authenticate.cpp
-        #src/callbacks/Load.cpp
-        #src/callbacks/Process.cpp
-        #src/callbacks/Miscellaneous.cpp
+        #src/callbacks/Edit.cpp #
+        #src/callbacks/Authenticate.cpp #
+        #src/callbacks/Load.cpp #
+        #src/callbacks/Process.cpp #
+        #src/callbacks/Miscellaneous.cpp #
 
-        src/windows/AboutWindow.h
-        src/windows/WelcomeWindow.h
+        src/windows/AboutWindow.h #
+        src/windows/WelcomeWindow.h #
 
-        src/windows/settings/SettingsWindow.cpp
-        src/windows/settings/GeneralSettingsTab.cpp
-        src/windows/settings/LoginTab.cpp
+        src/windows/settings/SettingsWindow.cpp #
+        src/windows/settings/GeneralSettingsTab.cpp #
+        src/windows/settings/LoginTab.cpp #
 
-        src/widgets/ModelSelectionWidget.h
-        #src/widgets/ModelDisplayWidget.h
-        #src/widgets/ControlAreaWidget.h
-        src/widgets/TrackAreaWidget.h #
-        src/widgets/StatusAreaWidget.h #
-        src/widgets/MediaClipboardWidget.h #
+        src/widgets/ModelSelectionWidget.h #
+        #src/widgets/ModelInfoWidget.h #
+        #src/widgets/ControlAreaWidget.h #
+        src/widgets/TrackAreaWidget.h
+        src/widgets/StatusAreaWidget.h
+        src/widgets/MediaClipboardWidget.h
 
-        src/gui/MultiButton.cpp
-        src/gui/TitledTextBox.h
-        src/gui/SliderWithLabel.h
-        src/gui/ComboBoxWithLabel.h
-        src/gui/HoverableLabel.h
-        src/gui/HoverHandler.cpp
+        src/gui/MultiButton.cpp #
+        src/gui/TitledTextBox.h #
+        src/gui/SliderWithLabel.h #
+        src/gui/ComboBoxWithLabel.h #
+        src/gui/HoverableLabel.h #
+        src/gui/HoverHandler.cpp #
 
         # TODO - subject to change
-        src/gui/CustomPathDialog.h
+        src/gui/CustomPathDialog.h #
 
-        src/media/MediaDisplayComponent.cpp #
-        src/media/AudioDisplayComponent.cpp #
-        src/media/MidiDisplayComponent.cpp #
-        src/media/OutputLabelComponent.cpp #
+        src/media/MediaDisplayComponent.cpp
+        src/media/AudioDisplayComponent.cpp
+        src/media/MidiDisplayComponent.cpp
+        src/media/OutputLabelComponent.cpp
 
-        src/media/pianoroll/KeyboardComponent.cpp #
-        src/media/pianoroll/NoteGridComponent.cpp #
-        src/media/pianoroll/PianoRollComponent.cpp #
-        src/media/pianoroll/SynthAudioSource.h #
+        src/media/pianoroll/KeyboardComponent.cpp
+        src/media/pianoroll/NoteGridComponent.cpp
+        src/media/pianoroll/PianoRollComponent.cpp
+        src/media/pianoroll/SynthAudioSource.h
 
-        src/client/Client.cpp
-        src/client/GradioClient.cpp
-        src/client/StabilityClient.cpp
+        src/client/Client.cpp #
+        src/client/GradioClient.cpp #
+        src/client/StabilityClient.cpp #
 
-        src/utils/Logging.h #
-        src/utils/Settings.h #
-        src/utils/Interface.h #
-        src/utils/Controls.h
-        src/utils/Labels.h #
-        src/utils/Clients.h
-        #src/utils/Threading.h
-        src/utils/Errors.h
-        src/utils/Enums.h
-
-        # TODO - add as a submodule
-        src/external/magic_enum.hpp
+        src/utils/Logging.h
+        src/utils/Settings.h
+        src/utils/Interface.h
+        src/utils/Controls.h #
+        src/utils/Labels.h
+        src/utils/Clients.h #
+        #src/utils/Threading.h #
+        src/utils/Errors.h #
+        src/utils/Enums.h #
 
         # TODO - add as a submodule
-        src/external/fontaudio/src/FontAudio.h
-        src/external/fontaudio/src/FontAudio.cpp
-        src/external/fontaudio/data/FontAudioData.h
-        src/external/fontaudio/data/FontAudioData.cpp
-        src/external/fontaudio/data/FontAudioIcons.h
+        src/external/magic_enum.hpp #
 
         # TODO - add as a submodule
-        src/external/fontawesome/src/FontAwesome.h
-        src/external/fontawesome/src/FontAwesome.cpp
-        src/external/fontawesome/data/FontAwesomeData.h
-        src/external/fontawesome/data/FontAwesomeData.cpp
-        src/external/fontawesome/data/FontAwesomeIcons.h
+        src/external/fontaudio/src/FontAudio.h #
+        src/external/fontaudio/src/FontAudio.cpp #
+        src/external/fontaudio/data/FontAudioData.h #
+        src/external/fontaudio/data/FontAudioData.cpp #
+        src/external/fontaudio/data/FontAudioIcons.h #
+
+        # TODO - add as a submodule
+        src/external/fontawesome/src/FontAwesome.h #
+        src/external/fontawesome/src/FontAwesome.cpp #
+        src/external/fontawesome/data/FontAwesomeData.h #
+        src/external/fontawesome/data/FontAwesomeData.cpp #
+        src/external/fontawesome/data/FontAwesomeIcons.h #
 )
 
 # `target_compile_definitions` adds some preprocessor definitions to our target. In a Projucer
