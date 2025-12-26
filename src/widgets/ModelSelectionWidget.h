@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <any>
 #include <functional>
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -91,15 +92,7 @@ public:
         };
         addAndMakeVisible(pathEditor);
 
-        //loadButton.setButtonText("Load");
         loadButton.setEnabled(false);
-        /*loadButton.onClick = [this]
-        {
-            if (onLoadCallback)
-            {
-                onLoadCallback(pathEditor.getText());
-            }
-        };*/
         loadButton.onClick = [this]
         {
             wasLoadPressed = true;
@@ -109,19 +102,11 @@ public:
                 onLoadCallback(pathEditor.getText());
             }
 
-            closeDialog();
+            closePopup();
         };
         addAndMakeVisible(loadButton);
 
-        //cancelButton.setButtonText("Cancel");
-        /*cancelButton.onClick = [this]
-        {
-            if (onCancelCallback)
-            {
-                onCancelCallback();
-            }
-        };*/
-        cancelButton.onClick = [this] { closeDialog(); };
+        cancelButton.onClick = [this] { closePopup(); };
         addAndMakeVisible(cancelButton);
 
         setSize(400, 80);
@@ -146,15 +131,6 @@ public:
 
     void resized() override
     {
-        /*Rectangle<int> totalArea = getLocalBounds().reduced(10);
-
-        pathEditor.setBounds(totalArea.removeFromTop(40));
-
-        Rectangle<int> buttonsArea = totalArea.removeFromBottom(40);
-
-        loadButton.setBounds(buttonsArea.removeFromLeft(buttonsArea.getWidth() / 2));
-        cancelButton.setBounds(buttonsArea);*/
-
         Rectangle<int> fullArea = getLocalBounds();
 
         FlexBox fullPopup;
@@ -186,7 +162,7 @@ public:
     }
 
 private:
-    void closeDialog()
+    void closePopup()
     {
         if (auto* popup = findParentComponentOfClass<DialogWindow>())
         {
@@ -204,7 +180,7 @@ private:
     std::function<void()> onCancelCallback;
 };
 
-class ModelSelectionWidget : public Component
+class ModelSelectionWidget : public Component, public ChangeBroadcaster
 {
 public:
     ModelSelectionWidget()
@@ -232,6 +208,41 @@ public:
 
         selectionArea.performLayout(getLocalBounds());
     }
+
+    String getCurrentlySelectedPath() { return selectedPath; }
+
+    void resetState()
+    {
+        lastLoadedPathIndex = -1;
+        lastSelectedPathIndex = -1;
+        modelPathComboBox.setSelectedId(lastSelectedPathIndex);
+
+        //loadModelButton.setMode(loadButtonInactiveInfo.label);
+        loadModelButton.setEnabled(false);
+    }
+
+    void setLoadingState()
+    {
+        modelPathComboBox.setEnabled(false);
+
+        loadModelButton.setEnabled(false);
+    }
+
+    /*void setFinishedState()
+    {
+        modelPathComboBox.setEnabled(true);
+
+        loadModelButton.setEnabled(true);
+    }
+
+    // TODO - set to successfully loaded custom path
+
+    void setSuccessfulState()
+    {
+        lastLoadedPathIndex = lastSelectedPathIndex;
+
+        setFinishedState();
+    }*/
 
 private:
     void initializeModelPathComboBox()
@@ -294,11 +305,18 @@ private:
 
     void initializeLoadModelButton()
     {
+        std::function<void()> loadCallback = [this]()
+        {
+            if (modelPathComboBox.getSelectedItemIndex() != 0)
+            {
+                selectedPath = modelPathComboBox.getText();
+                sendChangeMessage();
+            }
+        };
 
         // Mode when a model is selected and not currently being loaded (load enabled)
         loadButtonActiveInfo = MultiButton::Mode { "Load",
-                                                   //[this] { loadModelCallback(); }, // TODO
-                                                   [this] { resetState(); },
+                                                   loadCallback,
                                                    Colours::lightgrey,
                                                    "Click to load currently selected model path.",
                                                    MultiButton::DrawingMode::TextOnly };
@@ -314,16 +332,6 @@ private:
         addAndMakeVisible(loadModelButton);
 
         //loadBroadcaster.addChangeListener(this); // TODO - necessary?
-    }
-
-    void resetState()
-    {
-        lastLoadedPathIndex = -1;
-        lastSelectedPathIndex = -1;
-        modelPathComboBox.setSelectedId(lastSelectedPathIndex);
-
-        //loadModelButton.setMode(loadButtonInactiveInfo.label);
-        loadModelButton.setEnabled(false);
     }
 
     /* TODO
@@ -364,7 +372,8 @@ private:
             DBG_AND_LOG("ModelSelectionWidget::openCustomPathPopup::loadCallback: "
                         << "Custom path \"" << path << "\" entered.");
 
-            //loadModelCallback(textEntered); // TODO
+            selectedPath = path;
+            sendChangeMessage();
         };
 
         std::function<void()> cancelCallback = [this]()
@@ -419,15 +428,11 @@ private:
     int lastLoadedPathIndex; // Keep track of last loaded index for load failure cases
     int lastSelectedPathIndex;
 
+    String selectedPath;
+
     MultiButton loadModelButton;
     MultiButton::Mode loadButtonActiveInfo;
     MultiButton::Mode loadButtonInactiveInfo;
 
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
-
-    // TODO - cleanup below
-
-    //ChangeBroadcaster loadBroadcaster;
-
-    //ThreadPool threadPool { 1 };
 };

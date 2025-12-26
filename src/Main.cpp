@@ -42,7 +42,9 @@ public:
     const String getApplicationName() override { return JUCE_APPLICATION_NAME_STRING; }
     const String getApplicationVersion() override { return JUCE_APPLICATION_VERSION_STRING; }
 
-    /// Called when app is invoked
+    /**
+     * Called when the app is invoked.
+     */
     void initialise(const String& commandLine) override
     {
         debugAndLog("GuiAppApplication::initialise: Invoked with command line \"" + commandLine
@@ -129,7 +131,9 @@ public:
         }
     }
 
-    /// Called when app is invoked and other instances are running
+    /**
+     * Called when the app is invoked and other instances are running.
+     */
     void anotherInstanceStarted(const String& commandLine) override
     {
         StringArray args;
@@ -188,7 +192,6 @@ public:
         }
     }
 
-    /// Application shutdown code
     void shutdown() override
     {
         Desktop::getInstance().removeFocusChangeListener(this);

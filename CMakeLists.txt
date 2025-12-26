@@ -79,7 +79,6 @@ target_sources(${PROJECT_NAME}
         # TODO - subject to change
         #src/callbacks/Edit.cpp #
         #src/callbacks/Authenticate.cpp #
-        #src/callbacks/Load.cpp #
         #src/callbacks/Process.cpp #
         #src/callbacks/Miscellaneous.cpp #
 
