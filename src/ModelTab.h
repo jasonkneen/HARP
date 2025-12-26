@@ -55,8 +55,59 @@ private:
 
         String pathToLoad = modelSelectionWidget->getCurrentlySelectedPath();
 
+        /* TODO
         // disable the process button until the model is loaded
         //processCancelButton.setEnabled(false);
+        */
+
+        // TODO - what does loading really conist of:
+        //        - (Empty) model initialization
+        //          - Status: EMPTY
+        //          - Empty metadata
+        //          - No inputs or outputs
+        //        - (receive load request)
+        //        - Choose client based on path
+        //          - Parse path and multiplex correct client
+        //            - GRADIO
+        //            - STABILITY
+        //            - UNKNOWN
+        //          - If unknown fail here
+        //          - Link access token if available
+        //        - Query selected path
+        //          - If unsuccessful fail here
+        //          - Extract metadata / control info
+        //        - Set model's metadata
+        //        - Iteratively register controls / inputs / outputs
+
+        // TODO - separate client for loading and for processing? rather than temp / loaded client?
+        //        - loading client is used for querying to see if path / model is valid and for reading info
+        //          - can exist entirely within this callback
+        //        - processing client is used for sending process / cancel requests
+        //          - if load is successful client can be passed off to model to serve as processing client
+
+        // TODO - going to need clearControls() function when loading a new model and model already loaded
+        //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
+
+        // TODO - what does loading really conist of:
+        //        - setting up client (url / token / etc.)
+        //        - extracting model's associated metadata
+        //        - registering expected inputs / outputs
+        //        - tracking status / stages of loading
+        //        - handling modes of error
+        //        - update selection widget's state accordingly
+
+        // TODO - what does processing really consist of:
+        //        - todo - input file paths
+        //        - todo - client requests
+        //        - todo - output file paths
+        //        - todo - labels
+        //        - tracking status / stages of processing
+        //        - handling modes of error
+
+        // TODO - what does canceling really consist of:
+        //        - todo - TODO
+        //        - tracking status / stages of canceling
+        //        - handling modes of error
 
         std::map<std::string, std::any> params = {
             { "url", pathToLoad },

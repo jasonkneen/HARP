@@ -113,9 +113,9 @@ target_sources(${PROJECT_NAME}
         src/media/pianoroll/PianoRollComponent.cpp
         src/media/pianoroll/SynthAudioSource.h
 
-        src/client/Client.cpp #
-        src/client/GradioClient.cpp #
-        src/client/StabilityClient.cpp #
+        #src/client/Client.cpp #
+        #src/client/GradioClient.cpp #
+        #src/client/StabilityClient.cpp #
 
         src/utils/Logging.h
         src/utils/Settings.h
