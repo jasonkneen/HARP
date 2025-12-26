@@ -104,9 +104,6 @@ target_sources(${PROJECT_NAME}
         src/gui/HoverableLabel.h #
         src/gui/HoverHandler.cpp #
 
-        # TODO - subject to change
-        src/gui/CustomPathDialog.h #
-
         src/media/MediaDisplayComponent.cpp
         src/media/AudioDisplayComponent.cpp
         src/media/MidiDisplayComponent.cpp

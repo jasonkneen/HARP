@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../widgets/StatusAreaWidget.h"
@@ -13,15 +15,15 @@
 #include "../gui/HoverHandler.h"
 #include "../gui/MultiButton.h"
 
-#include "../gui/CustomPathDialog.h" // TODO - move to this file
-
+#include "../utils/Interface.h"
 #include "../utils/Logging.h"
 
 using namespace juce;
 
 struct SharedChoices //: public ChangeBroadcaster
 {
-    /*void setMessage(const String& m)
+    /* TODO - functions for updating savedModelPaths
+    void setMessage(const String& m)
     {
         message = m;
         sendChangeMessage();
@@ -31,7 +33,8 @@ struct SharedChoices //: public ChangeBroadcaster
     {
         message.clear();
         sendChangeMessage();
-    }*/
+    }
+    */
 
     std::vector<std::string> savedModelPaths = {
         "click here to enter a custom path...",
@@ -51,8 +54,9 @@ struct SharedChoices //: public ChangeBroadcaster
     };
 };
 
+/* TODO
 // this is the callback for the add new path popup alert
-/*class CustomPathAlertCallback : public ModalComponentManager::Callback
+class CustomPathAlertCallback : public ModalComponentManager::Callback
 {
 public:
     CustomPathAlertCallback(std::function<void(int)> const& callback) : userCallback(callback) {}
@@ -68,6 +72,137 @@ public:
 private:
     std::function<void(int)> userCallback;
 };*/
+
+class CustomPathComponent : public Component
+{
+public:
+    CustomPathComponent(std::function<void(String)> onLoad, std::function<void()> onCancel)
+        : onLoadCallback(std::move(onLoad)), onCancelCallback(std::move(onCancel))
+    {
+        pathEditor.setMultiLine(false);
+        pathEditor.setReturnKeyStartsNewLine(false);
+        pathEditor.onTextChange = [this] { loadButton.setEnabled(! pathEditor.isEmpty()); };
+        pathEditor.onReturnKey = [this]
+        {
+            if (loadButton.isEnabled())
+            {
+                loadButton.triggerClick();
+            }
+        };
+        addAndMakeVisible(pathEditor);
+
+        //loadButton.setButtonText("Load");
+        loadButton.setEnabled(false);
+        /*loadButton.onClick = [this]
+        {
+            if (onLoadCallback)
+            {
+                onLoadCallback(pathEditor.getText());
+            }
+        };*/
+        loadButton.onClick = [this]
+        {
+            wasLoadPressed = true;
+
+            if (onLoadCallback)
+            {
+                onLoadCallback(pathEditor.getText());
+            }
+
+            closeDialog();
+        };
+        addAndMakeVisible(loadButton);
+
+        //cancelButton.setButtonText("Cancel");
+        /*cancelButton.onClick = [this]
+        {
+            if (onCancelCallback)
+            {
+                onCancelCallback();
+            }
+        };*/
+        cancelButton.onClick = [this] { closeDialog(); };
+        addAndMakeVisible(cancelButton);
+
+        setSize(400, 80);
+    }
+
+    ~CustomPathComponent() override
+    {
+        if (! wasLoadPressed && onCancelCallback)
+        {
+            // Treat as cancel if closed without load
+            onCancelCallback();
+        }
+    }
+
+    void visibilityChanged() override
+    {
+        if (isVisible())
+        {
+            MessageManager::callAsync([this] { pathEditor.grabKeyboardFocus(); });
+        }
+    }
+
+    void resized() override
+    {
+        /*Rectangle<int> totalArea = getLocalBounds().reduced(10);
+
+        pathEditor.setBounds(totalArea.removeFromTop(40));
+
+        Rectangle<int> buttonsArea = totalArea.removeFromBottom(40);
+
+        loadButton.setBounds(buttonsArea.removeFromLeft(buttonsArea.getWidth() / 2));
+        cancelButton.setBounds(buttonsArea);*/
+
+        Rectangle<int> fullArea = getLocalBounds();
+
+        FlexBox fullPopup;
+        fullPopup.flexDirection = FlexBox::Direction::column;
+
+        fullPopup.items.add(FlexItem(pathEditor).withHeight(30).withMargin(2));
+
+        FlexBox buttonsArea;
+        buttonsArea.flexDirection = FlexBox::Direction::row;
+
+        buttonsArea.items.add(FlexItem(loadButton).withFlex(1).withMargin(10));
+        buttonsArea.items.add(FlexItem().withFlex(0.25));
+        buttonsArea.items.add(FlexItem(cancelButton).withFlex(1).withMargin(10));
+
+        fullPopup.items.add(FlexItem(buttonsArea).withFlex(1));
+
+        fullPopup.performLayout(fullArea);
+    }
+
+    void paint(Graphics& g) override
+    {
+        g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
+    }
+
+    void setTextFieldValue(const String& text)
+    {
+        pathEditor.setText(text, dontSendNotification);
+        pathEditor.selectAll();
+    }
+
+private:
+    void closeDialog()
+    {
+        if (auto* popup = findParentComponentOfClass<DialogWindow>())
+        {
+            popup->exitModalState(0);
+        }
+    }
+
+    TextEditor pathEditor;
+    TextButton loadButton { "Load" };
+    TextButton cancelButton { "Cancel" };
+
+    bool wasLoadPressed = false;
+
+    std::function<void(String)> onLoadCallback;
+    std::function<void()> onCancelCallback;
+};
 
 class ModelSelectionWidget : public Component
 {
@@ -159,6 +294,7 @@ private:
 
     void initializeLoadModelButton()
     {
+
         // Mode when a model is selected and not currently being loaded (load enabled)
         loadButtonActiveInfo = MultiButton::Mode { "Load",
                                                    //[this] { loadModelCallback(); }, // TODO
@@ -177,7 +313,7 @@ private:
         loadModelButton.setMode(loadButtonActiveInfo.label);
         addAndMakeVisible(loadModelButton);
 
-        //loadBroadcaster.addChangeListener(this); // TODO
+        //loadBroadcaster.addChangeListener(this); // TODO - necessary?
     }
 
     void resetState()
@@ -189,6 +325,34 @@ private:
         //loadModelButton.setMode(loadButtonInactiveInfo.label);
         loadModelButton.setEnabled(false);
     }
+
+    /* TODO
+    // Adds a path to the model dropdown if it's not already present
+    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
+    {
+        String displayStr(path);
+        if (wasSleeping)
+            displayStr += " (sleeping)";
+
+        bool alreadyExists = false;
+        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+        {
+            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
+            {
+                alreadyExists = true;
+                break;
+            }
+        }
+
+        if (! alreadyExists)
+        {
+            int newID = modelPathComboBox.getNumItems() + 1;
+            modelPathComboBox.addItem(displayStr, newID);
+        }
+
+        modelPathComboBox.setText(displayStr, dontSendNotification);
+    }
+    */
 
     /**
      * Create callbacks for and launch the custom path popup.
@@ -240,41 +404,10 @@ private:
         options.useNativeTitleBar = false;
         options.resizable = false;
         options.escapeKeyTriggersCloseButton = true;
-        options.componentToCentreAround =
-            getParentComponent(); // TODO - center around MainComponent
+        options.componentToCentreAround = getParentComponent();
 
         options.launchAsync();
-        /*options.launchAsync( // newer version of JUCE?
-            ModalCallbackFunction::create([cancelCallback](int) { cancelCallback(); }));*/
     }
-
-    /* TODO
-    // Adds a path to the model dropdown if it's not already present
-    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
-    {
-        String displayStr(path);
-        if (wasSleeping)
-            displayStr += " (sleeping)";
-
-        bool alreadyExists = false;
-        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-        {
-            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
-            {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (! alreadyExists)
-        {
-            int newID = modelPathComboBox.getNumItems() + 1;
-            modelPathComboBox.addItem(displayStr, newID);
-        }
-
-        modelPathComboBox.setText(displayStr, dontSendNotification);
-    }
-    */
 
     const float marginSize = 2;
 
@@ -292,9 +425,7 @@ private:
 
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
 
-    // TODO - below
-
-    //std::string customPath;
+    // TODO - cleanup below
 
     //ChangeBroadcaster loadBroadcaster;
 
