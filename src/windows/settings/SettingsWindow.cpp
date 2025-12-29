@@ -3,10 +3,12 @@
 SettingsWindow::SettingsWindow() : tabComponent(juce::TabbedButtonBar::TabsAtTop)
 {
     tabComponent.addTab("General", juce::Colours::darkgrey, new GeneralSettingsTab(), true);
+    /*
     tabComponent.addTab(
         "Hugging Face", juce::Colours::darkgrey, new LoginTab("huggingface"), true);
     tabComponent.addTab(
         "Stability AI", juce::Colours::darkgrey, new LoginTab("stability"), true);
+    */
     // tabComponent.addTab("Audio", juce::Colours::darkgrey, new AudioSettingsTab(), true);
     addAndMakeVisible(tabComponent);
     setSize(400, 300);

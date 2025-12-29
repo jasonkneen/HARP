@@ -73,7 +73,7 @@ target_sources(${PROJECT_NAME}
         src/ModelTab.h #
 
         # TODO - subject to change
-        #src/Model.h #
+        src/Model.h #
         #src/WebModel.h #
 
         # TODO - subject to change
@@ -87,7 +87,7 @@ target_sources(${PROJECT_NAME}
 
         src/windows/settings/SettingsWindow.cpp #
         src/windows/settings/GeneralSettingsTab.cpp #
-        src/windows/settings/LoginTab.cpp #
+        #src/windows/settings/LoginTab.cpp #
 
         src/widgets/ModelSelectionWidget.h #
         #src/widgets/ModelInfoWidget.h #
@@ -114,8 +114,11 @@ target_sources(${PROJECT_NAME}
         src/media/pianoroll/SynthAudioSource.h
 
         #src/client/Client.cpp #
+        src/client/Client.h #
         #src/client/GradioClient.cpp #
+        src/client/GradioClient.h #
         #src/client/StabilityClient.cpp #
+        src/client/GradioClient.h #
 
         src/utils/Logging.h
         src/utils/Settings.h

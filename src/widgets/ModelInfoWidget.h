@@ -334,9 +334,7 @@ public:
 
     void processLoadingResult(OpResult result);
 
-private:
-    std::shared_ptr<WebModel> model { new WebModel() };
-
+private
     std::unique_ptr<ModelStatusTimer> mModelStatusTimer { nullptr };
 
     ModelAuthorLabel modelAuthorLabel;

@@ -8,10 +8,14 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "Model.h"
+
 #include "widgets/ModelSelectionWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
-//#include "../utils.h"
+#include "client/Client.h"
+
+#include "utils/Clients.h"
 
 using namespace juce;
 
@@ -23,10 +27,10 @@ public:
         addAndMakeVisible(modelSelectionWidget);
         //addAndMakeVisible(modelDisplayWidget);
 
-        modelSelectionWidget->addChangeListener(this);
+        modelSelectionWidget.addChangeListener(this);
     }
 
-    ~ModelTab() { modelSelectionWidget->removeChangeListener(this); }
+    ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
 
     //void paint(Graphics& g) {}
 
@@ -35,7 +39,7 @@ public:
         FlexBox tabArea;
         tabArea.flexDirection = FlexBox::Direction::column;
 
-        tabArea.items.add(FlexItem(*modelSelectionWidget).withHeight(30));
+        tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
 
         tabArea.performLayout(getLocalBounds());
     }
@@ -43,7 +47,7 @@ public:
 private:
     void changeListenerCallback(ChangeBroadcaster* source)
     {
-        if (source == modelSelectionWidget)
+        if (source == &modelSelectionWidget)
         {
             loadModelCallback();
         }
@@ -51,82 +55,107 @@ private:
 
     void loadModelCallback()
     {
-        modelSelectionWidget->setLoadingState();
+        modelSelectionWidget.setLoadingState();
 
-        String pathToLoad = modelSelectionWidget->getCurrentlySelectedPath();
-
-        /* TODO
+        /* TODO - other state changes
         // disable the process button until the model is loaded
         //processCancelButton.setEnabled(false);
         */
 
-        // TODO - what does loading really conist of:
-        //        - (Empty) model initialization
-        //          - Status: EMPTY
-        //          - Empty metadata
-        //          - No inputs or outputs
-        //        - (receive load request)
-        //        - Choose client based on path
-        //          - Parse path and multiplex correct client
-        //            - GRADIO
-        //            - STABILITY
-        //            - UNKNOWN
-        //          - If unknown fail here
-        //          - Link access token if available
-        //        - Query selected path
-        //          - If unsuccessful fail here
-        //          - Extract metadata / control info
-        //        - Set model's metadata
-        //        - Iteratively register controls / inputs / outputs
+        // Obtain currently selected path
+        String selectedPath = modelSelectionWidget.getCurrentlySelectedPath();
 
-        // TODO - separate client for loading and for processing? rather than temp / loaded client?
-        //        - loading client is used for querying to see if path / model is valid and for reading info
-        //          - can exist entirely within this callback
-        //        - processing client is used for sending process / cancel requests
-        //          - if load is successful client can be passed off to model to serve as processing client
+        DBG_AND_LOG("ModelTab::loadModelCallback: Attempting to load path \"" << selectedPath
+                                                                              << "\".");
 
-        // TODO - going to need clearControls() function when loading a new model and model already loaded
-        //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
-
-        // TODO - what does loading really conist of:
-        //        - setting up client (url / token / etc.)
-        //        - extracting model's associated metadata
-        //        - registering expected inputs / outputs
-        //        - tracking status / stages of loading
-        //        - handling modes of error
-        //        - update selection widget's state accordingly
-
-        // TODO - what does processing really consist of:
-        //        - todo - input file paths
-        //        - todo - client requests
-        //        - todo - output file paths
-        //        - todo - labels
-        //        - tracking status / stages of processing
-        //        - handling modes of error
-
-        // TODO - what does canceling really consist of:
-        //        - todo - TODO
-        //        - tracking status / stages of canceling
-        //        - handling modes of error
-
-        std::map<std::string, std::any> params = {
-            { "url", pathToLoad },
-        };
-
-        // loading happens asynchronously.
         loadingThreadPool.addJob(
-            [this, params]
+            [this, selectedPath]
             {
                 try
                 {
-                    juce::String loadingError;
+                    // Determine and initialize appropriate client for selected model
+                    std::unique_ptr<Client> tempClient = multiplexClients(selectedPath);
 
+                    if (! tempClient)
+                    {
+                        // TODO - handle error case: unknown client
+                    }
+
+                    model->setStatus(ModelStatus::QUERYING_CLIENT);
+
+                    String endpointURL = tempClient->inferEndpointURL(selectedPath);
+
+                    if (endpointURL.isEmpty())
+                    {
+                        // TODO - handle error case: invalid path
+                    }
+
+                    // TODO - link access token if available
+
+                    // TODO - what does loading really conist of:
+                    //        - DONE
+                    //          - TODO - No inputs or outputs when model initialized
+                    //        - DONE
+                    //        - Query selected path
+                    //          - If invalid path fail here
+                    //          - Extract metadata / control info
+                    //        - Set model's metadata
+                    //        - Iteratively register controls / inputs / outputs
+
+                    // TODO - separate client for loading and for processing? rather than temp / loaded client?
+                    //        - loading client is used for querying to see if path / model is valid and for reading info
+                    //          - can exist entirely within this callback
+                    //        - processing client is used for sending process / cancel requests
+                    //          - if load is successful client can be passed off to model to serve as processing client
+
+                    // TODO - going to need clearControls() function when loading a new model and model already loaded
+                    //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
+
+                    // TODO - what does loading really conist of:
+                    //        - setting up client (url / token / etc.)
+                    //        - extracting model's associated metadata
+                    //        - registering expected inputs / outputs
+                    //        - tracking status / stages of loading
+                    //        - handling modes of error
+                    //        - update selection widget's state accordingly
+                }
+                /*catch (Error& loadingError)
+                {
+                    // TODO - think I will actually need op result structure to keep error popup facilitation neat
+                }
+                catch (const std::exception& e)
+                {
+                    // Catch any other standard exceptions (like std::runtime_error)
+                    DBG_AND_LOG("Caught std::exception: " << e.what());
+                    AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
+                                                     "Error",
+                                                     "An unexpected error occurred: "
+                                                         + juce::String(e.what()));
+                }
+                catch (...) // Catch any other exceptions
+                {
+                    DBG_AND_LOG("Caught unknown exception");
+                    AlertWindow::showMessageBoxAsync(
+                        AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
+                }*/
+                catch (...)
+                {
+                }
+            });
+
+        /*
+        // loading happens asynchronously.
+        loadingThreadPool.addJob(
+            [this]
+            {
+                try
+                {
                     // set the last status to the current status
                     // If loading of the new model fails,
                     // we want to go back to the status we had before the failed attempt
                     model->setLastStatus(model->getStatus());
 
-                    OpResult loadingResult = model->load(params);
+                    OpResult loadingResult = model->load();
                     if (loadingResult.failed())
                     {
                         throw loadingResult.getError();
@@ -139,7 +168,7 @@ private:
                     MessageManager::callAsync(
                         [this, loadingResult]
                         {
-                            resetUI();
+                            resetUI(); // TODO - clear model here if successful
                             if (modelPathComboBox.getSelectedItemIndex() == 0)
                             {
                                 bool alreadyInComboBox = false;
@@ -297,23 +326,21 @@ private:
                             MessageManager::callAsync([this, loadingError]
                                                       { loadModelButton.setEnabled(false); });
                         }
-                        /*
-                        if (loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        {
-                            MessageManager::callAsync(
-                                [this]
-                                {
-                                    addCustomPathToDropdown(customPath, true); // mark as sleeping
-                                });
-                        }
-                        //NEW: reopen custom path dialog if sleeping or 404
-                        if (loadingError.type == ErrorType::InvalidURL
-                            || loadingError.devMessage.contains("404")
-                            || loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        {
-                            MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
-                        }
-                        */
+                        //if (loadingError.userMessage.containsIgnoreCase("sleeping"))
+                        //{
+                        //    MessageManager::callAsync(
+                        //        [this]
+                        //        {
+                        //            addCustomPathToDropdown(customPath, true); // mark as sleeping
+                        //        });
+                        //}
+                        ////NEW: reopen custom path dialog if sleeping or 404
+                        //if (loadingError.type == ErrorType::InvalidURL
+                        //    || loadingError.devMessage.contains("404")
+                        //    || loadingError.userMessage.containsIgnoreCase("sleeping"))
+                        //{
+                        //    MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
+                        //}
                     };
 
                     AlertWindow::showAsync(msgOpts, alertCallback);
@@ -335,6 +362,7 @@ private:
                         AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
                 }
             });
+            */
     }
 
     /*void processLoadingResult(OpResult result)
@@ -415,10 +443,25 @@ private:
         repaint();
     }*/
 
+    // TODO - what does processing really consist of:
+    //        - todo - input file paths
+    //        - todo - client requests
+    //        - todo - output file paths
+    //        - todo - labels
+    //        - tracking status / stages of processing
+    //        - handling modes of error
+
+    // TODO - what does canceling really consist of:
+    //        - todo - TODO
+    //        - tracking status / stages of canceling
+    //        - handling modes of error
+
     const float marginSize = 2;
 
-    ModelSelectionWidget* modelSelectionWidget;
-    //ModelDisplayWidget* modelDisplayWidget;
+    std::shared_ptr<Model> model { new Model() };
+
+    ModelSelectionWidget modelSelectionWidget;
+    //ModelDisplayWidget modelDisplayWidget;
 
     ThreadPool loadingThreadPool { 1 };
 

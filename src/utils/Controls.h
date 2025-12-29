@@ -6,6 +6,7 @@ using namespace juce;
 
 struct PyHarpComponentInfo
 {
+    // TODO - are the following fields necessary?
     Uuid id { "" };
     std::string label { "" };
     std::string info { "" };

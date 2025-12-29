@@ -56,197 +56,6 @@ public:
         return nullptr;
     }
 
-    OpResult parseSpaceAddress(juce::String spaceAddress, SpaceInfo& spaceInfo)
-    {
-        /***
-             We parse the space address given by the user
-             which can take 4 forms:
-                 "http://localhost:7860", (gradio app)
-                 "https://xribene-midi-pitch-shifter.hf.space/", (gradio app)
-                 "https://huggingface.co/spaces/xribene/midi_pitch_shifter", (hf repo)
-                 "xribene/midi_pitch_shifter",
- 
-             and we store the parsed information in a SpaceInfo object
-             e.g
-             {
-                 "huggingface":
-             "https://huggingface.co/spaces/xribene/midi_pitch_shifter", "gradio":
-             "https://xribene-midi-pitch-shifter.hf.space/", "userInput":
-             "xribene/midi_pitch_shifter", "modelName": "midi_pitch_shifter", "userName":
-             "xribene"
-             }
-             ***/
-        // Create an Error object in case we need it
-        Error error;
-        // All errors in this function are of type InvalidURL
-        error.type = ErrorType::InvalidURL;
-
-        spaceInfo.userInput = spaceAddress;
-        juce::String user;
-        juce::String model;
-        // Check if the URL is of Type 4 (localhost or gradio.live)
-        if (spaceAddress.contains("localhost") || spaceAddress.contains("gradio.live")
-            || spaceAddress.matchesWildcard("*.*.*.*:*", true))
-        {
-            spaceInfo.gradio = spaceAddress;
-            spaceInfo.apiEndpointURL = spaceAddress;
-            spaceInfo.status = SpaceInfo::Status::LOCALHOST;
-            spaceInfo.userName = "localhost";
-            spaceInfo.modelName = "localhost";
-        }
-        // 2. Stability AI: "stability/service_type"
-        else if (spaceAddress.startsWith("stability/"))
-        {
-            auto parts = juce::StringArray::fromTokens(spaceAddress, "/", "");
-            if (parts.size() == 2)
-            {
-                user = parts[0]; // "stability"
-                model = parts[1]; // serviceType e.g., "text-to-audio"
-                spaceInfo.status = SpaceInfo::Status::STABILITY;
-                spaceInfo.userName = user;
-                spaceInfo.modelName = model;
-                spaceInfo.stabilityServiceType = model;
-
-                if (model.equalsIgnoreCase("text-to-audio"))
-                {
-                    spaceInfo.stability =
-                        "https://platform.stability.ai/docs/api-reference#tag/Stable-Audio-2/paths/~1v2beta~1audio~1stable-audio-2~1text-to-audio/post";
-                    spaceInfo.apiEndpointURL =
-                        "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio";
-                }
-                else if (model.equalsIgnoreCase("audio-to-audio"))
-                {
-                    spaceInfo.stability =
-                        "https://platform.stability.ai/docs/api-reference#tag/Stable-Audio-2/paths/~1v2beta~1audio~1stable-audio-2~1audio-to-audio/post";
-                    spaceInfo.apiEndpointURL =
-                        "https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio";
-                }
-                else
-                {
-                    spaceInfo.error = "Unsupported Stability AI service type: " + model;
-                    spaceInfo.status = SpaceInfo::Status::FAILED;
-                    error.devMessage = spaceInfo.error;
-                    return OpResult::fail(error);
-                }
-            }
-            else
-            {
-                spaceInfo.error =
-                    "Invalid Stability AI format. Expected 'stability/service_type'. Got: "
-                    + spaceAddress;
-                spaceInfo.status = SpaceInfo::Status::FAILED;
-                error.devMessage = spaceInfo.error;
-                return OpResult::fail(error);
-            }
-        }
-        else if (spaceAddress.contains("https://huggingface.co/spaces/"))
-        {
-            auto spacePath =
-                spaceAddress.fromFirstOccurrenceOf("https://huggingface.co/spaces/", false, false);
-            auto parts = juce::StringArray::fromTokens(spacePath, "/", "");
-
-            if (parts.size() >= 2)
-            {
-                user = parts[0];
-                model = parts[1];
-                spaceInfo.status = SpaceInfo::Status::HUGGINGFACE;
-                spaceInfo.huggingface = spaceAddress; // The full HF space URL
-                // For Gradio apps hosted on HF, the Gradio API endpoint is usually the hf.space URL
-                spaceInfo.gradio = "https://" + user + "-" + model.replace("_", "-") + ".hf.space/";
-                spaceInfo.apiEndpointURL = spaceInfo.gradio; // Assuming Gradio client uses this
-                spaceInfo.userName = user;
-                spaceInfo.modelName = model;
-            }
-            else
-            {
-                // result.huggingface = spaceAddress;
-                spaceInfo.error = "Detected huggingface.co URL but could not parse user and "
-                                  "model. Too few parts in "
-                                  + spaceAddress;
-                spaceInfo.status = SpaceInfo::Status::FAILED;
-                error.devMessage = spaceInfo.error;
-                return OpResult::fail(error);
-            }
-        }
-        else if (spaceAddress.contains("hf.space"))
-        {
-            spaceInfo.apiEndpointURL = spaceAddress;
-            // Remove the protocol part (e.g., "https://")
-            auto withoutProtocol = spaceAddress.fromFirstOccurrenceOf("://", false, false);
-
-            // Extract the subdomain part before ".hf.space/"
-            auto subdomain = withoutProtocol.upToFirstOccurrenceOf(".hf.space", false, false);
-
-            // Split the subdomain at the first hyphen
-            auto firstHyphenIndex = subdomain.indexOfChar('-');
-            if (firstHyphenIndex != -1)
-            {
-                user = subdomain.substring(0, firstHyphenIndex);
-                model = subdomain.substring(firstHyphenIndex + 1);
-                spaceInfo.status = SpaceInfo::Status::GRADIO;
-                spaceInfo.userName = user;
-                spaceInfo.modelName = model.replace("-", "_");
-                spaceInfo.gradio = spaceAddress;
-
-                spaceInfo.huggingface =
-                    "https://huggingface.co/spaces/" + user + "/" + spaceInfo.modelName;
-            }
-            else
-            {
-                // DBG_AND_LOG("No hyphen found in the subdomain." << subdomain);
-                // Even though the spaceAddress is supposed to be a gradio URL, we
-                // return it as the huggingface URL because result.huggingface is
-                // used for the  "Open Space URL" button in the error dialog box
-                // result.huggingface = spaceAddress;
-                spaceInfo.error = "Detected hf.space URL but could not parse user and model. No "
-                                  "hyphen found in the subdomain: "
-                                  + subdomain;
-                spaceInfo.status = SpaceInfo::Status::FAILED;
-                error.devMessage = spaceInfo.error;
-                return OpResult::fail(error);
-            }
-        }
-        // else if address is of the form user/model and doesn't contain http
-        else if (spaceAddress.contains("/") && ! spaceAddress.contains("http"))
-        {
-            // Extract user and model
-            auto parts = juce::StringArray::fromTokens(spaceAddress, "/", "");
-            if (parts.size() == 2)
-            {
-                user = parts[0];
-                model = parts[1];
-                // Defaulting to HuggingFace for shorthand user/model if not 'stability'
-                spaceInfo.status = SpaceInfo::Status::HUGGINGFACE;
-                spaceInfo.huggingface = "https://huggingface.co/spaces/" + user + "/" + model;
-                spaceInfo.gradio = "https://" + user + "-" + model.replace("_", "-") + ".hf.space/";
-                spaceInfo.apiEndpointURL = spaceInfo.gradio; // Assuming Gradio client
-                spaceInfo.userName = user;
-                spaceInfo.modelName = model;
-                // }
-            }
-            else
-            {
-                spaceInfo.error = "Detected user/model URL but could not parse user and model. "
-                                  "Too many/few slashes in "
-                                  + spaceAddress;
-                spaceInfo.status = SpaceInfo::Status::FAILED;
-                error.devMessage = spaceInfo.error;
-                return OpResult::fail(error);
-            }
-        }
-        else
-        {
-            spaceInfo.error = "Invalid URL: " + spaceAddress
-                              + ". URL does not match any of the expected patterns.";
-            spaceInfo.status = SpaceInfo::Status::FAILED;
-            error.devMessage = spaceInfo.error;
-            return OpResult::fail(error);
-        }
-
-        DBG_AND_LOG(spaceInfo.toString());
-        return OpResult::ok();
-    }
-
     OpResult load(const map<string, any>& params) override
     {
         // Create an Error object in case we need it
@@ -257,19 +66,19 @@ public:
 
         status2 = ModelStatus::LOADING;
 
-        std::string userSpaceAddress = std::any_cast<std::string>(params.at("url"));
+        //std::string userSpaceAddress = std::any_cast<std::string>(params.at("url"));
 
-        SpaceInfo spaceInfo;
-        result = parseSpaceAddress(userSpaceAddress, spaceInfo);
-        if (result.failed())
-        {
-            status2 = ModelStatus::ERROR;
-            return result;
-        }
+        //SpaceInfo spaceInfo;
+        //result = parseSpaceAddress(userSpaceAddress, spaceInfo);
+        //if (result.failed())
+        //{
+        //    status2 = ModelStatus::ERROR;
+        //    return result;
+        //}
 
         //std::unique_ptr<Client> newClient;
 
-        if (spaceInfo.status == SpaceInfo::Status::STABILITY)
+        /*if (spaceInfo.status == SpaceInfo::Status::STABILITY)
         {
             tempClient = std::make_unique<StabilityClient>();
             isStabilityModel = true;
@@ -283,6 +92,7 @@ public:
         tempClient->setSpaceInfo(spaceInfo);
 
         DBG_AND_LOG(tempClient->getSpaceInfo().toString());
+        */
 
         // The input components defined in PyHARP include
         // both the input tracks (audio or midi) and the controls (sliders, text boxes, etc)
@@ -771,9 +581,7 @@ private:
 
     bool isStabilityModel =
         false; // A flag to indicate if the current model is a Stability AI model
-    ComponentInfoList controlsInfo;
-    ComponentInfoList inputTracksInfo;
-    ComponentInfoList outputTracksInfo;
+
     // A vector that stores the Uuid of the input and control components
     // in the order they are received from the server
     // We need to keep track the order to be able to send the data

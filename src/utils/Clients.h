@@ -2,14 +2,42 @@
 
 #include <juce_core/juce_core.h>
 
+#include "../client/Client.h"
+#include "../client/GradioClient.h"
+#include "../client/StabilityClient.h"
+
+#include "Logging.h"
+
 using namespace juce;
 
-// TODO - the following patterns should be supported
-// "xribene/midi_pitch_shifter",
-// "http://localhost:7860",
-// "https://xribene-midi-pitch-shifter.hf.space/",
-// "https://huggingface.co/spaces/xribene/midi_pitch_shifter"
+inline std::unique_ptr<Client> multiplexClients(String modelPath)
+{
+    std::unique_ptr<Client> client;
 
+    if (StabilityClient::matchesPathSpec(modelPath))
+    {
+        DBG_AND_LOG(
+            "utils::multiplexClients: Stability path detected. Initializing Stability client.");
+
+        client = std::make_unique<StabilityClient>();
+    }
+    // Check Gradio last to serve as a catch-all if no third-party provider path specifications match
+    else if (GradioClient::matchesPathSpec(modelPath))
+    {
+        DBG_AND_LOG("utils::multiplexClients: Gradio path detected. Initializing Gradio client.");
+
+        client = std::make_unique<GradioClient>();
+    }
+    else
+    {
+        DBG_AND_LOG(
+            "utils::multiplexClients: Path does not match valid specification for any supported clients.");
+    }
+
+    return client;
+}
+
+/*
 enum GradioEvents
 {
     complete,
@@ -106,3 +134,4 @@ struct SpaceInfo
         return "Unknown/Unknown";
     }
 };
+*/

@@ -5,8 +5,8 @@
 #include "../../external/magic_enum.hpp"
 
 //#include "../../WebModel.h"
-#include "../../client/GradioClient.h"
-#include "../../client/StabilityClient.h"
+//#include "../../client/GradioClient.h"
+//#include "../../client/StabilityClient.h"
 
 #include "../../utils/Logging.h"
 #include "../../utils/Settings.h"
