@@ -1,6 +1,8 @@
 #pragma once
 
-#include "Client.h"
+#include <BinaryData.h>
+
+#include "../../Client.h"
 
 using namespace juce;
 
@@ -81,6 +83,38 @@ public:
         }
 
         return documentationURL;
+    }
+
+    String queryControls(String modelPath)
+    {
+        const char* jsonData;
+        int jsonDataSize = 0;
+
+        if (isValidTextToAudioPath(modelPath))
+        {
+            // Access binarized JSON for text-to-audio controls
+            jsonData = BinaryData::texttoaudio_json;
+            jsonDataSize = BinaryData::texttoaudio_jsonSize;
+        }
+        else if (isValidAudioToAudioPath(modelPath))
+        {
+            // Access binarized JSON for audio-to-audio controls
+            jsonData = BinaryData::audiotoaudio_json;
+            jsonDataSize = BinaryData::audiotoaudio_jsonSize;
+        }
+        else
+        {
+            // TODO - handle error case (invalid Stability AI path)
+        }
+
+        String responseJSON = String::fromUTF8(jsonData, jsonDataSize);
+
+        if (responseJSON.isEmpty())
+        {
+            // TODO - handle error case (failed to read controls JSON from resource file)
+        }
+
+        return responseJSON;
     }
 
 private:

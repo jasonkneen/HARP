@@ -13,10 +13,6 @@
 #include "widgets/ModelSelectionWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
-#include "client/Client.h"
-
-#include "utils/Clients.h"
-
 using namespace juce;
 
 class ModelTab : public Component, private ChangeListener
@@ -73,55 +69,11 @@ private:
             {
                 try
                 {
-                    // Determine and initialize appropriate client for selected model
-                    std::unique_ptr<Client> tempClient = multiplexClients(selectedPath);
-
-                    if (! tempClient)
-                    {
-                        // TODO - handle error case: unknown client
-                    }
-
-                    model->setStatus(ModelStatus::QUERYING_CLIENT);
-
-                    String endpointURL = tempClient->inferEndpointURL(selectedPath);
-
-                    if (endpointURL.isEmpty())
-                    {
-                        // TODO - handle error case: invalid path
-                    }
-
-                    // TODO - link access token if available
-
-                    // TODO - what does loading really conist of:
-                    //        - DONE
-                    //          - TODO - No inputs or outputs when model initialized
-                    //        - DONE
-                    //        - Query selected path
-                    //          - If invalid path fail here
-                    //          - Extract metadata / control info
-                    //        - Set model's metadata
-                    //        - Iteratively register controls / inputs / outputs
-
-                    // TODO - separate client for loading and for processing? rather than temp / loaded client?
-                    //        - loading client is used for querying to see if path / model is valid and for reading info
-                    //          - can exist entirely within this callback
-                    //        - processing client is used for sending process / cancel requests
-                    //          - if load is successful client can be passed off to model to serve as processing client
-
-                    // TODO - going to need clearControls() function when loading a new model and model already loaded
-                    //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
-
-                    // TODO - what does loading really conist of:
-                    //        - setting up client (url / token / etc.)
-                    //        - extracting model's associated metadata
-                    //        - registering expected inputs / outputs
-                    //        - tracking status / stages of loading
-                    //        - handling modes of error
-                    //        - update selection widget's state accordingly
+                    // TODO - think I will actually need op result structure to keep error popup facilitation neat
+                    model->loadPath(selectedPath);
                 }
                 /*catch (Error& loadingError)
                 {
-                    // TODO - think I will actually need op result structure to keep error popup facilitation neat
                 }
                 catch (const std::exception& e)
                 {

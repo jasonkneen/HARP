@@ -181,9 +181,10 @@ target_compile_definitions(${PROJECT_NAME}
 # static library. These source files can be of any kind (wav data, images, fonts, icons etc.).
 # Conversion to binary-data will happen when your target is built.
 
-juce_add_binary_data(client_controls
+juce_add_binary_data(stability_controls
     SOURCES
-        ${CMAKE_SOURCE_DIR}/src/client/stability-controls.json
+        ${CMAKE_SOURCE_DIR}/src/client/providers/stability/models/text-to-audio.json
+        ${CMAKE_SOURCE_DIR}/src/client/providers/stability/models/audio-to-audio.json
 )
 
 # `target_link_libraries` links libraries and JUCE modules to other libraries or executables. Here,
@@ -206,7 +207,7 @@ target_link_libraries(${PROJECT_NAME}
         juce::juce_events
         juce::juce_gui_basics
         juce::juce_gui_extra
-        client_controls
+        stability_controls
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

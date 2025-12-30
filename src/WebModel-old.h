@@ -66,34 +66,6 @@ public:
 
         status2 = ModelStatus::LOADING;
 
-        //std::string userSpaceAddress = std::any_cast<std::string>(params.at("url"));
-
-        //SpaceInfo spaceInfo;
-        //result = parseSpaceAddress(userSpaceAddress, spaceInfo);
-        //if (result.failed())
-        //{
-        //    status2 = ModelStatus::ERROR;
-        //    return result;
-        //}
-
-        //std::unique_ptr<Client> newClient;
-
-        /*if (spaceInfo.status == SpaceInfo::Status::STABILITY)
-        {
-            tempClient = std::make_unique<StabilityClient>();
-            isStabilityModel = true;
-        }
-        else
-        { // GRADIO, HUGGINFACE, LOCALHOST
-            tempClient = std::make_unique<GradioClient>();
-            isStabilityModel = false;
-        }
-
-        tempClient->setSpaceInfo(spaceInfo);
-
-        DBG_AND_LOG(tempClient->getSpaceInfo().toString());
-        */
-
         // The input components defined in PyHARP include
         // both the input tracks (audio or midi) and the controls (sliders, text boxes, etc)
         juce::Array<juce::var> inputPyharpComponents;

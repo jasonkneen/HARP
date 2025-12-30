@@ -20,5 +20,8 @@ public:
     virtual String inferEndpointURL(String modelPath) = 0;
     virtual String inferDocumentationURL(String modelPath) = 0;
 
+    virtual String queryControls(String modelPath) = 0;
+
 private:
+    String accessToken;
 };

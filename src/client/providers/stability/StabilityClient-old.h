@@ -26,9 +26,6 @@ public:
     StabilityClient();
     ~StabilityClient() = default;
 
-    // Space Info
-    OpResult setSpaceInfo(const SpaceInfo& info) override;
-
     // Requests
     OpResult getControls(Array<var>& inputComponents,
                          Array<var>& outputComponents,

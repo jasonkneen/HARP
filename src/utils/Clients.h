@@ -4,7 +4,7 @@
 
 #include "../client/Client.h"
 #include "../client/GradioClient.h"
-#include "../client/StabilityClient.h"
+#include "../client/providers/stability/StabilityClient.h"
 
 #include "Logging.h"
 

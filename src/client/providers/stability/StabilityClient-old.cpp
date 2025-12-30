@@ -1,10 +1,13 @@
 #include "StabilityClient.h"
 
+/*
 StabilityClient::StabilityClient()
 {
     tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
 }
+*/
 
+/*
 String StabilityClient::mimeForAudioFile(const File& f)
 {
     auto ext = f.getFileExtension().toLowerCase(); // includes the dot
@@ -14,23 +17,9 @@ String StabilityClient::mimeForAudioFile(const File& f)
         return "audio/mpeg";
     return {};
 }
+*/
 
-OpResult StabilityClient::setSpaceInfo(const SpaceInfo& inSpaceInfo)
-{
-    spaceInfo = inSpaceInfo;
-
-    if (spaceInfo.status != SpaceInfo::Status::STABILITY)
-    {
-        return OpResult::fail(
-            Error { ErrorType::InvalidURL, -1, "Invalid space info for StabilityClient" });
-    }
-    if (! spaceInfo.apiEndpointURL.isNotEmpty())
-    {
-        return OpResult::fail(Error { ErrorType::InvalidURL, -1, "API endpoint URL is empty" });
-    }
-    return OpResult::ok();
-}
-
+/*
 OpResult StabilityClient::uploadFileRequest(const File& fileToUpload,
                                             String& uploadedFilePath,
                                             const int timeoutMs) const
@@ -75,7 +64,9 @@ String StabilityClient::getControlValue(const String& label, const Array<var>* d
     DBG_AND_LOG("[getControlValue] Label not found: " + label);
     return {};
 }
+*/
 
+/*
 OpResult StabilityClient::processTextToAudio(const Array<var>* dataArray,
                                              Error& error,
                                              std::vector<String>& outputFilePaths)
@@ -192,7 +183,9 @@ OpResult StabilityClient::processTextToAudio(const Array<var>* dataArray,
     outputFilePaths.push_back(URL(out).toString(true));
     return OpResult::ok();
 }
+*/
 
+/*
 OpResult StabilityClient::processAudioToAudio(const Array<var>* dataArray,
                                               Error& error,
                                               std::vector<String>& outputFilePaths)
@@ -412,7 +405,9 @@ OpResult StabilityClient::processAudioToAudio(const Array<var>* dataArray,
     outputFilePaths.push_back(URL(out).toString(true));
     return OpResult::ok();
 }
+*/
 
+/*
 OpResult StabilityClient::processRequest(Error& error,
                                          String& processingPayload,
                                          std::vector<String>& outputFilePaths,
@@ -467,128 +462,37 @@ OpResult StabilityClient::processRequest(Error& error,
         return OpResult::fail(error);
     }
 }
+*/
 
-OpResult StabilityClient::getControls(Array<var>& inputComponents,
-                                      Array<var>& outputComponents,
-                                      DynamicObject& cardDict)
-{
-    String callID = "controls";
-    String eventID;
-
-    // Initialize a positive result
-    OpResult result = OpResult::ok();
-
-    // Create an Error object in case we need it for the next steps
-    Error error;
-    error.type = ErrorType::JsonParseError;
-
-    // Access binarized controls JSON. It's an array of 2 dicts.
-    // The first is for text-to-audio, the second is for audio-to-audio.
-    const char* jsonData = BinaryData::stabilitycontrols_json;
-    const int jsonDataSize = BinaryData::stabilitycontrols_jsonSize;
-
-    String responseData = String::fromUTF8(jsonData, jsonDataSize);
-
-    if (responseData.isEmpty())
-    {
-        error.devMessage = "Failed to read controls JSON from resource file.";
-
-        return OpResult::fail(error);
-    }
-
-    // Parse the extracted JSON string
-    var parsedData;
-    JSON::parse(responseData, parsedData);
-
-    if (! parsedData.isObject())
-    {
-        error.devMessage = "Failed to parse the data portion of the received controls JSON.";
-        return OpResult::fail(error);
-    }
-
-    if (! parsedData.isArray())
-    {
-        error.devMessage = "Parsed JSON is not an array.";
-        return OpResult::fail(error);
-    }
-    Array<var>* dataArray = parsedData.getArray();
-    if (dataArray == nullptr)
-    {
-        error.devMessage = "Parsed JSON is not an array 2.";
-        return OpResult::fail(error);
-    }
-
-    DynamicObject* obj = nullptr;
-    if (spaceInfo.modelName == "text-to-audio")
-        // Check if the first element in the array is a dict
-        obj = dataArray->getReference(0).getDynamicObject();
-    else if (spaceInfo.modelName == "audio-to-audio")
-        // Check if the first element in the array is a dict
-        obj = dataArray->getReference(1).getDynamicObject();
-
-    if (obj == nullptr)
-    {
-        error.devMessage = "First element in the array is not a dict.";
-        return OpResult::fail(error);
-    }
-
-    // Get the card and controls objects from the parsed data
-    DynamicObject* cardObj = obj->getProperty("card").getDynamicObject();
-
-    if (cardObj == nullptr)
-    {
-        error.devMessage = "Couldn't load the modelCard dict from the controls response.";
-        return OpResult::fail(error);
-    }
-
-    // Clear the existing properties in cardDict
-    cardDict.clear();
-
-    // Copy all properties from cardObj to cardDict
-    for (auto& key : cardObj->getProperties())
-    {
-        cardDict.setProperty(key.name, key.value);
-    }
-
-    Array<var>* inputsArray = obj->getProperty("inputs").getArray();
-    if (inputsArray == nullptr)
-    {
-        error.devMessage = "Couldn't load the controls array/list from the controls response.";
-        return OpResult::fail(error);
-    }
-    inputComponents = *inputsArray;
-
-    Array<var>* outputsArray = obj->getProperty("outputs").getArray();
-    if (outputsArray == nullptr)
-    {
-        error.devMessage = "Couldn't load the controls array/list from the controls response.";
-        return OpResult::fail(error);
-    }
-    outputComponents = *outputsArray;
-
-    return result;
-}
-
+/*
 OpResult StabilityClient::cancel()
 {
     DBG_AND_LOG("[StabilityClient] Cancel request received.");
     shouldCancel.store(true);
     return OpResult::ok();
 }
+*/
 
+/*
 String StabilityClient::getJsonContentTypeHeader(const String& processID) const
 {
     String boundary = "--------" + processID + "--------";
     return "Content-Type: multipart/form-data; boundary=" + boundary + "\r\n";
 }
+*/
 
+/*
 String StabilityClient::getAcceptHeader() const { return "Accept: audio/*,application/json\r\n"; }
+*/
 
+/*
 String StabilityClient::createJsonHeaders(const String& processID) const
 {
     return getJsonContentTypeHeader(processID) + getAcceptHeader() + getAuthorizationHeader();
 }
+*/
 
+/*
 OpResult
     StabilityClient::buildPayload(StringPairArray& args, String& processID, String& payload) const
 {
@@ -617,3 +521,4 @@ OpResult
 
     return OpResult::ok();
 }
+*/

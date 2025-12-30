@@ -108,6 +108,15 @@ public:
 
     String inferDocumentationURL(String modelPath) override { return inferEndpointURL(modelPath); }
 
+    String queryControls(String modelPath)
+    {
+        String responseJSON;
+
+        // TODO
+
+        return responseJSON;
+    }
+
 private:
     static bool isValidLocalPath(String modelPath)
     {

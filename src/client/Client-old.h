@@ -22,10 +22,6 @@ public:
     Client() = default;
     virtual ~Client() {};
 
-    // Space Info
-    virtual OpResult setSpaceInfo(const SpaceInfo&) = 0;
-    SpaceInfo getSpaceInfo() const { return spaceInfo; }
-
     // Requests
     virtual OpResult getControls(Array<var>& inputComponents,
                                  Array<var>& outputComponents,

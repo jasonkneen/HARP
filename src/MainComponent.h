@@ -146,10 +146,6 @@ private:
 
     // ---
 
-    /* Authentication */
-
-    String savedStabilityToken;
-
     /* Processing */
 
     String currentProcessID;

@@ -3,15 +3,11 @@
 #include "../utils/Enums.h"
 #include "../utils/Errors.h"
 
+/*
 GradioClient::GradioClient() { tokenValidationURL = URL("https://huggingface.co/api/whoami-v2"); }
+*/
 
-// Space Info
-OpResult GradioClient::setSpaceInfo(const SpaceInfo& inSpaceInfo)
-{
-    spaceInfo = inSpaceInfo;
-    return OpResult::ok();
-}
-
+/*
 // Requests
 OpResult GradioClient::processRequest(Error& error,
                                       String& processingPayload,
@@ -277,6 +273,7 @@ OpResult GradioClient::processRequest(Error& error,
     }
     return result;
 }
+*/
 
 OpResult GradioClient::extractKeyFromResponse(const String& response,
                                               String& responseKey,
@@ -300,6 +297,7 @@ OpResult GradioClient::extractKeyFromResponse(const String& response,
     return OpResult::ok();
 }
 
+/*
 OpResult GradioClient::uploadFileRequest(const File& fileToUpload,
                                          String& uploadedFilePath,
                                          const int timeoutMs) const
@@ -372,6 +370,7 @@ OpResult GradioClient::uploadFileRequest(const File& fileToUpload,
     // DBG_AND_LOG("File uploaded successfully, path: " + uploadedFilePath);
     return OpResult::ok();
 }
+*/
 
 OpResult GradioClient::makePostRequestForEventID(const String endpoint,
                                                  String& eventID,
@@ -560,82 +559,19 @@ OpResult GradioClient::getControls(Array<var>& inputComponents,
     // From the gradio app, we receive a JSON string
     // (see core.py in pyharp --> gr.Text(label="Controls"))
     // Extract the data portion from the response
-    String responseData;
-    result = extractKeyFromResponse(response, responseData, "data: ");
+    String responseJSON;
+    result = extractKeyFromResponse(response, responseJSON, "data: ");
     if (result.failed())
     {
         return result;
     }
 
-    // Create an Error object in case we need it for the next steps
-    Error error;
-    error.type = ErrorType::JsonParseError;
-    // Parse the extracted JSON string
-    var parsedData;
-    JSON::parse(responseData, parsedData);
-
-    if (! parsedData.isObject())
-    {
-        error.devMessage = "Failed to parse the data portion of the received controls JSON.";
-        return OpResult::fail(error);
-    }
-
-    if (! parsedData.isArray())
-    {
-        error.devMessage = "Parsed JSON is not an array.";
-        return OpResult::fail(error);
-    }
-    Array<var>* dataArray = parsedData.getArray();
-    if (dataArray == nullptr)
-    {
-        error.devMessage = "Parsed JSON is not an array 2.";
-        return OpResult::fail(error);
-    }
-    // Check if the first element in the array is a dict
-    DynamicObject* obj = dataArray->getFirst().getDynamicObject();
-    if (obj == nullptr)
-    {
-        error.devMessage = "First element in the array is not a dict.";
-        return OpResult::fail(error);
-    }
-
-    // Get the card and controls objects from the parsed data
-    DynamicObject* cardObj = obj->getProperty("card").getDynamicObject();
-
-    if (cardObj == nullptr)
-    {
-        error.devMessage = "Couldn't load the modelCard dict from the controls response.";
-        return OpResult::fail(error);
-    }
-
-    // Clear the existing properties in cardDict
-    cardDict.clear();
-
-    // Copy all properties from cardObj to cardDict
-    for (auto& key : cardObj->getProperties())
-    {
-        cardDict.setProperty(key.name, key.value);
-    }
-
-    Array<var>* inputsArray = obj->getProperty("inputs").getArray();
-    if (inputsArray == nullptr)
-    {
-        error.devMessage = "Couldn't load the controls array/list from the controls response.";
-        return OpResult::fail(error);
-    }
-    inputComponents = *inputsArray;
-
-    Array<var>* outputsArray = obj->getProperty("outputs").getArray();
-    if (outputsArray == nullptr)
-    {
-        error.devMessage = "Couldn't load the controls array/list from the controls response.";
-        return OpResult::fail(error);
-    }
-    outputComponents = *outputsArray;
+    // TODO - extract JSON data
 
     return result;
 }
 
+/*
 OpResult GradioClient::cancel()
 {
     OpResult result = OpResult::ok();
@@ -656,7 +592,9 @@ OpResult GradioClient::cancel()
     result = getResponseFromEventID(endpoint, eventId, response);
     return result;
 }
+*/
 
+/*
 OpResult GradioClient::downloadFileFromURL(const URL& fileURL,
                                            String& downloadedFilePath,
                                            const int timeoutMs) const
@@ -726,7 +664,9 @@ OpResult GradioClient::downloadFileFromURL(const URL& fileURL,
 
     return OpResult::ok();
 }
+*/
 
+/*
 OpResult GradioClient::validateToken(const String& newToken) const
 {
     // Create the error here, in case we need it
@@ -821,3 +761,4 @@ OpResult GradioClient::validateToken(const String& newToken) const
 
     return OpResult::ok();
 }
+*/
