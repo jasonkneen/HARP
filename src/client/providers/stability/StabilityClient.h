@@ -107,14 +107,14 @@ public:
             // TODO - handle error case (invalid Stability AI path)
         }
 
-        String responseJSON = String::fromUTF8(jsonData, jsonDataSize);
+        String queryResponse = String::fromUTF8(jsonData, jsonDataSize);
 
-        if (responseJSON.isEmpty())
+        if (queryResponse.isEmpty())
         {
             // TODO - handle error case (failed to read controls JSON from resource file)
         }
 
-        return responseJSON;
+        return queryResponse;
     }
 
 private:

@@ -110,11 +110,11 @@ public:
 
     String queryControls(String modelPath)
     {
-        String responseJSON;
+        String queryResponse;
 
         // TODO
 
-        return responseJSON;
+        return queryResponse;
     }
 
 private:

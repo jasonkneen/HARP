@@ -8,6 +8,8 @@
 #include "client/Client.h"
 
 #include "utils/Clients.h"
+#include "utils/Controls.h"
+#include "utils/Logging.h"
 
 using namespace juce;
 
@@ -37,9 +39,40 @@ struct ModelMetadata
 
     std::vector<std::string> tags;
 
-    bool isEmpty()
+    ModelMetadata() {}
+
+    ModelMetadata(DynamicObject* card)
     {
-        // TODO
+        // TODO - check that the following properties are of the correct type
+
+        if (card->hasProperty("name"))
+        {
+            name = card->getProperty("name").toString().toStdString();
+        }
+        if (card->hasProperty("author"))
+        {
+            author = card->getProperty("author").toString().toStdString();
+        }
+        if (card->hasProperty("description"))
+        {
+            description = card->getProperty("description").toString().toStdString();
+        }
+        if (card->hasProperty("tags"))
+        {
+            Array<var>* newTags = card->getProperty("tags").getArray();
+
+            if (newTags == nullptr)
+            {
+                // TODO - handle error case: failed to parse tags
+            }
+            else
+            {
+                for (int i = 0; i < newTags->size(); i++)
+                {
+                    tags.push_back(newTags->getReference(i).toString().toStdString());
+                }
+            }
+        }
     }
 };
 
@@ -55,8 +88,8 @@ public:
 
     //~Model() override {} // TODO
 
-    bool isEmpty() { return metadata.isEmpty(); }
-    bool isLoaded() { return ! isEmpty(); }
+    //bool isEmpty() { return metadata.isEmpty(); }
+    //bool isLoaded() { return ! isEmpty(); }
 
     void setStatus(ModelStatus newStatus)
     {
@@ -95,99 +128,275 @@ public:
             // TODO - handle error case: invalid path
         }
 
-        String responseJSON = tempClient->queryControls(endpointURL);
+        String queryResponse = tempClient->queryControls(endpointURL);
 
-        // TODO - extract / populate model based on JSON
+        //if (
+        populateControlsFromJSON(queryResponse);
+        //)
+        //{
+        client = std::move(tempClient);
 
-        // TODO - going to need clearControls() function when loading a new model and model already loaded
-        //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
+        currentPath = pathToLoad;
 
-        // TODO - if successful replace existing client (and set path field)
+        setStatus(ModelStatus::READY);
+        //}
+        //else
+        //{
+        //    setStatus(ModelStatus::EMPTY);
+        //}
     }
 
 private:
-    /*void extractControlsFromJSON(String responseJSON)
+    // TODO - going to need clearControls() function when loading a new model and model already loaded
+    //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
+    // TODO - does anything special need to be done to free memory?
+    void setModelMetadata(ModelMetadata newMetadata)
     {
-        // TODO - parameter(s)
+        metadata = newMetadata;
+    }
 
-        // Create an Error object in case we need it for the next steps
-        Error error;
-        error.type = ErrorType::JsonParseError;
-        // Parse the extracted JSON string
+    void setControls(ModelComponentList newControls)
+    {
+        controlComponents = newControls;
+    }
+
+    void setInputs(ModelComponentList newInputs)
+    {
+        inputTrackComponents = newInputs;
+    }
+
+    void setOutputs(ModelComponentList newOutputs)
+    {
+        outputTrackComponents = newOutputs;
+    }
+
+    void populateControlsFromJSON(String responseJSON)
+    {
         var parsedData;
-        JSON::parse(responseData, parsedData);
 
-        if (! parsedData.isObject())
+        Result parseResult = JSON::parse(responseJSON, parsedData);
+
+        if (parseResult.failed() || ! parsedData.isObject())
         {
-            error.devMessage = "Failed to parse the data portion of the received controls JSON.";
-            return OpResult::fail(error);
+            // TODO - handle error case: failed to parse controls
         }
 
         if (! parsedData.isArray())
         {
-            error.devMessage = "Parsed JSON is not an array.";
-            return OpResult::fail(error);
+            // TODO - handle error case: parsed data is not an array
         }
-        Array<var>* dataArray = parsedData.getArray();
+
+        //Array<var>* dataArray = parsedData.getArray();
+
+        /*
         if (dataArray == nullptr)
         {
-            error.devMessage = "Parsed JSON is not an array 2.";
-            return OpResult::fail(error);
+            // TODO - handle error case: failed to parse controls
         }
-        // Check if the first element in the array is a dict
-        DynamicObject* obj = dataArray->getFirst().getDynamicObject();
-        if (obj == nullptr)
+        */
+
+        // Verify first element of array is a dict
+        DynamicObject* dict = parsedData.getDynamicObject();
+
+        if (dict == nullptr)
         {
-            error.devMessage = "First element in the array is not a dict.";
-            return OpResult::fail(error);
+            // TODO - handle error case: failed to parse controls
         }
 
-        // Get the card and controls objects from the parsed data
-        DynamicObject* cardObj = obj->getProperty("card").getDynamicObject();
+        /*
+        // Verify first element of array is a dict
+        DynamicObject* firstElement = dataArray->getFirst().getDynamicObject();
 
-        if (cardObj == nullptr)
+        if (firstElement == nullptr)
         {
-            error.devMessage = "Couldn't load the modelCard dict from the controls response.";
-            return OpResult::fail(error);
+            // TODO - handle error case: first element is not a dict
         }
+        */
 
-        // Clear the existing properties in cardDict
-        cardDict.clear();
+        // Extract metadata from parsed JSON
+        DynamicObject* card = dict->getProperty("card").getDynamicObject();
 
-        // Copy all properties from cardObj to cardDict
-        for (auto& key : cardObj->getProperties())
+        if (card == nullptr)
         {
-            cardDict.setProperty(key.name, key.value);
+            // TODO - handle error case: couldn't load metadata
         }
 
-        Array<var>* inputsArray = obj->getProperty("inputs").getArray();
-        if (inputsArray == nullptr)
+        ModelMetadata newMetadata = ModelMetadata(card);
+
+        Array<var>* inputComponents = dict->getProperty("inputs").getArray();
+
+        if (inputComponents == nullptr)
         {
-            error.devMessage = "Couldn't load the controls array/list from the controls response.";
-            return OpResult::fail(error);
+            // TODO - handle error case: couldn't load inputs
         }
-        inputComponents = *inputsArray;
 
-        Array<var>* outputsArray = obj->getProperty("outputs").getArray();
-        if (outputsArray == nullptr)
+        ModelComponentList newInputs;
+        ModelComponentList newControls;
+
+        for (int i = 0; i < inputComponents->size(); i++)
         {
-            error.devMessage = "Couldn't load the controls array/list from the controls response.";
-            return OpResult::fail(error);
-        }
-        outputComponents = *outputsArray;
+            DynamicObject* input = inputComponents->getReference(i).getDynamicObject();
 
-        // TODO - return value
-    }*/
+            if (dict == nullptr)
+            {
+                // TODO - handle error case: failed to read control
+            }
+            else if (input->hasProperty("type"))
+            {
+                String type = input->getProperty("type").toString().toStdString();
+
+                if (type == "audio_track")
+                {
+                    std::shared_ptr<ModelComponent> audioTrack =
+                        std::make_shared<AudioTrackComponent>(input);
+
+                    newInputs.push_back(audioTrack);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Audio track input \""
+                                + audioTrack->label + "\" extracted.");
+                }
+                else if (type == "midi_track")
+                {
+                    std::shared_ptr<ModelComponent> midiTrack =
+                        std::make_shared<MidiTrackComponent>(input);
+
+                    newInputs.push_back(midiTrack);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: MIDI track input \""
+                                + midiTrack->label + "\" extracted.");
+                }
+                else if (type == "text_box")
+                {
+                    std::shared_ptr<ModelComponent> textControl =
+                        std::make_shared<TextBoxComponent>(input);
+
+                    newControls.push_back(textControl);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Text control \""
+                                + textControl->label + "\" extracted.");
+                }
+                else if (type == "number_box")
+                {
+                    std::shared_ptr<ModelComponent> numberControl =
+                        std::make_shared<NumberBoxComponent>(input);
+
+                    newControls.push_back(numberControl);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Number box control \""
+                                + numberControl->label + "\" extracted.");
+                }
+                else if (type == "toggle")
+                {
+                    std::shared_ptr<ModelComponent> toggleControl =
+                        std::make_shared<ToggleComponent>(input);
+
+                    newControls.push_back(toggleControl);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Toggle control \""
+                                + toggleControl->label + "\" extracted.");
+                }
+                else if (type == "slider")
+                {
+                    std::shared_ptr<ModelComponent> sliderControl =
+                        std::make_shared<SliderComponent>(input);
+
+                    newControls.push_back(sliderControl);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Slider control \""
+                                + sliderControl->label + "\" extracted.");
+                }
+                else if (type == "dropdown")
+                {
+                    std::shared_ptr<ModelComponent> dropdownControl =
+                        std::make_shared<ComboBoxComponent>(input);
+
+                    newControls.push_back(dropdownControl);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Dropdown control \""
+                                + dropdownControl->label + "\" extracted.");
+                }
+                else
+                {
+                    // TODO - handle error case: unknown control
+                }
+            }
+            else
+            {
+                // TODO - handle error case: ambiguous input
+            }
+        }
+
+        Array<var>* outputComponents = dict->getProperty("outputs").getArray();
+
+        if (outputComponents == nullptr)
+        {
+            // TODO - handle error case: couldn't load outputs
+        }
+
+        ModelComponentList newOutputs;
+
+        for (int i = 0; i < outputComponents->size(); i++)
+        {
+            DynamicObject* output = outputComponents->getReference(i).getDynamicObject();
+
+            if (dict == nullptr)
+            {
+                // TODO - handle error case: failed to read control
+            }
+            else if (output->hasProperty("type"))
+            {
+                String type = output->getProperty("type").toString().toStdString();
+
+                if (type == "audio_track")
+                {
+                    std::shared_ptr<ModelComponent> audioTrack =
+                        std::make_shared<AudioTrackComponent>(output);
+
+                    newOutputs.push_back(audioTrack);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: Audio track output \""
+                                + audioTrack->label + "\" extracted.");
+                }
+                else if (type == "midi_track")
+                {
+                    std::shared_ptr<ModelComponent> midiTrack =
+                        std::make_shared<MidiTrackComponent>(output);
+
+                    newOutputs.push_back(midiTrack);
+
+                    DBG_AND_LOG("Model::extractControlsFromJSON: MIDI track output \""
+                                + midiTrack->label + "\" extracted.");
+                }
+                else
+                {
+                    // TODO - handle error case: unknown control
+                }
+            }
+            else
+            {
+                // TODO - handle error case: ambiguous output
+            }
+        }
+
+        // Update model information if all loading operations are successful
+        setModelMetadata(newMetadata);
+        setControls(newControls);
+        setInputs(newInputs);
+        setOutputs(newOutputs);
+
+        //return // TODO - OpResult
+    }
 
     ModelStatus status; // TODO - control flow shouldn't depend on status
+
+    std::unique_ptr<Client> client;
 
     String currentPath;
 
     ModelMetadata metadata;
 
-    // TODO - subject to change
-    //ComponentInfoList controlsInfo;
+    ModelComponentList controlComponents;
 
-    //ComponentInfoList inputTracksInfo;
-    //ComponentInfoList outputTracksInfo;
+    ModelComponentList inputTrackComponents;
+    ModelComponentList outputTrackComponents;
 };

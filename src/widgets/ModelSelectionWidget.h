@@ -259,13 +259,13 @@ private:
         {
             if (modelPathComboBox.getSelectedItemIndex() == -1)
             {
-                DBG_AND_LOG("modelPathComboBox::onChange: Combo box reset.");
+                DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Combo box reset.");
             }
             else
             {
                 if (modelPathComboBox.getSelectedItemIndex() == 0)
                 {
-                    DBG_AND_LOG("modelPathComboBox::onChange: Custom path selected.");
+                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Custom path selected.");
 
                     openCustomPathPopup();
                 }
@@ -273,7 +273,7 @@ private:
                 {
                     lastSelectedPathIndex = modelPathComboBox.getSelectedItemIndex();
 
-                    DBG_AND_LOG("modelPathComboBox::onChange: Entry " << lastSelectedPathIndex
+                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Entry " << lastSelectedPathIndex
                                                                       << " selected.");
                 }
 
