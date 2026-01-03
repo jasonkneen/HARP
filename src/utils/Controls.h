@@ -20,18 +20,20 @@ inline bool stringToBool(const String& str)
     return false;
 }
 
-struct ModelComponent
+struct ModelComponentInfo
 {
     //Uuid id { "" }; // TODO - is this field necessary?
 
     std::string label { "" };
     std::string info { "" };
 
-    ModelComponent(DynamicObject* input)
-    {
-        // TODO - check that the following properties are of the correct type
+    ModelComponentInfo() = default;
 
+    ModelComponentInfo(DynamicObject* input)
+    {
         //id = juce::Uuid();
+
+        // TODO - check that the following properties are of the correct type
 
         if (input->hasProperty("label"))
         {
@@ -44,11 +46,14 @@ struct ModelComponent
     }
 };
 
-struct AudioTrackComponent : public ModelComponent
+struct TrackComponentInfo : public ModelComponentInfo
 {
     bool required = true;
 
-    AudioTrackComponent(DynamicObject* input) : ModelComponent(input)
+    TrackComponentInfo() = default;
+    virtual ~TrackComponentInfo() = default; // Make child-tree polymorphic
+
+    TrackComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -59,26 +64,21 @@ struct AudioTrackComponent : public ModelComponent
     }
 };
 
-struct MidiTrackComponent : public ModelComponent
+struct AudioTrackComponentInfo : public TrackComponentInfo
 {
-    bool required = true;
-
-    MidiTrackComponent(DynamicObject* input) : ModelComponent(input)
-    {
-        // TODO - check that the following properties are of the correct type
-
-        if (input->hasProperty("required"))
-        {
-            required = stringToBool(input->getProperty("required").toString());
-        }
-    }
+    using TrackComponentInfo::TrackComponentInfo;
 };
 
-struct TextBoxComponent : public ModelComponent
+struct MidiTrackComponentInfo : public TrackComponentInfo
+{
+    using TrackComponentInfo::TrackComponentInfo;
+};
+
+struct TextBoxComponentInfo : public ModelComponentInfo
 {
     std::string value { "" };
 
-    TextBoxComponent(DynamicObject* input) : ModelComponent(input)
+    TextBoxComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -89,14 +89,14 @@ struct TextBoxComponent : public ModelComponent
     }
 };
 
-struct NumberBoxComponent : public ModelComponent
+struct NumberBoxComponentInfo : public ModelComponentInfo
 {
     // TODO - consistency with SliderComponent
     double min;
     double max;
     double value;
 
-    NumberBoxComponent(DynamicObject* input) : ModelComponent(input)
+    NumberBoxComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -115,11 +115,11 @@ struct NumberBoxComponent : public ModelComponent
     }
 };
 
-struct ToggleComponent : public ModelComponent
+struct ToggleComponentInfo : public ModelComponentInfo
 {
     bool value = false;
 
-    ToggleComponent(DynamicObject* input) : ModelComponent(input)
+    ToggleComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -130,14 +130,14 @@ struct ToggleComponent : public ModelComponent
     }
 };
 
-struct SliderComponent : public ModelComponent
+struct SliderComponentInfo : public ModelComponentInfo
 {
     double minimum;
     double maximum;
     double step;
     double value;
 
-    SliderComponent(DynamicObject* input) : ModelComponent(input)
+    SliderComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -160,13 +160,13 @@ struct SliderComponent : public ModelComponent
     }
 };
 
-struct ComboBoxComponent : public ModelComponent
+struct ComboBoxComponentInfo : public ModelComponentInfo
 {
     std::vector<std::string> options;
 
     std::string value;
 
-    ComboBoxComponent(DynamicObject* input) : ModelComponent(input)
+    ComboBoxComponentInfo(DynamicObject* input) : ModelComponentInfo(input)
     {
         // TODO - check that the following properties are of the correct type
 
@@ -213,7 +213,7 @@ struct ComboBoxComponent : public ModelComponent
 };
 
 // TODO - are all of these necessary?
-using ModelComponentPair = std::pair<Uuid, std::shared_ptr<ModelComponent>>;
-using ModelComponentMap = std::map<Uuid, std::shared_ptr<ModelComponent>>;
-using ModelComponentPairList = std::vector<ModelComponentPair>;
-using ModelComponentList = std::vector<std::shared_ptr<ModelComponent>>;
+//using ModelComponentInfoPair = std::pair<Uuid, std::shared_ptr<ModelComponentInfo>>;
+//using ModelComponentInfoMap = std::map<Uuid, std::shared_ptr<ModelComponentInfo>>;
+//using ModelComponentInfoPairList = std::vector<ModelComponentInfoPair>;
+using ModelComponentInfoList = std::vector<std::shared_ptr<ModelComponentInfo>>;

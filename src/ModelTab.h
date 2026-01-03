@@ -13,6 +13,8 @@
 #include "widgets/ModelSelectionWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
+#include "utils/Errors.h"
+
 using namespace juce;
 
 class ModelTab : public Component, private ChangeListener
@@ -69,8 +71,7 @@ private:
             {
                 try
                 {
-                    // TODO - think I will actually need op result structure to keep error popup facilitation neat
-                    model->loadPath(selectedPath);
+                    OpResult result = model->loadPath(selectedPath);
                 }
                 /*catch (Error& loadingError)
                 {

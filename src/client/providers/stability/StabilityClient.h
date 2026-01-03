@@ -4,6 +4,8 @@
 
 #include "../../Client.h"
 
+#include "../../../utils/Errors.h"
+
 using namespace juce;
 
 class StabilityClient : public Client
@@ -29,13 +31,14 @@ public:
         {
             hostSlashModel = "stability/text-to-audio";
         }
-        else if (isValidTextToAudioPath(modelPath))
+        else if (isValidAudioToAudioPath(modelPath))
         {
             hostSlashModel = "stability/audio-to-audio";
         }
         else
         {
-            // TODO - handle error case (invalid Stability AI path)
+            DBG_AND_LOG("StabilityClient::inferHostSlashModel: Path \""
+                        << modelPath << "\" does not match valid specification for Stability AI.");
         }
 
         return hostSlashModel;
@@ -49,13 +52,14 @@ public:
         {
             endpointURL = "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio";
         }
-        else if (isValidTextToAudioPath(modelPath))
+        else if (isValidAudioToAudioPath(modelPath))
         {
             endpointURL = "https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio";
         }
         else
         {
-            // TODO - handle error case (invalid Stability AI path)
+            DBG_AND_LOG("StabilityClient::inferEndpointURL: Path \""
+                        << modelPath << "\" does not match valid specification for Stability AI.");
         }
 
         return endpointURL;
@@ -79,42 +83,53 @@ public:
         }
         else
         {
-            // TODO - handle error case (invalid Stability AI path)
+            DBG_AND_LOG("StabilityClient::inferDocumentationURL: Path \""
+                        << modelPath << "\" does not match valid specification for Stability AI.");
         }
 
         return documentationURL;
     }
 
-    String queryControls(String modelPath)
+    OpResult queryControls(String modelPath, String& queryResponse)
     {
         const char* jsonData;
         int jsonDataSize = 0;
 
         if (isValidTextToAudioPath(modelPath))
         {
+            DBG_AND_LOG("StabilityClient::queryControls: Reading text-to-audio.json.");
+
             // Access binarized JSON for text-to-audio controls
             jsonData = BinaryData::texttoaudio_json;
             jsonDataSize = BinaryData::texttoaudio_jsonSize;
         }
         else if (isValidAudioToAudioPath(modelPath))
         {
+            DBG_AND_LOG("StabilityClient::queryControls: Reading audio-to-audio.json.");
+
             // Access binarized JSON for audio-to-audio controls
             jsonData = BinaryData::audiotoaudio_json;
             jsonDataSize = BinaryData::audiotoaudio_jsonSize;
         }
         else
         {
-            // TODO - handle error case (invalid Stability AI path)
+            ClientError error { ClientError::Type::InvalidModelPath, modelPath, "Stability AI" };
+
+            DBG_AND_LOG("StabilityClient::queryControls: " << toUserMessage(error));
+
+            return OpResult::fail(error);
         }
 
-        String queryResponse = String::fromUTF8(jsonData, jsonDataSize);
+        queryResponse = String::fromUTF8(jsonData, jsonDataSize);
 
         if (queryResponse.isEmpty())
         {
-            // TODO - handle error case (failed to read controls JSON from resource file)
+            DBG_AND_LOG("StabilityClient::queryControls: JSON response is empty.");
+
+            // TODO - should this be a failure? does this even ever happen?
         }
 
-        return queryResponse;
+        return OpResult::ok();
     }
 
 private:
@@ -131,7 +146,8 @@ private:
 
         StringArray array = StringArray::fromTokens(modelPath, "/", "");
 
-        return array.size() == 2 && array[0] == "stability" && array[1] == "text-to-audio";
+        return array.size() == 2 && array[0].equalsIgnoreCase("stability")
+               && array[1].equalsIgnoreCase("text-to-audio");
     }
 
     static bool isValidLongTextToAudioPath(String modelPath)
@@ -140,9 +156,10 @@ private:
           i.e., "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio"
         */
 
-        return modelPath.fromFirstOccurrenceOf(
-                   "https://api.stability.ai/v2beta/audio/stable-audio-2/", false, false)
-               == "text-to-audio";
+        return modelPath
+            .fromFirstOccurrenceOf(
+                "https://api.stability.ai/v2beta/audio/stable-audio-2/", false, false)
+            .equalsIgnoreCase("text-to-audio");
     }
 
     static bool isValidAudioToAudioPath(String modelPath)
@@ -158,7 +175,8 @@ private:
 
         StringArray array = StringArray::fromTokens(modelPath, "/", "");
 
-        return array.size() == 2 && array[0] == "stability" && array[1] == "audio-to-audio";
+        return array.size() == 2 && array[0].equalsIgnoreCase("stability")
+               && array[1].equalsIgnoreCase("audio-to-audio");
     }
 
     static bool isValidLongAudioToAudioPath(String modelPath)
@@ -167,8 +185,9 @@ private:
           i.e., "https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio"
         */
 
-        return modelPath.fromFirstOccurrenceOf(
-                   "https://api.stability.ai/v2beta/audio/stable-audio-2/", false, false)
-               == "text-to-audio";
+        return modelPath
+            .fromFirstOccurrenceOf(
+                "https://api.stability.ai/v2beta/audio/stable-audio-2/", false, false)
+            .equalsIgnoreCase("audio-to-audio");
     }
 };

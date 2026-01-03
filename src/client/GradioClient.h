@@ -2,6 +2,8 @@
 
 #include "Client.h"
 
+#include "../utils/Errors.h"
+
 using namespace juce;
 
 class GradioClient : public Client
@@ -56,7 +58,8 @@ public:
         }
         else
         {
-            // TODO - handle error case (invalid Gradio path)
+            DBG_AND_LOG("GradioClient::inferHostSlashModel: Path \""
+                        << modelPath << "\" does not match valid specification for Gradio.");
         }
 
         return hostSlashModel;
@@ -100,7 +103,8 @@ public:
         }
         else
         {
-            // TODO - handle error case (invalid Gradio path)
+            DBG_AND_LOG("GradioClient::inferEndpointURL: Path \""
+                        << modelPath << "\" does not match valid specification for Gradio.");
         }
 
         return endpointURL;
@@ -108,13 +112,11 @@ public:
 
     String inferDocumentationURL(String modelPath) override { return inferEndpointURL(modelPath); }
 
-    String queryControls(String modelPath)
+    OpResult queryControls(String modelPath, String& queryResponse)
     {
-        String queryResponse;
-
         // TODO
 
-        return queryResponse;
+        return OpResult::ok();
     }
 
 private:
@@ -164,6 +166,11 @@ private:
               This is ambiguous. There's no way to tell where the delimeter
               belongs and which hypens were converted from underscores.
             */
+
+            DBG_AND_LOG(
+                "GradioClient::isValidShortHuggingFacePath: Path \""
+                << modelPath
+                << "\" is ambiguous. Please use the abbreviated or long-form path instead.");
 
             return false;
         }

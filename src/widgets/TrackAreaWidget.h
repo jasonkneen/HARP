@@ -162,20 +162,20 @@ public:
         mediaDisplays.clear();
     }
 
-    void addTrackFromComponentInfo(ComponentInfo info, bool fromDAW = false)
+    void addTrackFromComponentInfo(std::unique_ptr<TrackComponentInfo>& trackInfo,
+                                   bool fromDAW = false)
     {
-        std::shared_ptr<PyHarpComponentInfo> trackInfo = info.second;
         std::unique_ptr<MediaDisplayComponent> m;
 
         std::string label =
             trackInfo->label.empty() ? "Track-" + std::to_string(getNumTracks()) : trackInfo->label;
 
-        if (auto audioTrackInfo = dynamic_cast<AudioTrackInfo*>(trackInfo.get()))
+        if (auto audioTrackInfo = dynamic_cast<AudioTrackComponentInfo*>(trackInfo.get()))
         {
             m = std::make_unique<AudioDisplayComponent>(
                 label, audioTrackInfo->required, fromDAW, displayMode);
         }
-        else if (auto midiTrackInfo = dynamic_cast<MidiTrackInfo*>(trackInfo.get()))
+        else if (auto midiTrackInfo = dynamic_cast<MidiTrackComponentInfo*>(trackInfo.get()))
         {
             m = std::make_unique<MidiDisplayComponent>(
                 label, midiTrackInfo->required, fromDAW, displayMode);
@@ -193,7 +193,7 @@ public:
                 m->setMediaInstructions(trackInfo->info);
             }
 
-            m->setDisplayID(trackInfo->id);
+            //m->setDisplayID(trackInfo->id);
             m->addChangeListener(this);
             addAndMakeVisible(m.get());
             mediaDisplays.push_back(std::move(m));
@@ -230,23 +230,25 @@ public:
 
         bool validExt = true;
 
-        ComponentInfo componentInfo;
+        std::unique_ptr<TrackComponentInfo> trackInfo;
 
         if (AudioDisplayComponent::getSupportedExtensions().contains(ext))
         {
-            auto audioTrackInfo = std::make_shared<AudioTrackInfo>();
-            audioTrackInfo->id = Uuid();
+            auto audioTrackInfo = std::make_unique<AudioTrackComponentInfo>();
+
             audioTrackInfo->required = false;
             audioTrackInfo->label = label.toStdString();
-            componentInfo = ComponentInfo(audioTrackInfo->id, audioTrackInfo);
+
+            trackInfo = std::move(audioTrackInfo);
         }
         else if (MidiDisplayComponent::getSupportedExtensions().contains(ext))
         {
-            auto midiTrackInfo = std::make_shared<MidiTrackInfo>();
-            midiTrackInfo->id = Uuid();
+            auto midiTrackInfo = std::make_unique<MidiTrackComponentInfo>();
+
             midiTrackInfo->required = false;
             midiTrackInfo->label = label.toStdString();
-            componentInfo = ComponentInfo(midiTrackInfo->id, midiTrackInfo);
+
+            trackInfo = std::move(midiTrackInfo);
         }
         else
         {
@@ -258,7 +260,7 @@ public:
 
         if (validExt)
         {
-            addTrackFromComponentInfo(componentInfo, fromDAW);
+            addTrackFromComponentInfo(trackInfo, fromDAW);
             mediaDisplays.back()->initializeDisplay(filePath);
             mediaDisplays.back()->setTrackName(filePath.getFileName());
         }

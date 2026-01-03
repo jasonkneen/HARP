@@ -6,14 +6,13 @@
 #include "../client/GradioClient.h"
 #include "../client/providers/stability/StabilityClient.h"
 
+#include "Errors.h"
 #include "Logging.h"
 
 using namespace juce;
 
-inline std::unique_ptr<Client> multiplexClients(String modelPath)
+inline OpResult multiplexClients(String modelPath, std::unique_ptr<Client>& client)
 {
-    std::unique_ptr<Client> client;
-
     if (StabilityClient::matchesPathSpec(modelPath))
     {
         DBG_AND_LOG(
@@ -30,11 +29,14 @@ inline std::unique_ptr<Client> multiplexClients(String modelPath)
     }
     else
     {
-        DBG_AND_LOG(
-            "utils::multiplexClients: Path does not match valid specification for any supported clients.");
+        ClientError error { ClientError::Type::UnknownClient, modelPath, {} };
+
+        DBG_AND_LOG("utils::multiplexClients: " << toUserMessage(error));
+
+        return OpResult::fail(error);
     }
 
-    return client;
+    return OpResult::ok();
 }
 
 /*

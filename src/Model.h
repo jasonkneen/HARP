@@ -9,6 +9,7 @@
 
 #include "utils/Clients.h"
 #include "utils/Controls.h"
+#include "utils/Errors.h"
 #include "utils/Logging.h"
 
 using namespace juce;
@@ -104,74 +105,88 @@ public:
     {
         metadata = ModelMetadata {};
 
+        // TODO - clear controls / tracks
+
+        // TODO - clear client
+
+        currentlyLoadedPath.clear();
+
         setStatus(ModelStatus::EMPTY);
     }
 
-    void loadPath(String pathToLoad)
+    OpResult loadPath(String pathToLoad)
     {
-        // Determine and initialize appropriate client for selected path
-        std::unique_ptr<Client> tempClient = multiplexClients(pathToLoad);
+        // Initialize result for error handling
+        OpResult result = OpResult::ok();
 
-        if (! tempClient)
+        // Create new client for querying
+        std::unique_ptr<Client> tempClient;
+
+        // Initialize appropriate client for selected path
+        result = multiplexClients(pathToLoad, tempClient);
+
+        if (result.failed())
         {
-            // TODO - handle error case: unknown client
+            return result;
         }
 
         // TODO - link access token if available
 
         setStatus(ModelStatus::QUERYING_CONTROLS);
 
+        // Obtain queryable endpoint URL from provided path
         String endpointURL = tempClient->inferEndpointURL(pathToLoad);
 
-        if (endpointURL.isEmpty())
+        // Initialize empty string to hold query response
+        String queryResponse;
+
+        // Obtain JSON string corresponding to controls + track layout
+        result = tempClient->queryControls(endpointURL, queryResponse);
+
+        if (result.failed())
         {
-            // TODO - handle error case: invalid path
+            setStatus(ModelStatus::EMPTY);
+
+            return result;
         }
 
-        String queryResponse = tempClient->queryControls(endpointURL);
+        // Attempt to parse JSON response and update controls + track layout
+        result = populateControlsFromJSON(queryResponse);
 
-        //if (
-        populateControlsFromJSON(queryResponse);
-        //)
-        //{
+        if (result.failed())
+        {
+            setStatus(ModelStatus::EMPTY);
+
+            return result;
+        }
+
+        // Replace existing client
         client = std::move(tempClient);
-
-        currentPath = pathToLoad;
+        // Keep track of loaded path
+        currentlyLoadedPath = pathToLoad;
 
         setStatus(ModelStatus::READY);
-        //}
-        //else
-        //{
-        //    setStatus(ModelStatus::EMPTY);
-        //}
+
+        return result;
     }
 
 private:
     // TODO - going to need clearControls() function when loading a new model and model already loaded
     //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
     // TODO - does anything special need to be done to free memory?
-    void setModelMetadata(ModelMetadata newMetadata)
-    {
-        metadata = newMetadata;
-    }
+    void setModelMetadata(ModelMetadata newMetadata) { metadata = newMetadata; }
 
-    void setControls(ModelComponentList newControls)
-    {
-        controlComponents = newControls;
-    }
+    void setControls(ModelComponentInfoList newControls) { controlComponents = newControls; }
 
-    void setInputs(ModelComponentList newInputs)
-    {
-        inputTrackComponents = newInputs;
-    }
+    void setInputs(ModelComponentInfoList newInputs) { inputTrackComponents = newInputs; }
 
-    void setOutputs(ModelComponentList newOutputs)
-    {
-        outputTrackComponents = newOutputs;
-    }
+    void setOutputs(ModelComponentInfoList newOutputs) { outputTrackComponents = newOutputs; }
 
-    void populateControlsFromJSON(String responseJSON)
+    OpResult populateControlsFromJSON(String responseJSON)
     {
+        // Initialize result for error handling
+        OpResult result = OpResult::ok();
+
         var parsedData;
 
         Result parseResult = JSON::parse(responseJSON, parsedData);
@@ -230,8 +245,8 @@ private:
             // TODO - handle error case: couldn't load inputs
         }
 
-        ModelComponentList newInputs;
-        ModelComponentList newControls;
+        ModelComponentInfoList newInputs;
+        ModelComponentInfoList newControls;
 
         for (int i = 0; i < inputComponents->size(); i++)
         {
@@ -247,8 +262,8 @@ private:
 
                 if (type == "audio_track")
                 {
-                    std::shared_ptr<ModelComponent> audioTrack =
-                        std::make_shared<AudioTrackComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> audioTrack =
+                        std::make_shared<AudioTrackComponentInfo>(input);
 
                     newInputs.push_back(audioTrack);
 
@@ -257,8 +272,8 @@ private:
                 }
                 else if (type == "midi_track")
                 {
-                    std::shared_ptr<ModelComponent> midiTrack =
-                        std::make_shared<MidiTrackComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> midiTrack =
+                        std::make_shared<MidiTrackComponentInfo>(input);
 
                     newInputs.push_back(midiTrack);
 
@@ -267,8 +282,8 @@ private:
                 }
                 else if (type == "text_box")
                 {
-                    std::shared_ptr<ModelComponent> textControl =
-                        std::make_shared<TextBoxComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> textControl =
+                        std::make_shared<TextBoxComponentInfo>(input);
 
                     newControls.push_back(textControl);
 
@@ -277,8 +292,8 @@ private:
                 }
                 else if (type == "number_box")
                 {
-                    std::shared_ptr<ModelComponent> numberControl =
-                        std::make_shared<NumberBoxComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> numberControl =
+                        std::make_shared<NumberBoxComponentInfo>(input);
 
                     newControls.push_back(numberControl);
 
@@ -287,8 +302,8 @@ private:
                 }
                 else if (type == "toggle")
                 {
-                    std::shared_ptr<ModelComponent> toggleControl =
-                        std::make_shared<ToggleComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> toggleControl =
+                        std::make_shared<ToggleComponentInfo>(input);
 
                     newControls.push_back(toggleControl);
 
@@ -297,8 +312,8 @@ private:
                 }
                 else if (type == "slider")
                 {
-                    std::shared_ptr<ModelComponent> sliderControl =
-                        std::make_shared<SliderComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> sliderControl =
+                        std::make_shared<SliderComponentInfo>(input);
 
                     newControls.push_back(sliderControl);
 
@@ -307,8 +322,8 @@ private:
                 }
                 else if (type == "dropdown")
                 {
-                    std::shared_ptr<ModelComponent> dropdownControl =
-                        std::make_shared<ComboBoxComponent>(input);
+                    std::shared_ptr<ModelComponentInfo> dropdownControl =
+                        std::make_shared<ComboBoxComponentInfo>(input);
 
                     newControls.push_back(dropdownControl);
 
@@ -333,7 +348,7 @@ private:
             // TODO - handle error case: couldn't load outputs
         }
 
-        ModelComponentList newOutputs;
+        ModelComponentInfoList newOutputs;
 
         for (int i = 0; i < outputComponents->size(); i++)
         {
@@ -349,8 +364,8 @@ private:
 
                 if (type == "audio_track")
                 {
-                    std::shared_ptr<ModelComponent> audioTrack =
-                        std::make_shared<AudioTrackComponent>(output);
+                    std::shared_ptr<ModelComponentInfo> audioTrack =
+                        std::make_shared<AudioTrackComponentInfo>(output);
 
                     newOutputs.push_back(audioTrack);
 
@@ -359,8 +374,8 @@ private:
                 }
                 else if (type == "midi_track")
                 {
-                    std::shared_ptr<ModelComponent> midiTrack =
-                        std::make_shared<MidiTrackComponent>(output);
+                    std::shared_ptr<ModelComponentInfo> midiTrack =
+                        std::make_shared<MidiTrackComponentInfo>(output);
 
                     newOutputs.push_back(midiTrack);
 
@@ -384,19 +399,19 @@ private:
         setInputs(newInputs);
         setOutputs(newOutputs);
 
-        //return // TODO - OpResult
+        return result;
     }
 
     ModelStatus status; // TODO - control flow shouldn't depend on status
 
     std::unique_ptr<Client> client;
 
-    String currentPath;
+    String currentlyLoadedPath;
 
     ModelMetadata metadata;
 
-    ModelComponentList controlComponents;
+    ModelComponentInfoList controlComponents;
 
-    ModelComponentList inputTrackComponents;
-    ModelComponentList outputTrackComponents;
+    ModelComponentInfoList inputTrackComponents;
+    ModelComponentInfoList outputTrackComponents;
 };

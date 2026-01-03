@@ -75,8 +75,8 @@ public:
     bool isHybridTrack() { return displayMode == 2; }
     bool isThumbnailTrack() { return displayMode == 3; }
 
-    void setDisplayID(Uuid id) { displayID = id; }
-    Uuid getDisplayID() { return displayID; }
+    //void setDisplayID(Uuid id) { displayID = id; }
+    //Uuid getDisplayID() { return displayID; }
 
     void setMediaInstructions(String instructions) { mediaInstructions = instructions; }
 
