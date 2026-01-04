@@ -114,6 +114,9 @@ public:
 
     OpResult queryControls(String modelPath, String& queryResponse)
     {
+        // Obtain queryable endpoint URL from provided path
+        String endpointURL = inferEndpointURL(modelPath);
+
         // TODO
 
         return OpResult::ok();
@@ -160,7 +163,7 @@ private:
         {
             return true;
         }
-        else
+        else if (array.size() != 0)
         {
             /*
               This is ambiguous. There's no way to tell where the delimeter
@@ -172,6 +175,10 @@ private:
                 << modelPath
                 << "\" is ambiguous. Please use the abbreviated or long-form path instead.");
 
+            return false;
+        }
+        else
+        {
             return false;
         }
     }

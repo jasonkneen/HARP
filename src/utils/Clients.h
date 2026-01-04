@@ -16,7 +16,7 @@ inline OpResult multiplexClients(String modelPath, std::unique_ptr<Client>& clie
     if (StabilityClient::matchesPathSpec(modelPath))
     {
         DBG_AND_LOG(
-            "utils::multiplexClients: Stability path detected. Initializing Stability client.");
+            "utils::multiplexClients: Stability AI path detected. Initializing Stability client.");
 
         client = std::make_unique<StabilityClient>();
     }

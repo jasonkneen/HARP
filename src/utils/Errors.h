@@ -114,6 +114,23 @@ inline String toUserMessage(const Error& error)
     return std::visit([](const auto& e) { return toUserMessage(e); }, error);
 }
 
+inline std::optional<String> getOpenablePath(const Error& error)
+{
+    if (const auto* e = std::get_if<ClientError>(&error))
+    {
+        if (e->type == ClientError::Type::UnknownClient && e->path.isNotEmpty())
+        {
+            return std::nullopt;
+        }
+        else if (e->type == ClientError::Type::InvalidModelPath && e->path.isNotEmpty())
+        {
+            return std::nullopt;
+        }
+    }
+
+    return std::nullopt;
+}
+
 class OpResult
 {
 public:

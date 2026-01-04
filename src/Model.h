@@ -134,14 +134,11 @@ public:
 
         setStatus(ModelStatus::QUERYING_CONTROLS);
 
-        // Obtain queryable endpoint URL from provided path
-        String endpointURL = tempClient->inferEndpointURL(pathToLoad);
-
         // Initialize empty string to hold query response
         String queryResponse;
 
         // Obtain JSON string corresponding to controls + track layout
-        result = tempClient->queryControls(endpointURL, queryResponse);
+        result = tempClient->queryControls(pathToLoad, queryResponse);
 
         if (result.failed())
         {

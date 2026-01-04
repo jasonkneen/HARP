@@ -228,21 +228,30 @@ public:
         loadModelButton.setEnabled(false);
     }
 
-    /*void setFinishedState()
+    void setFinishedState()
     {
         modelPathComboBox.setEnabled(true);
 
         loadModelButton.setEnabled(true);
     }
 
-    // TODO - set to successfully loaded custom path
-
     void setSuccessfulState()
     {
+        // TODO - if custom path set as choice
+
         lastLoadedPathIndex = lastSelectedPathIndex;
 
         setFinishedState();
-    }*/
+    }
+
+    /*
+    void setUnsuccessfulState()
+    {
+        // TODO - if valid custom path can still add with tag (sleeping)
+
+        resetState(); // TODO - don't necessarily want to overwrite last loaded model
+    }
+    */
 
 private:
     void initializeModelPathComboBox()
@@ -265,7 +274,8 @@ private:
             {
                 if (modelPathComboBox.getSelectedItemIndex() == 0)
                 {
-                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Custom path selected.");
+                    DBG_AND_LOG(
+                        "ModelSelectionWidget::modelPathComboBox::onChange: Custom path selected.");
 
                     openCustomPathPopup();
                 }
@@ -273,8 +283,8 @@ private:
                 {
                     lastSelectedPathIndex = modelPathComboBox.getSelectedItemIndex();
 
-                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Entry " << lastSelectedPathIndex
-                                                                      << " selected.");
+                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Entry "
+                                << lastSelectedPathIndex << " selected.");
                 }
 
                 //loadModelButton.setMode(loadButtonActiveInfo.label);

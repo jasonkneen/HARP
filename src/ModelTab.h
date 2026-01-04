@@ -14,6 +14,7 @@
 //#include "widgets/ModelDisplayWidget.h"
 
 #include "utils/Errors.h"
+#include "utils/Logging.h"
 
 using namespace juce;
 
@@ -69,67 +70,24 @@ private:
         loadingThreadPool.addJob(
             [this, selectedPath]
             {
-                try
-                {
-                    OpResult result = model->loadPath(selectedPath);
-                }
-                /*catch (Error& loadingError)
-                {
-                }
-                catch (const std::exception& e)
-                {
-                    // Catch any other standard exceptions (like std::runtime_error)
-                    DBG_AND_LOG("Caught std::exception: " << e.what());
-                    AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                                     "Error",
-                                                     "An unexpected error occurred: "
-                                                         + juce::String(e.what()));
-                }
-                catch (...) // Catch any other exceptions
-                {
-                    DBG_AND_LOG("Caught unknown exception");
-                    AlertWindow::showMessageBoxAsync(
-                        AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
-                }*/
-                catch (...)
-                {
-                }
-            });
+                OpResult result = model->loadPath(selectedPath);
 
-        /*
-        // loading happens asynchronously.
-        loadingThreadPool.addJob(
-            [this]
-            {
-                try
-                {
-                    // set the last status to the current status
-                    // If loading of the new model fails,
-                    // we want to go back to the status we had before the failed attempt
-                    model->setLastStatus(model->getStatus());
-
-                    OpResult loadingResult = model->load();
-                    if (loadingResult.failed())
+                // Perform updates on message (GUI) thread
+                MessageManager::callAsync(
+                    [this, result]
                     {
-                        throw loadingResult.getError();
-                    }
-
-                    // loading succeeded
-                    // Do some UI stuff to add the new model to the comboBox
-                    // if it's not already there
-                    // and update the lastSelectedItemIndex and lastLoadedModelItemIndex
-                    MessageManager::callAsync(
-                        [this, loadingResult]
+                        if (result.wasOk())
                         {
-                            resetUI(); // TODO - clear model here if successful
+                            // TODO - add custom path to dropdown (if not already there) and select it
+
+                            /*
                             if (modelPathComboBox.getSelectedItemIndex() == 0)
                             {
                                 bool alreadyInComboBox = false;
 
                                 for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
                                 {
-                                    if (modelPathComboBox.getItemText(i)
-                                        == (juce::String) customPath)
+                                    if (modelPathComboBox.getItemText(i) == (juce::String) customPath)
                                     {
                                         alreadyInComboBox = true;
                                         modelPathComboBox.setSelectedId(i + 1);
@@ -147,119 +105,101 @@ private:
                                     lastLoadedModelItemIndex = new_id - 1;
                                 }
                             }
-                            else
-                            {
-                                lastLoadedModelItemIndex = modelPathComboBox.getSelectedItemIndex();
-                            }
-                            processLoadingResult(loadingResult);
-                        });
-                }
-                catch (Error& loadingError)
-                {
-                    Error::fillUserMessage(loadingError);
-                    DBG_AND_LOG("Error in Model Loading:\n" + loadingError.devMessage);
-                    auto msgOpts =
-                        MessageBoxOptions()
-                            .withTitle("Loading Error")
-                            .withIconType(AlertWindow::WarningIcon)
-                            .withTitle("Error")
-                            .withMessage("An error occurred while loading the WebModel: \n"
-                                         + loadingError.userMessage);
-                    // if (! String(e.what()).contains("404")
-                    //     && ! String(e.what()).contains("Invalid URL"))
-                    if (loadingError.type != ErrorType::InvalidURL)
-                    {
-                        msgOpts = msgOpts.withButton("Open Space URL");
-                    }
+                            */
 
-                    msgOpts = msgOpts.withButton("Open HARP Logs").withButton("Ok");
-                    auto alertCallback = [this, msgOpts, loadingError](int result)
-                    {
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        // NOTE (hugo): there's something weird about the button indices assigned by the msgOpts here
-                        // DBG_AND_LOG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
-                        // auto chosen = msgOpts.getButtonText(result);
-                        // they're not the same as the order of the buttons in the alert
-                        // this is the order that I actually observed them to be.
-                        // UPDATE/TODO (xribene): This should be fixed in Juce v8
-                        // see: https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        std::map<int, std::string> observedButtonIndicesMap = {};
-                        if (msgOpts.getNumButtons() == 3)
-                        {
-                            observedButtonIndicesMap.insert(
-                                { 1, "Open Space URL" }); // should actually be 0 right?
-                        }
-                        observedButtonIndicesMap.insert(
-                            { msgOpts.getNumButtons() - 1,
-                              "Open HARP Logs" }); // should actually be 1
-                        observedButtonIndicesMap.insert({ 0, "Ok" }); // should be 2
-
-                        auto chosen = observedButtonIndicesMap[result];
-
-                        if (chosen == "Open HARP Logs")
-                        {
-                            HarpLogger::getInstance()->getLogFile().revealToUser();
-                        }
-                        else if (chosen == "Open Space URL")
-                        {
-                            // get the spaceInfo
-                            SpaceInfo spaceInfo = model->getTempClient().getSpaceInfo();
-                            if (spaceInfo.status == SpaceInfo::Status::GRADIO)
-                            {
-                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().gradio;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
-                            {
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().huggingface;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
-                            {
-                                // either choose hugingface or gradio, they are the same
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().huggingface;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
-                            {
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().stability;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            // URL spaceUrl =
-                            //     this->model->getGradioClient().getSpaceInfo().huggingface;
-                            // spaceUrl.launchInDefaultBrowser();
-                        }
-
-                        if (lastLoadedModelItemIndex == -1)
-                        {
-                            // If before the failed attempt to load a new model, we HAD NO model loaded
-                            // TODO: these two functions we call here might be an overkill for this case
-                            // we need to simplify
-                            MessageManager::callAsync(
-                                [this, loadingError]
-                                {
-                                    resetModelPathComboBox();
-                                    model->setStatus(ModelStatus::INITIALIZED);
-                                    processLoadingResult(OpResult::fail(loadingError));
-                                });
+                            modelSelectionWidget.setSuccessfulState();
+                            // TODO - set other state for successful load here
+                            // TODO - set model / author label URL to model's documentation URL
                         }
                         else
                         {
-                            // If before the failed attempt to load a new model, we HAD a model loaded
-                            MessageManager::callAsync(
-                                [this, loadingError]
-                                {
-                                    // We set the status to
-                                    // the status of the model before the failed attempt
-                                    model->setStatus(model->getLastStatus());
-                                    processLoadingResult(OpResult::fail(loadingError));
-                                });
-                        }
+                            const Error* error = result.getError();
 
+                            MessageBoxOptions errorPopup =
+                                MessageBoxOptions()
+                                    .withIconType(AlertWindow::WarningIcon)
+                                    .withTitle(
+                                        "Error") // TODO - Name of error family would be nice here
+                                    // error ? toUserMessage(*error) : "An unknown error occurred."
+                                    .withMessage(toUserMessage(*error));
+
+                            std::optional<String> openablePath = getOpenablePath(*error);
+
+                            if (openablePath.has_value())
+                            {
+                                errorPopup = errorPopup.withButton("Open URL");
+                            }
+
+                            errorPopup = errorPopup.withButton("Open Logs").withButton("Ok");
+
+                            auto alertCallback = [this, openablePath, errorPopup](int choice)
+                            {
+                                DBG_AND_LOG(
+                                    "ModelTab::loadModelCallback::alertCallback: Chosen button index: "
+                                    << choice << ".");
+
+                                enum Choice
+                                {
+                                    OpenURL,
+                                    OpenLogs,
+                                    OK
+                                };
+
+                                /*
+                                  TODO - The button indices assigned by MessageBoxOptions do not follow the order in which
+                                  they were added. This should be fixed in JUCE v8. The following is a temporary workaround.
+
+                                  See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
+
+                                  When this is fixed, remove errorPopup from the argument list.
+                                */
+                                {
+                                    std::map<int, int> observedButtonIndicesMap = {};
+
+                                    if (errorPopup.getNumButtons() == 3)
+                                    {
+                                        observedButtonIndicesMap.insert({ 1, Choice::OpenURL });
+                                    }
+
+                                    observedButtonIndicesMap.insert(
+                                        { errorPopup.getNumButtons() - 1, Choice::OpenLogs });
+
+                                    observedButtonIndicesMap.insert({ 0, Choice::OK });
+
+                                    choice = observedButtonIndicesMap[choice];
+                                }
+
+                                if (choice == Choice::OpenURL)
+                                {
+                                    URL(*openablePath).launchInDefaultBrowser();
+                                }
+                                else if (choice == Choice::OpenLogs)
+                                {
+                                    HARPLogger::getInstance()->getLogFile().revealToUser();
+                                }
+                                else
+                                {
+                                    // Nothing to do
+                                }
+                            };
+
+                            AlertWindow::showAsync(errorPopup, alertCallback);
+
+                            //modelSelectionWidget.setUnsuccessfulState();
+                            // TODO - set other state for unsuccessful load here
+                        }
+                    });
+            });
+
+        /*
+        // loading happens asynchronously.
+        loadingThreadPool.addJob(
+            [this]
+            {
+                catch (Error& loadingError)
+                {
+                    auto alertCallback = [this, msgOpts, loadingError](int result)
+                    {
                         // This if/elseif/else block is responsible for setting the selected item
                         // in the modelPathComboBox to the correct item (i.e the model/path/app that
                         // was selected before the failed attempt to load a new model)
@@ -295,9 +235,6 @@ private:
                         //    MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
                         //}
                     };
-
-                    AlertWindow::showAsync(msgOpts, alertCallback);
-                    //saveEnabled = false;
                 }
                 catch (const std::exception& e)
                 {
@@ -323,12 +260,7 @@ private:
         // return;
         if (result.wasOk())
         {
-            setModelCard(model->card());
-            controlAreaWidget.setModel(model);
             mModelStatusTimer->setModel(model);
-            controlAreaWidget.populateControls();
-
-            populateTracks();
 
             //Apply saved Stability token
             SpaceInfo spaceInfo = model->getClient().getSpaceInfo();
@@ -338,42 +270,8 @@ private:
                 setStatus("Applied saved Stability AI token to loaded model.");
             }
 
-            // juce::String spaceUrlButtonText;
-            if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
 
-            {
-                // spaceUrlButton.setButtonText("open localhost in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.gradio));
-                modelAuthorLabel.setURL(URL(spaceInfo.gradio));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
-            {
-                // spaceUrlButton.setButtonText("open " + spaceInfo.userName + "/"
-                //                              + spaceInfo.modelName + " in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.huggingface));
-                modelAuthorLabel.setURL(URL(spaceInfo.huggingface));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::GRADIO)
-            {
-                // spaceUrlButton.setButtonText("open " + spaceInfo.userName + "-"
-                //                              + spaceInfo.modelName + " in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.gradio));
-                modelAuthorLabel.setURL(URL(spaceInfo.gradio));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
-            {
-                modelAuthorLabel.setURL(URL(spaceInfo.stability));
-            }
-            // spaceUrlButton.setFont(Font(15.00f, Font::plain));
-            addAndMakeVisible(modelAuthorLabel);
-            // modelAuthorLabelHandler.onMouseEnter = [this]()
-            // {
-            //     setInstructions("Click to visit "
-            //                     + model->getGradioClient().getSpaceInfo().getModelSlashUser()
-            //                     + "\nin your browser");
-            // };
-            // modelAuthorLabelHandler.onMouseExit = [this]() { clearInstructions(); };
-            // modelAuthorLabelHandler.attach();
+            modelAuthorLabel.setURL(URL(spaceInfo.gradio));
         }
 
         // now, we can enable the buttons
