@@ -111,6 +111,20 @@ public:
 
     virtual bool isPlaying() { return transportSource.isPlaying(); }
 
+    Rectangle<int> getChooseFileButtonBounds()
+    {
+        if (auto* p = chooseFileButton.getParentComponent())
+            return getLocalArea(p, chooseFileButton.getBounds());
+        return chooseFileButton.getBounds();
+    }
+
+    Rectangle<int> getPlayButtonBounds()
+    {
+        if (auto* p = playStopButton.getParentComponent())
+            return getLocalArea(p, playStopButton.getBounds());
+        return playStopButton.getBounds();
+    }
+
     int getNumOverheadLabels();
 
     void addOverheadLabel(OverheadLabelComponent* l);

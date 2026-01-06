@@ -22,7 +22,7 @@ class WebModel : public Model
 public:
     WebModel() { status2 = ModelStatus::INITIALIZED; }
 
-    ~WebModel() {}
+    virtual ~WebModel() {}
 
     bool ready() const override { return m_loaded; }
 
