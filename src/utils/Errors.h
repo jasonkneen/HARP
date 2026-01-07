@@ -67,13 +67,93 @@ inline String toUserMessage(const ClientError& e)
     return userMessage;
 }
 
-/*
+struct HttpError
+{
+    enum class Type
+    {
+        InvalidURL,
+        ConnectionFailed,
+        BadStatusCode,
+        InvalidResponse
+    };
+
+    enum class Request
+    {
+        POST,
+        GET
+    };
+
+    Type type;
+    Request request;
+
+    String endpoint;
+
+    int statusCode = 0;
+};
+
+inline String toUserMessage(const HttpError& e)
+{
+    String userMessage = "An HTTP error occurred.";
+
+    // TODO
+
+    return userMessage;
+}
+
+struct JSONError
+{
+    enum class Type
+    {
+        InvalidJSON,
+        NotADictionary,
+        NotAList,
+        Empty,
+        MissingKey
+    };
+
+    Type type;
+
+    String stringJSON;
+    String key;
+};
+
+inline String toUserMessage(const JSONError& e)
+{
+    String userMessage = "A JSON error occurred.";
+
+    // TODO
+
+    return userMessage;
+}
+
 struct ControlError
 {
     enum class Type
     {
-        UnsupportedControlType,
-        InvalidValue
+        UnsupportedControl
+    };
+
+    Type type;
+
+    String controlType;
+};
+
+inline String toUserMessage(const ControlError& e)
+{
+    String userMessage = "A control error occurred.";
+
+    // TODO
+
+    return userMessage;
+}
+
+/*
+struct HuggingFaceError
+{
+    enum class Type
+    {
+        Paused,
+        Sleeping
     };
 
     Type type;
@@ -94,20 +174,7 @@ struct FileError
 };
 */
 
-/*
-struct HuggingFaceError
-{
-    enum class Type
-    {
-        Paused,
-        Sleeping
-    };
-
-    Type type;
-};
-*/
-
-using Error = std::variant<ClientError>;
+using Error = std::variant<ClientError, HttpError, JSONError, ControlError>;
 
 inline String toUserMessage(const Error& error)
 {

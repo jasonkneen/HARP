@@ -27,9 +27,6 @@ public:
     ~StabilityClient() = default;
 
     // Requests
-    OpResult getControls(Array<var>& inputComponents,
-                         Array<var>& outputComponents,
-                         DynamicObject& cardDict) override; // TODO - abstract to ThirdPartyClient
     OpResult uploadFileRequest(const File& fileToUpload,
                                String& uploadedFilePath,
                                const int timeoutMs = 10000) const override;

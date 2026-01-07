@@ -44,17 +44,17 @@ public:
         return hostSlashModel;
     }
 
-    String inferEndpointURL(String modelPath) override
+    String inferEndpointPath(String modelPath) override
     {
-        String endpointURL;
+        String endpointPath;
 
         if (isValidTextToAudioPath(modelPath))
         {
-            endpointURL = "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio";
+            endpointPath = "https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio";
         }
         else if (isValidAudioToAudioPath(modelPath))
         {
-            endpointURL = "https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio";
+            endpointPath = "https://api.stability.ai/v2beta/audio/stable-audio-2/audio-to-audio";
         }
         else
         {
@@ -62,22 +62,22 @@ public:
                         << modelPath << "\" does not match valid specification for Stability AI.");
         }
 
-        return endpointURL;
+        return endpointPath;
     }
 
-    String inferDocumentationURL(String modelPath) override
+    String inferDocumentationPath(String modelPath) override
     {
-        String documentationURL;
+        String documentationPath;
 
         if (isValidTextToAudioPath(modelPath))
         {
-            documentationURL =
+            documentationPath =
                 "https://platform.stability.ai/docs/api-reference#tag/Stable-Audio-2/"
                 "paths/~1v2beta~1audio~1stable-audio-2~1text-to-audio/post";
         }
         else if (isValidAudioToAudioPath(modelPath))
         {
-            documentationURL =
+            documentationPath =
                 "https://platform.stability.ai/docs/api-reference#tag/Stable-Audio-2/"
                 "paths/~1v2beta~1audio~1stable-audio-2~1audio-to-audio/post";
         }
@@ -87,10 +87,10 @@ public:
                         << modelPath << "\" does not match valid specification for Stability AI.");
         }
 
-        return documentationURL;
+        return documentationPath;
     }
 
-    OpResult queryControls(String modelPath, String& queryResponse)
+    OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
     {
         const char* jsonData;
         int jsonDataSize = 0;
@@ -120,13 +120,19 @@ public:
             return OpResult::fail(error);
         }
 
-        queryResponse = String::fromUTF8(jsonData, jsonDataSize);
+        String queryResponse = String::fromUTF8(jsonData, jsonDataSize);
 
         if (queryResponse.isEmpty())
         {
-            DBG_AND_LOG("StabilityClient::queryControls: JSON response is empty.");
+            return OpResult::fail(JSONError { JSONError::Type::Empty, queryResponse });
+        }
 
-            // TODO - should this be a failure? does this even ever happen?
+        // Extract model metadata, inputs, controls, and outputs
+        OpResult result = stringJSONToDict(queryResponse, controls);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         return OpResult::ok();

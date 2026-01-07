@@ -40,14 +40,6 @@ inline OpResult multiplexClients(String modelPath, std::unique_ptr<Client>& clie
 }
 
 /*
-enum GradioEvents
-{
-    complete,
-    error,
-    heartbeat,
-    generating
-};
-
 struct SpaceInfo
 {
     enum Status

@@ -116,14 +116,11 @@ public:
 
     OpResult loadPath(String pathToLoad)
     {
-        // Initialize result for error handling
-        OpResult result = OpResult::ok();
-
         // Create new client for querying
         std::unique_ptr<Client> tempClient;
 
         // Initialize appropriate client for selected path
-        result = multiplexClients(pathToLoad, tempClient);
+        OpResult result = multiplexClients(pathToLoad, tempClient);
 
         if (result.failed())
         {
@@ -134,11 +131,11 @@ public:
 
         setStatus(ModelStatus::QUERYING_CONTROLS);
 
-        // Initialize empty string to hold query response
-        String queryResponse;
+        // Initialize empty dictionary to hold query response
+        DynamicObject::Ptr controls;
 
         // Obtain JSON string corresponding to controls + track layout
-        result = tempClient->queryControls(pathToLoad, queryResponse);
+        result = tempClient->queryControls(pathToLoad, controls);
 
         if (result.failed())
         {
@@ -147,8 +144,10 @@ public:
             return result;
         }
 
-        // Attempt to parse JSON response and update controls + track layout
-        result = populateControlsFromJSON(queryResponse);
+        ModelMetadata newMetadata;
+
+        // Attempt to extract metadata from JSON
+        result = extractMetadata(controls, newMetadata);
 
         if (result.failed())
         {
@@ -156,6 +155,37 @@ public:
 
             return result;
         }
+
+        ModelComponentInfoList newInputs;
+        ModelComponentInfoList newControls;
+
+        // Attempt to extract inputs and controls from JSON
+        result = extractInputs(controls, newInputs, newControls);
+
+        if (result.failed())
+        {
+            setStatus(ModelStatus::EMPTY);
+
+            return result;
+        }
+
+        ModelComponentInfoList newOutputs;
+
+        // Attempt to extract outputs from JSON
+        result = extractOutputs(controls, newOutputs);
+
+        if (result.failed())
+        {
+            setStatus(ModelStatus::EMPTY);
+
+            return result;
+        }
+
+        // Update model information if all loading operations are successful
+        metadata = newMetadata;
+        controlComponents = newControls;
+        inputTrackComponents = newInputs;
+        outputTrackComponents = newOutputs;
 
         // Replace existing client
         client = std::move(tempClient);
@@ -168,99 +198,88 @@ public:
     }
 
 private:
-    // TODO - going to need clearControls() function when loading a new model and model already loaded
-    //        - actually notion of resetModel() would be better to clear everything (status / metadata / controls / etc.)
-    // TODO - does anything special need to be done to free memory?
-    void setModelMetadata(ModelMetadata newMetadata) { metadata = newMetadata; }
-
-    void setControls(ModelComponentInfoList newControls) { controlComponents = newControls; }
-
-    void setInputs(ModelComponentInfoList newInputs) { inputTrackComponents = newInputs; }
-
-    void setOutputs(ModelComponentInfoList newOutputs) { outputTrackComponents = newOutputs; }
-
-    OpResult populateControlsFromJSON(String responseJSON)
+    OpResult extractMetadata(DynamicObject::Ptr& controls, ModelMetadata& newMetadata)
     {
-        // Initialize result for error handling
-        OpResult result = OpResult::ok();
-
-        var parsedData;
-
-        Result parseResult = JSON::parse(responseJSON, parsedData);
-
-        if (parseResult.failed() || ! parsedData.isObject())
+        if (controls == nullptr)
         {
-            // TODO - handle error case: failed to parse controls
+            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
         }
 
-        if (! parsedData.isArray())
+        static const Identifier metadataKey { "card" };
+
+        if (! controls->hasProperty(metadataKey))
         {
-            // TODO - handle error case: parsed data is not an array
+            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                                              JSON::toString(var(controls.get()), true),
+                                              metadataKey.toString() });
         }
 
-        //Array<var>* dataArray = parsedData.getArray();
+        const var& metadataValue = controls->getProperty(metadataKey);
 
-        /*
-        if (dataArray == nullptr)
+        if (! metadataValue.isObject())
         {
-            // TODO - handle error case: failed to parse controls
-        }
-        */
-
-        // Verify first element of array is a dict
-        DynamicObject* dict = parsedData.getDynamicObject();
-
-        if (dict == nullptr)
-        {
-            // TODO - handle error case: failed to parse controls
+            return OpResult::fail(
+                JSONError { JSONError::Type::NotADictionary, metadataValue.toString() });
         }
 
-        /*
-        // Verify first element of array is a dict
-        DynamicObject* firstElement = dataArray->getFirst().getDynamicObject();
+        DynamicObject::Ptr metadataDict = metadataValue.getDynamicObject();
 
-        if (firstElement == nullptr)
+        jassert(metadataDict != nullptr);
+
+        newMetadata = ModelMetadata(metadataDict);
+
+        return OpResult::ok();
+    }
+
+    OpResult extractInputs(DynamicObject::Ptr& controls,
+                           ModelComponentInfoList& newInputs,
+                           ModelComponentInfoList& newControls)
+    {
+        if (controls == nullptr)
         {
-            // TODO - handle error case: first element is not a dict
-        }
-        */
-
-        // Extract metadata from parsed JSON
-        DynamicObject* card = dict->getProperty("card").getDynamicObject();
-
-        if (card == nullptr)
-        {
-            // TODO - handle error case: couldn't load metadata
-        }
-
-        ModelMetadata newMetadata = ModelMetadata(card);
-
-        Array<var>* inputComponents = dict->getProperty("inputs").getArray();
-
-        if (inputComponents == nullptr)
-        {
-            // TODO - handle error case: couldn't load inputs
+            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
         }
 
-        ModelComponentInfoList newInputs;
-        ModelComponentInfoList newControls;
+        static const Identifier inputsKey { "inputs" };
+
+        if (! controls->hasProperty(inputsKey))
+        {
+            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                                              JSON::toString(var(controls.get()), true),
+                                              inputsKey.toString() });
+        }
+
+        const var& inputsValue = controls->getProperty(inputsKey);
+
+        if (! inputsValue.isArray())
+        {
+            return OpResult::fail(JSONError { JSONError::Type::NotAList, inputsValue.toString() });
+        }
+
+        Array<var>* inputComponents = inputsValue.getArray();
 
         for (int i = 0; i < inputComponents->size(); i++)
         {
-            DynamicObject* input = inputComponents->getReference(i).getDynamicObject();
+            var controlsVar = inputComponents->getReference(i);
 
-            if (dict == nullptr)
+            if (! controlsVar.isObject())
             {
-                // TODO - handle error case: failed to read control
+                return OpResult::fail(
+                    JSONError { JSONError::Type::NotADictionary, controlsVar.toString() });
             }
-            else if (input->hasProperty("type"))
+
+            DynamicObject* controlsDict = controlsVar.getDynamicObject();
+
+            static const Identifier typeKey { "type" };
+
+            if (controlsDict->hasProperty(typeKey))
             {
-                String type = input->getProperty("type").toString().toStdString();
+                String type = controlsDict->getProperty("type").toString().toStdString();
 
                 if (type == "audio_track")
                 {
                     std::shared_ptr<ModelComponentInfo> audioTrack =
-                        std::make_shared<AudioTrackComponentInfo>(input);
+                        std::make_shared<AudioTrackComponentInfo>(controlsDict);
 
                     newInputs.push_back(audioTrack);
 
@@ -270,7 +289,7 @@ private:
                 else if (type == "midi_track")
                 {
                     std::shared_ptr<ModelComponentInfo> midiTrack =
-                        std::make_shared<MidiTrackComponentInfo>(input);
+                        std::make_shared<MidiTrackComponentInfo>(controlsDict);
 
                     newInputs.push_back(midiTrack);
 
@@ -280,7 +299,7 @@ private:
                 else if (type == "text_box")
                 {
                     std::shared_ptr<ModelComponentInfo> textControl =
-                        std::make_shared<TextBoxComponentInfo>(input);
+                        std::make_shared<TextBoxComponentInfo>(controlsDict);
 
                     newControls.push_back(textControl);
 
@@ -290,7 +309,7 @@ private:
                 else if (type == "number_box")
                 {
                     std::shared_ptr<ModelComponentInfo> numberControl =
-                        std::make_shared<NumberBoxComponentInfo>(input);
+                        std::make_shared<NumberBoxComponentInfo>(controlsDict);
 
                     newControls.push_back(numberControl);
 
@@ -300,7 +319,7 @@ private:
                 else if (type == "toggle")
                 {
                     std::shared_ptr<ModelComponentInfo> toggleControl =
-                        std::make_shared<ToggleComponentInfo>(input);
+                        std::make_shared<ToggleComponentInfo>(controlsDict);
 
                     newControls.push_back(toggleControl);
 
@@ -310,7 +329,7 @@ private:
                 else if (type == "slider")
                 {
                     std::shared_ptr<ModelComponentInfo> sliderControl =
-                        std::make_shared<SliderComponentInfo>(input);
+                        std::make_shared<SliderComponentInfo>(controlsDict);
 
                     newControls.push_back(sliderControl);
 
@@ -320,7 +339,7 @@ private:
                 else if (type == "dropdown")
                 {
                     std::shared_ptr<ModelComponentInfo> dropdownControl =
-                        std::make_shared<ComboBoxComponentInfo>(input);
+                        std::make_shared<ComboBoxComponentInfo>(controlsDict);
 
                     newControls.push_back(dropdownControl);
 
@@ -329,40 +348,68 @@ private:
                 }
                 else
                 {
-                    // TODO - handle error case: unknown control
+                    return OpResult::fail(
+                        ControlError { ControlError::Type::UnsupportedControl, type });
                 }
             }
             else
             {
-                // TODO - handle error case: ambiguous input
+                return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                                                  JSON::toString(var(controlsDict), true),
+                                                  typeKey.toString() });
             }
         }
 
-        Array<var>* outputComponents = dict->getProperty("outputs").getArray();
+        return OpResult::ok();
+    }
 
-        if (outputComponents == nullptr)
+    OpResult extractOutputs(DynamicObject::Ptr& controls, ModelComponentInfoList& newOutputs)
+    {
+        if (controls == nullptr)
         {
-            // TODO - handle error case: couldn't load outputs
+            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
         }
 
-        ModelComponentInfoList newOutputs;
+        static const Identifier outputsKey { "outputs" };
+
+        if (! controls->hasProperty(outputsKey))
+        {
+            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                                              JSON::toString(var(controls.get()), true),
+                                              outputsKey.toString() });
+        }
+
+        const var& outputsValue = controls->getProperty(outputsKey);
+
+        if (! outputsValue.isArray())
+        {
+            return OpResult::fail(JSONError { JSONError::Type::NotAList, outputsValue.toString() });
+        }
+
+        Array<var>* outputComponents = outputsValue.getArray();
 
         for (int i = 0; i < outputComponents->size(); i++)
         {
-            DynamicObject* output = outputComponents->getReference(i).getDynamicObject();
+            var controlsVar = outputComponents->getReference(i);
 
-            if (dict == nullptr)
+            if (! controlsVar.isObject())
             {
-                // TODO - handle error case: failed to read control
+                return OpResult::fail(
+                    JSONError { JSONError::Type::NotADictionary, controlsVar.toString() });
             }
-            else if (output->hasProperty("type"))
+
+            DynamicObject* controlsDict = controlsVar.getDynamicObject();
+
+            static const Identifier typeKey { "type" };
+
+            if (controlsDict->hasProperty("type"))
             {
-                String type = output->getProperty("type").toString().toStdString();
+                String type = controlsDict->getProperty("type").toString().toStdString();
 
                 if (type == "audio_track")
                 {
                     std::shared_ptr<ModelComponentInfo> audioTrack =
-                        std::make_shared<AudioTrackComponentInfo>(output);
+                        std::make_shared<AudioTrackComponentInfo>(controlsDict);
 
                     newOutputs.push_back(audioTrack);
 
@@ -372,7 +419,7 @@ private:
                 else if (type == "midi_track")
                 {
                     std::shared_ptr<ModelComponentInfo> midiTrack =
-                        std::make_shared<MidiTrackComponentInfo>(output);
+                        std::make_shared<MidiTrackComponentInfo>(controlsDict);
 
                     newOutputs.push_back(midiTrack);
 
@@ -381,22 +428,19 @@ private:
                 }
                 else
                 {
-                    // TODO - handle error case: unknown control
+                    return OpResult::fail(
+                        ControlError { ControlError::Type::UnsupportedControl, type });
                 }
             }
             else
             {
-                // TODO - handle error case: ambiguous output
+                return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                                                  JSON::toString(var(controlsDict), true),
+                                                  typeKey.toString() });
             }
         }
 
-        // Update model information if all loading operations are successful
-        setModelMetadata(newMetadata);
-        setControls(newControls);
-        setInputs(newInputs);
-        setOutputs(newOutputs);
-
-        return result;
+        return OpResult::ok();
     }
 
     ModelStatus status; // TODO - control flow shouldn't depend on status

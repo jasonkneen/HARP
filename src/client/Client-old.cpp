@@ -48,34 +48,3 @@ OpResult Client::validateToken(const String& newToken) const
 
     return OpResult::ok();
 }
-
-String Client::getAuthorizationHeader(String inputToken) const
-{
-    String currentToken;
-
-    if (inputToken.isNotEmpty())
-    {
-        currentToken = inputToken;
-    }
-    else
-    {
-        currentToken = accessToken;
-    }
-
-    if (! currentToken.isEmpty())
-    {
-        return "Authorization: Bearer " + currentToken + "\r\n";
-    }
-    return "";
-}
-
-String Client::getAcceptHeader() const { return "Accept: */*\r\n"; }
-
-String Client::getJsonContentTypeHeader() const { return "Content-Type: application/json\r\n"; }
-
-String Client::createCommonHeaders() const { return getAuthorizationHeader() + getAcceptHeader(); }
-
-String Client::createJsonHeaders() const
-{
-    return createCommonHeaders() + getJsonContentTypeHeader();
-}
