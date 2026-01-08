@@ -238,8 +238,13 @@ public:
                     else
                     {
                         int index = 1;
+
+                        // First pass: All except Model
                         for (const auto& pair : controls)
                         {
+                            if (String(pair.second->label).equalsIgnoreCase("Model"))
+                                continue;
+
                             auto info = pair.second;
                             String friendlyCtrlDesc = getFriendlyControlDescription(
                                 model->card().name, info->label, info->info);
@@ -247,9 +252,23 @@ public:
                             fullText += String(index++) + ". " + info->label + ": "
                                         + friendlyCtrlDesc + "\n\n";
                         }
+
+                        // Second pass: Only Model
+                        for (const auto& pair : controls)
+                        {
+                            if (! String(pair.second->label).equalsIgnoreCase("Model"))
+                                continue;
+
+                            auto info = pair.second;
+                            String friendlyCtrlDesc = getFriendlyControlDescription(
+                                model->card().name, info->label, info->info);
+
+                            fullText += String(index++) + ". " + info->label + ": "
+                                        + friendlyCtrlDesc + "\n\n";
+                        }
+                        fullText +=
+                            "Tip: We suggest sticking with the default parameters for the best balance of processing time vs. quality.";
                     }
-                    fullText +=
-                        "Tip: We suggest sticking with the default parameters for the best balance of processing time vs. quality.";
                 }
 
                 steps.push_back({ stepTitle, fullText, [](MainComponent* c) {
@@ -387,6 +406,28 @@ public:
             }
         }
 
+        // STABILITY AI (Text-to-Audio / Audio-to-Audio)
+        if (modelName.containsIgnoreCase("stability")
+            || modelName.containsIgnoreCase("text-to-audio")
+            || modelName.containsIgnoreCase("audio-to-audio")
+            || modelName.containsIgnoreCase("stable audio"))
+        {
+            if (label.containsIgnoreCase("Duration"))
+                return "Sets the length of the generated audio in seconds.";
+
+            if (label.containsIgnoreCase("steps"))
+                return "Number of diffusion steps. Higher values improve quality but take longer to process.";
+
+            if (label.containsIgnoreCase("cfg"))
+                return "Classifier Free Guidance. Higher values make the output adhere more strictly to the prompt.";
+
+            if (label.containsIgnoreCase("Output Format"))
+                return "The file format for the generated audio (e.g. wav).";
+
+            if (label.containsIgnoreCase("Text Prompt"))
+                return "Description of the audio content you want to generate.";
+        }
+
         // MEGATTS 3
         if (modelName.containsIgnoreCase("megatts"))
         {
@@ -408,6 +449,15 @@ public:
             if (label.containsIgnoreCase("text"))
             {
                 return "Enter the text you want the cloned voice to speak.";
+            }
+        }
+
+        // TRIA
+        if (modelName.containsIgnoreCase("tria"))
+        {
+            if (label.equalsIgnoreCase("Model"))
+            {
+                return "Choose which variant to you want to use. Currently this is the only one available, however more models would be available soon.";
             }
         }
 
@@ -472,26 +522,17 @@ public:
                 dontShowAgainToggle.setBounds(checkArea.removeFromRight(200));
             }
 
-            descriptionEditor.setBounds(area);
-
+            // Fix for UI overlap: Reserve space for the "show details" button at the bottom FIRST
             if (showDetailsButton.isVisible())
             {
                 auto btnArea = area.removeFromBottom(30);
                 showDetailsButton.setBounds(btnArea.reduced(20, 0));
-                // Recalculate description bounds if details button taking space?
-                // Wait, descriptionEditor.setBounds(area) was called above.
-                // If details button is visible, we need to shrink description editor further?
-                // The original logic was:
-                // descriptionEditor.setBounds(area);
-                // if (showDetailsButton...) { btnArea = area.removeFromBottom... desc.setBounds(...) }
-                // My new logic:
-                // descriptionEditor assigned to 'area'.
-                // If showDetailsButton is visible (on Step 4), 'area' should be reduced?
-                // Actually original logic was:
-                // descriptionEditor.setBounds(area);
-                // if (showDetailsButton...) { ... descriptionEditor.setBounds(area.removeFromTop...)}
-                // So I should keep that flow.
+                // Add some spacing between button and description
+                area.removeFromBottom(10);
             }
+
+            // Finally, the description editor takes the remaining space
+            descriptionEditor.setBounds(area);
         }
     }
 
