@@ -7,6 +7,8 @@
 
 #include "client/Client.h"
 
+#include "widgets/StatusAreaWidget.h"
+
 #include "utils/Clients.h"
 #include "utils/Controls.h"
 #include "utils/Errors.h"
@@ -87,17 +89,24 @@ public:
         resetState();
     }
 
-    //~Model() override {} // TODO
+    ~Model() { resetState(); }
 
-    //bool isEmpty() { return metadata.isEmpty(); }
-    //bool isLoaded() { return ! isEmpty(); }
+    bool isEmpty() { return client == nullptr && currentlyLoadedPath.isEmpty(); }
+    bool isLoaded() { return ! isEmpty(); }
 
     void setStatus(ModelStatus newStatus)
     {
         status = newStatus;
 
-        // TODO - update statusBox each time
+        if (statusMessage != nullptr)
+        {
+            String statusString = std::string(magic_enum::enum_name(status)).c_str();
+
+            statusMessage->setMessage("Model Status: " + statusString);
+        }
     }
+
+    String getLoadedPath() { return currentlyLoadedPath; }
 
     ModelMetadata getMetadata() { return metadata; }
 
@@ -105,9 +114,11 @@ public:
     {
         metadata = ModelMetadata {};
 
-        // TODO - clear controls / tracks
+        controlComponents.clear();
+        inputTrackComponents.clear();
+        outputTrackComponents.clear();
 
-        // TODO - clear client
+        client.reset();
 
         currentlyLoadedPath.clear();
 
@@ -180,6 +191,8 @@ public:
 
             return result;
         }
+
+        resetState();
 
         // Update model information if all loading operations are successful
         metadata = newMetadata;
@@ -405,7 +418,7 @@ private:
         return OpResult::ok();
     }
 
-    ModelStatus status; // TODO - control flow shouldn't depend on status
+    ModelStatus status;
 
     std::unique_ptr<Client> client;
 
@@ -417,4 +430,6 @@ private:
 
     ModelComponentInfoList inputTrackComponents;
     ModelComponentInfoList outputTrackComponents;
+
+    SharedResourcePointer<StatusMessage> statusMessage;
 };

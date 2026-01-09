@@ -237,21 +237,77 @@ public:
 
     void setSuccessfulState()
     {
-        // TODO - if custom path set as choice
+        if (modelPathComboBox.getSelectedItemIndex() == 0)
+        {
+            bool alreadyInComboBox = false;
 
-        lastLoadedPathIndex = lastSelectedPathIndex;
+            for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+            {
+                if (modelPathComboBox.getItemText(i)
+                    == selectedPath) // TODO - should check endpoint path - otherwise could be duplicates
+                {
+                    alreadyInComboBox = true;
+
+                    modelPathComboBox.setSelectedId(i + 1);
+
+                    lastSelectedPathIndex = i;
+                    lastLoadedPathIndex = i;
+
+                    break;
+                }
+            }
+
+            if (! alreadyInComboBox)
+            {
+                int newID = modelPathComboBox.getNumItems() + 1;
+
+                modelPathComboBox.addItem(selectedPath, newID);
+                modelPathComboBox.setSelectedId(newID);
+
+                lastSelectedPathIndex = newID - 1;
+                lastLoadedPathIndex = newID - 1;
+            }
+        }
 
         setFinishedState();
     }
 
-    /*
     void setUnsuccessfulState()
     {
         // TODO - if valid custom path can still add with tag (sleeping)
 
-        resetState(); // TODO - don't necessarily want to overwrite last loaded model
+        /*
+        // Adds a path to the model dropdown if it's not already present
+        void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
+        {
+            String displayStr(path);
+            if (wasSleeping)
+                displayStr += " (sleeping)";
+
+            bool alreadyExists = false;
+            for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+            {
+                if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
+                {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+
+            if (! alreadyExists)
+            {
+                int newID = modelPathComboBox.getNumItems() + 1;
+                modelPathComboBox.addItem(displayStr, newID);
+            }
+
+            modelPathComboBox.setText(displayStr, dontSendNotification);
+        }
+        */
+
+        modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
+
+        setFinishedState();
     }
-    */
 
 private:
     void initializeModelPathComboBox()
@@ -343,34 +399,6 @@ private:
 
         //loadBroadcaster.addChangeListener(this); // TODO - necessary?
     }
-
-    /* TODO
-    // Adds a path to the model dropdown if it's not already present
-    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
-    {
-        String displayStr(path);
-        if (wasSleeping)
-            displayStr += " (sleeping)";
-
-        bool alreadyExists = false;
-        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-        {
-            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
-            {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (! alreadyExists)
-        {
-            int newID = modelPathComboBox.getNumItems() + 1;
-            modelPathComboBox.addItem(displayStr, newID);
-        }
-
-        modelPathComboBox.setText(displayStr, dontSendNotification);
-    }
-    */
 
     /**
      * Create callbacks for and launch the custom path popup.

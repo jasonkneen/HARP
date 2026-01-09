@@ -78,38 +78,10 @@ private:
                     {
                         if (result.wasOk())
                         {
-                            // TODO - add custom path to dropdown (if not already there) and select it
-
-                            /*
-                            if (modelPathComboBox.getSelectedItemIndex() == 0)
-                            {
-                                bool alreadyInComboBox = false;
-
-                                for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-                                {
-                                    if (modelPathComboBox.getItemText(i) == (juce::String) customPath)
-                                    {
-                                        alreadyInComboBox = true;
-                                        modelPathComboBox.setSelectedId(i + 1);
-                                        lastSelectedItemIndex = i;
-                                        lastLoadedModelItemIndex = i;
-                                    }
-                                }
-
-                                if (! alreadyInComboBox)
-                                {
-                                    int new_id = modelPathComboBox.getNumItems() + 1;
-                                    modelPathComboBox.addItem(customPath, new_id);
-                                    modelPathComboBox.setSelectedId(new_id);
-                                    lastSelectedItemIndex = new_id - 1;
-                                    lastLoadedModelItemIndex = new_id - 1;
-                                }
-                            }
-                            */
-
                             modelSelectionWidget.setSuccessfulState();
                             // TODO - set other state for successful load here
                             // TODO - set model / author label URL to model's documentation URL
+                            model->getLoadedPath();
                         }
                         else
                         {
@@ -185,7 +157,23 @@ private:
 
                             AlertWindow::showAsync(errorPopup, alertCallback);
 
-                            //modelSelectionWidget.setUnsuccessfulState();
+                            //if (loadingError.userMessage.containsIgnoreCase("sleeping"))
+                            //{
+                            //    MessageManager::callAsync(
+                            //        [this]
+                            //        {
+                            //            addCustomPathToDropdown(customPath, true); // mark as sleeping
+                            //        });
+                            //}
+                            ////NEW: reopen custom path dialog if sleeping or 404
+                            //if (loadingError.type == ErrorType::InvalidURL
+                            //    || loadingError.devMessage.contains("404")
+                            //    || loadingError.userMessage.containsIgnoreCase("sleeping"))
+                            //{
+                            //    MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
+                            //}
+
+                            modelSelectionWidget.setUnsuccessfulState();
                             // TODO - set other state for unsuccessful load here
                         }
                     });
@@ -198,43 +186,7 @@ private:
             {
                 catch (Error& loadingError)
                 {
-                    auto alertCallback = [this, msgOpts, loadingError](int result)
-                    {
-                        // This if/elseif/else block is responsible for setting the selected item
-                        // in the modelPathComboBox to the correct item (i.e the model/path/app that
-                        // was selected before the failed attempt to load a new model)
-                        // cb: sometimes setSelectedId it doesn't work and I dont know why.
-                        // I've tried nesting it in MessageManage::callAsync, but still nothing.
-                        if (lastLoadedModelItemIndex != -1)
-                        {
-                            modelPathComboBox.setSelectedId(lastLoadedModelItemIndex + 1);
-                        }
-                        else if (lastLoadedModelItemIndex == -1 && lastSelectedItemIndex != -1)
-                        {
-                            modelPathComboBox.setSelectedId(lastSelectedItemIndex + 1);
-                        }
-                        else
-                        {
-                            resetModelPathComboBox();
-                            MessageManager::callAsync([this, loadingError]
-                                                      { loadModelButton.setEnabled(false); });
-                        }
-                        //if (loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        //{
-                        //    MessageManager::callAsync(
-                        //        [this]
-                        //        {
-                        //            addCustomPathToDropdown(customPath, true); // mark as sleeping
-                        //        });
-                        //}
-                        ////NEW: reopen custom path dialog if sleeping or 404
-                        //if (loadingError.type == ErrorType::InvalidURL
-                        //    || loadingError.devMessage.contains("404")
-                        //    || loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        //{
-                        //    MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
-                        //}
-                    };
+    
                 }
                 catch (const std::exception& e)
                 {
