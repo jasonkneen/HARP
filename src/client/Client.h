@@ -13,7 +13,7 @@ inline OpResult parseJSONString(const String& stringJSON, var& outData)
 
     if (result.failed())
     {
-        return OpResult::fail(JSONError { JSONError::Type::InvalidJSON, stringJSON });
+        return OpResult::fail(JsonError { JsonError::Type::InvalidJSON, stringJSON });
     }
 
     return OpResult::ok();
@@ -32,7 +32,7 @@ inline OpResult stringJSONToDict(const String& stringJSON, DynamicObject::Ptr& d
 
     if (! data.isObject())
     {
-        return OpResult::fail(JSONError { JSONError::Type::NotADictionary, stringJSON });
+        return OpResult::fail(JsonError { JsonError::Type::NotADictionary, stringJSON });
     }
 
     dict = data.getDynamicObject();
@@ -55,10 +55,68 @@ inline OpResult stringJSONToList(const String& stringJSON, Array<var>& list)
 
     if (! data.isArray())
     {
-        return OpResult::fail(JSONError { JSONError::Type::NotAList, stringJSON });
+        return OpResult::fail(JsonError { JsonError::Type::NotAnArray, stringJSON });
     }
 
     list = *data.getArray();
+
+    return OpResult::ok();
+}
+
+inline OpResult getRequiredDictProperty(DynamicObject::Ptr& parentDict,
+                                        const Identifier& key,
+                                        DynamicObject::Ptr& outDict)
+{
+    if (parentDict == nullptr)
+    {
+        return OpResult::fail(JsonError { JsonError::Type::NotADictionary, {} });
+    }
+
+    if (! parentDict->hasProperty(key))
+    {
+        return OpResult::fail(JsonError { JsonError::Type::MissingKey,
+                                          JSON::toString(var(parentDict.get()), true),
+                                          key.toString() });
+    }
+
+    const var& value = parentDict->getProperty(key);
+
+    if (! value.isObject())
+    {
+        return OpResult::fail(JsonError { JsonError::Type::NotADictionary, value.toString() });
+    }
+
+    outDict = value.getDynamicObject();
+
+    jassert(outDict != nullptr);
+
+    return OpResult::ok();
+}
+
+inline OpResult getRequiredArrayProperty(DynamicObject::Ptr& parentDict,
+                                         const Identifier& key,
+                                         Array<var>*& outArray)
+{
+    if (parentDict == nullptr)
+    {
+        return OpResult::fail(JsonError { JsonError::Type::NotADictionary, {} });
+    }
+
+    if (! parentDict->hasProperty(key))
+    {
+        return OpResult::fail(JsonError { JsonError::Type::MissingKey,
+                                          JSON::toString(var(parentDict.get()), true),
+                                          key.toString() });
+    }
+
+    const var& value = parentDict->getProperty(key);
+
+    if (! value.isArray())
+    {
+        return OpResult::fail(JsonError { JsonError::Type::NotAnArray, value.toString() });
+    }
+
+    outArray = value.getArray();
 
     return OpResult::ok();
 }

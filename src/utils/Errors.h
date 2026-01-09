@@ -36,7 +36,7 @@ inline String toUserMessage(const ClientError& e)
 
             if (e.path.isNotEmpty())
             {
-                "\"" + e.path + "\" ";
+                userMessage += "\"" + e.path + "\" ";
             }
 
             userMessage += "does not match valid specification for any supported clients.";
@@ -49,14 +49,14 @@ inline String toUserMessage(const ClientError& e)
 
             if (e.path.isNotEmpty())
             {
-                "\"" + e.path + "\" ";
+                userMessage += "\"" + e.path + "\" ";
             }
 
             userMessage += "does not match valid specification for client";
 
             if (e.client.isNotEmpty())
             {
-                " \"" + e.client + "\"";
+                userMessage += " \"" + e.client + "\"";
             }
 
             userMessage += ".";
@@ -74,8 +74,10 @@ struct HttpError
         InvalidURL,
         ConnectionFailed,
         BadStatusCode,
-        InvalidResponse
+        //InvalidResponse
     };
+
+    Type type;
 
     enum class Request
     {
@@ -83,10 +85,9 @@ struct HttpError
         GET
     };
 
-    Type type;
     Request request;
 
-    String endpoint;
+    String endpointPath;
 
     int statusCode = 0;
 };
@@ -95,18 +96,145 @@ inline String toUserMessage(const HttpError& e)
 {
     String userMessage = "An HTTP error occurred.";
 
-    // TODO
+    switch (e.type)
+    {
+        case HttpError::Type::InvalidURL:
+
+            userMessage = "Endpoint URL ";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += "\"" + e.endpointPath + "\" ";
+            }
+
+            userMessage += "is malformed.";
+
+            return userMessage;
+
+        case HttpError::Type::ConnectionFailed:
+
+            userMessage = "Unable to make ";
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += "POST";
+            }
+            else if (e.request == HttpError::Request::GET)
+            {
+                userMessage += "GET";
+            }
+            else
+            {
+            }
+
+            userMessage += " request to endpoint";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += " \"" + e.endpointPath + "\"";
+            }
+
+            userMessage += ".";
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += " If this is a valid Hugging Face space, this "
+                               "could indicate the space is sleeping or restarting.";
+            }
+
+            return userMessage;
+
+        case HttpError::Type::BadStatusCode:
+
+            userMessage.clear();
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += "POST";
+            }
+            else if (e.request == HttpError::Request::GET)
+            {
+                userMessage += "GET";
+            }
+            else
+            {
+            }
+
+            userMessage += " request to endpoint ";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += "\"" + e.endpointPath + "\" ";
+            }
+
+            userMessage += "failed";
+
+            if (e.statusCode != 0)
+            {
+                userMessage += " with status code " + String(e.statusCode);
+            }
+
+            userMessage += ".";
+
+            if (e.statusCode == 503)
+            {
+                userMessage += " If this is a valid Hugging Face space, this could indicate "
+                               "the space is paused or down due to a build or runtime error.";
+            }
+
+            /*
+        case HttpError::Type::InvalidResponse:
+
+            return userMessage;
+        */
+    }
 
     return userMessage;
 }
 
-struct JSONError
+struct GradioError
+{
+    enum class Type
+    {
+        RuntimeError
+    };
+
+    Type type;
+
+    String endpointPath;
+};
+
+inline String toUserMessage(const GradioError& e)
+{
+    String userMessage = "A Gradio error occurred.";
+
+    switch (e.type)
+    {
+        case GradioError::Type::RuntimeError:
+
+            userMessage = "A runtime error occurred at endpoint";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += " \"" + e.endpointPath + "\"";
+            }
+
+            userMessage += ". If this is a Hugging Face space running on ZeroGPU, this "
+                           "can also indicate a user has exceeded their daily ZeroGPU quota.";
+
+            return userMessage;
+    }
+
+    return userMessage;
+}
+
+struct JsonError
 {
     enum class Type
     {
         InvalidJSON,
         NotADictionary,
-        NotAList,
+        NotAnArray,
         Empty,
         MissingKey
     };
@@ -117,11 +245,77 @@ struct JSONError
     String key;
 };
 
-inline String toUserMessage(const JSONError& e)
+inline String toUserMessage(const JsonError& e)
 {
     String userMessage = "A JSON error occurred.";
 
-    // TODO
+    switch (e.type)
+    {
+        case JsonError::Type::InvalidJSON:
+
+            userMessage = "Unable to parse JSON";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += " \"" + e.stringJSON + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+
+        case JsonError::Type::NotADictionary:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is not a valid dictionary.";
+
+            return userMessage;
+
+        case JsonError::Type::NotAnArray:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is not a valid array.";
+
+            return userMessage;
+
+        case JsonError::Type::Empty:
+
+            userMessage = "JSON is empty.";
+
+            return userMessage;
+
+        case JsonError::Type::MissingKey:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is missing key";
+
+            if (e.key.isNotEmpty())
+            {
+                userMessage += " \"" + e.key + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+    }
 
     return userMessage;
 }
@@ -142,23 +336,24 @@ inline String toUserMessage(const ControlError& e)
 {
     String userMessage = "A control error occurred.";
 
-    // TODO
+    switch (e.type)
+    {
+        case ControlError::Type::UnsupportedControl:
+
+            userMessage = "HARP does not currently support controls of type";
+
+            if (e.controlType.isNotEmpty())
+            {
+                userMessage += " \"" + e.controlType + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+    }
 
     return userMessage;
 }
-
-/*
-struct HuggingFaceError
-{
-    enum class Type
-    {
-        Paused,
-        Sleeping
-    };
-
-    Type type;
-};
-*/
 
 /*
 struct FileError
@@ -174,7 +369,7 @@ struct FileError
 };
 */
 
-using Error = std::variant<ClientError, HttpError, JSONError, ControlError>;
+using Error = std::variant<ClientError, HttpError, GradioError, JsonError, ControlError>;
 
 inline String toUserMessage(const Error& error)
 {
@@ -183,15 +378,23 @@ inline String toUserMessage(const Error& error)
 
 inline std::optional<String> getOpenablePath(const Error& error)
 {
-    if (const auto* e = std::get_if<ClientError>(&error))
+    if (const auto* e = std::get_if<HttpError>(&error))
     {
-        if (e->type == ClientError::Type::UnknownClient && e->path.isNotEmpty())
+        if (e->type == HttpError::Type::ConnectionFailed && e->endpointPath.isNotEmpty())
         {
-            return std::nullopt;
+            return e->endpointPath;
         }
-        else if (e->type == ClientError::Type::InvalidModelPath && e->path.isNotEmpty())
+        else if (e->type == HttpError::Type::BadStatusCode & e->endpointPath.isNotEmpty())
         {
-            return std::nullopt;
+            return e->endpointPath;
+        }
+    }
+
+    if (const auto* e = std::get_if<GradioError>(&error))
+    {
+        if (e->type == GradioError::Type::RuntimeError && e->endpointPath.isNotEmpty())
+        {
+            return e->endpointPath;
         }
     }
 

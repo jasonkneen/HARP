@@ -56,18 +56,6 @@ public:
         return nullptr;
     }
 
-    /*OpResult load(const map<string, any>& params) override
-    {
-        controlsInfo.clear();
-        inputTracksInfo.clear();
-        outputTracksInfo.clear();
-        uuidsInOrder.clear();
-
-        status2 = ModelStatus::LOADED;
-        m_loaded = true;
-        return OpResult::ok();
-    }*/
-
     // The input is a vector of String:File objects corresponding to
     // the files currently loaded in each inputMediaDisplay
     OpResult process(std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles)

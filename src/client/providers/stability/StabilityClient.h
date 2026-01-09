@@ -124,7 +124,7 @@ public:
 
         if (queryResponse.isEmpty())
         {
-            return OpResult::fail(JSONError { JSONError::Type::Empty, queryResponse });
+            return OpResult::fail(JsonError { JsonError::Type::Empty, queryResponse });
         }
 
         // Extract model metadata, inputs, controls, and outputs

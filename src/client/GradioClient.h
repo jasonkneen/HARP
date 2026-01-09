@@ -121,16 +121,37 @@ public:
 
     String inferDocumentationPath(String modelPath) override
     {
-        return inferEndpointPath(modelPath);
+        String documentationPath;
+
+        if (isValidLocalPath(modelPath) || isValidGradioPath(modelPath))
+        {
+            documentationPath = inferEndpointPath(documentationPath);
+        }
+        else if (isValidHuggingFacePath(modelPath))
+        {
+            if (isValidShortHuggingFacePath(modelPath) || isValidAbbrevHuggingFacePath(modelPath))
+            {
+                documentationPath = "https://huggingface.co/spaces/" + inferHostSlashModel(modelPath);
+            }
+            else if (isValidLongHuggingFacePath(modelPath))
+            {
+                documentationPath = modelPath;
+            }
+        }
+        else
+        {
+            DBG_AND_LOG("GradioClient::inferDocumentationPath: Path \""
+                        << modelPath << "\" does not match valid specification for Gradio.");
+        }
+
+        return documentationPath;
     }
 
     OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
     {
-        URL endpointURL = getEndpoint(modelPath, "controls");
-
         String responseJSON;
 
-        OpResult result = makePOSTRequest(endpointURL, emptyJSONBody, responseJSON);
+        OpResult result = makePOSTRequest(modelPath, "controls", emptyJSONBody, responseJSON);
 
         if (result.failed())
         {
@@ -150,7 +171,7 @@ public:
 
         if (! responseDict->hasProperty(eventKey))
         {
-            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+            return OpResult::fail(JsonError { JsonError::Type::MissingKey,
                                               JSON::toString(var(responseDict.get()), true),
                                               eventKey.toString() });
         }
@@ -161,7 +182,7 @@ public:
 
         responseJSON.clear();
 
-        result = makeGETRequest(endpointURL.getChildURL(eventID), responseJSON);
+        result = makeGETRequest(modelPath, "controls", eventID, responseJSON);
 
         if (result.failed())
         {
@@ -179,14 +200,14 @@ public:
 
         if (dataList.isEmpty())
         {
-            return OpResult::fail(JSONError { JSONError::Type::Empty, {} });
+            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
         }
 
         var first = dataList.getFirst();
 
         if (! first.isObject())
         {
-            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, first.toString() });
+            return OpResult::fail(JsonError { JsonError::Type::NotADictionary, first.toString() });
         }
 
         // Extract model metadata, inputs, controls, and outputs
@@ -194,7 +215,7 @@ public:
 
         if (controls == nullptr)
         {
-            return OpResult::fail(JSONError { JSONError::Type::InvalidJSON, first.toString() });
+            return OpResult::fail(JsonError { JsonError::Type::InvalidJSON, first.toString() });
         }
 
         return OpResult::ok();
@@ -282,11 +303,8 @@ private:
         return array.size() == 2;
     }
 
-    URL getEndpoint(String modelPath, String functionName)
+    URL getEndpoint(String endpointPath, String functionName)
     {
-        // Obtain queryable endpoint from provided path
-        String endpointPath = inferEndpointPath(modelPath);
-
         URL endpointURL = URL(endpointPath)
                               .getChildURL("gradio_api")
                               .getChildURL("call")
@@ -295,11 +313,14 @@ private:
         return endpointURL;
     }
 
-    OpResult makePOSTRequest(URL endpoint,
+    OpResult makePOSTRequest(const String modelPath,
+                             const String functionName,
                              const String body,
                              String& response,
                              const int timeoutMs = 10000)
     {
+        URL endpoint = getEndpoint(inferEndpointPath(modelPath), functionName);
+
         String requestHeaders = getJSONHeaders();
 
         DBG_AND_LOG("GradioClient::makePOSTRequest: Attempting to make POST request for endpoint \""
@@ -311,7 +332,7 @@ private:
         if (! endpoint.isWellFormed())
         {
             return OpResult::fail(HttpError {
-                HttpError::Type::InvalidURL, HttpError::Request::POST, endpoint.toString(true) });
+                HttpError::Type::InvalidURL, HttpError::Request::POST, inferDocumentationPath(modelPath) });
         }
 
         int statusCode = 0;
@@ -329,11 +350,9 @@ private:
 
         if (stream == nullptr)
         {
-            // TODO - also indicates model SLEEPING / RESTARTING
-
             return OpResult::fail(HttpError { HttpError::Type::ConnectionFailed,
                                               HttpError::Request::POST,
-                                              endpoint.toString(true) });
+                                              inferDocumentationPath(modelPath) });
         }
 
         DBG_AND_LOG("GradioClient::makePOSTRequest: Received status code \""
@@ -344,7 +363,7 @@ private:
         {
             return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
                                               HttpError::Request::POST,
-                                              endpoint.toString(true),
+                                              inferDocumentationPath(modelPath),
                                               statusCode });
         }
 
@@ -353,8 +372,14 @@ private:
         return OpResult::ok();
     }
 
-    OpResult makeGETRequest(URL endpoint, String& response, const int timeoutMs = 10000)
+    OpResult makeGETRequest(const String modelPath,
+                            const String functionName,
+                            const String eventID,
+                            String& response,
+                            const int timeoutMs = 10000)
     {
+        URL endpoint = getEndpoint(inferEndpointPath(modelPath), functionName).getChildURL(eventID);
+
         String requestHeaders = getCommonHeaders();
 
         DBG_AND_LOG("GradioClient::makeGETRequest: Attempting to make GET request for endpoint \""
@@ -364,7 +389,7 @@ private:
         if (! endpoint.isWellFormed())
         {
             return OpResult::fail(HttpError {
-                HttpError::Type::InvalidURL, HttpError::Request::GET, endpoint.toString(true) });
+                HttpError::Type::InvalidURL, HttpError::Request::GET, inferDocumentationPath(modelPath) });
         }
 
         int statusCode = 0;
@@ -383,12 +408,20 @@ private:
         {
             return OpResult::fail(HttpError { HttpError::Type::ConnectionFailed,
                                               HttpError::Request::GET,
-                                              endpoint.toString(true) });
+                                              inferDocumentationPath(modelPath) });
         }
 
         DBG_AND_LOG("GradioClient::makeGETRequest: Received status code \""
                     << String(statusCode) << "\" and response \""
                     << toPrintableHeaders(responseHeaders.getDescription()) << "\".");
+
+        if (statusCode != 200)
+        {
+            return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
+                                              HttpError::Request::GET,
+                                              inferDocumentationPath(modelPath),
+                                              statusCode });
+        }
 
         while (! stream->isExhausted())
         {
@@ -410,14 +443,8 @@ private:
 
                 DBG_AND_LOG("GradioClient::makeGETRequest: Error response \"" << response << "\".");
 
-                if (statusCode == 200 && response.contains("data: null"))
-                {
-                    // TODO - Space Error (within actual code) or Quota error
-                }
-                else
-                {
-                    // TODO
-                }
+                return OpResult::fail(
+                    GradioError { GradioError::Type::RuntimeError, endpoint.toString(true) });
             }
             else
             {

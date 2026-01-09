@@ -200,31 +200,16 @@ public:
 private:
     OpResult extractMetadata(DynamicObject::Ptr& controls, ModelMetadata& newMetadata)
     {
-        if (controls == nullptr)
-        {
-            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
-        }
-
         static const Identifier metadataKey { "card" };
 
-        if (! controls->hasProperty(metadataKey))
+        DynamicObject::Ptr metadataDict;
+
+        OpResult result = getRequiredDictProperty(controls, metadataKey, metadataDict);
+
+        if (result.failed())
         {
-            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
-                                              JSON::toString(var(controls.get()), true),
-                                              metadataKey.toString() });
+            return result;
         }
-
-        const var& metadataValue = controls->getProperty(metadataKey);
-
-        if (! metadataValue.isObject())
-        {
-            return OpResult::fail(
-                JSONError { JSONError::Type::NotADictionary, metadataValue.toString() });
-        }
-
-        DynamicObject::Ptr metadataDict = metadataValue.getDynamicObject();
-
-        jassert(metadataDict != nullptr);
 
         newMetadata = ModelMetadata(metadataDict);
 
@@ -235,28 +220,16 @@ private:
                            ModelComponentInfoList& newInputs,
                            ModelComponentInfoList& newControls)
     {
-        if (controls == nullptr)
-        {
-            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
-        }
-
         static const Identifier inputsKey { "inputs" };
 
-        if (! controls->hasProperty(inputsKey))
+        Array<var>* inputComponents;
+
+        OpResult result = getRequiredArrayProperty(controls, inputsKey, inputComponents);
+
+        if (result.failed())
         {
-            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
-                                              JSON::toString(var(controls.get()), true),
-                                              inputsKey.toString() });
+            return result;
         }
-
-        const var& inputsValue = controls->getProperty(inputsKey);
-
-        if (! inputsValue.isArray())
-        {
-            return OpResult::fail(JSONError { JSONError::Type::NotAList, inputsValue.toString() });
-        }
-
-        Array<var>* inputComponents = inputsValue.getArray();
 
         for (int i = 0; i < inputComponents->size(); i++)
         {
@@ -265,13 +238,14 @@ private:
             if (! controlsVar.isObject())
             {
                 return OpResult::fail(
-                    JSONError { JSONError::Type::NotADictionary, controlsVar.toString() });
+                    JsonError { JsonError::Type::NotADictionary, controlsVar.toString() });
             }
 
             DynamicObject* controlsDict = controlsVar.getDynamicObject();
 
             static const Identifier typeKey { "type" };
 
+            // TODO - could abstract some of the following for extractInputs & extractOutputs
             if (controlsDict->hasProperty(typeKey))
             {
                 String type = controlsDict->getProperty("type").toString().toStdString();
@@ -283,8 +257,8 @@ private:
 
                     newInputs.push_back(audioTrack);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Audio track input \""
-                                + audioTrack->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Audio track input \"" + audioTrack->label
+                                + "\" extracted.");
                 }
                 else if (type == "midi_track")
                 {
@@ -293,8 +267,8 @@ private:
 
                     newInputs.push_back(midiTrack);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: MIDI track input \""
-                                + midiTrack->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: MIDI track input \"" + midiTrack->label
+                                + "\" extracted.");
                 }
                 else if (type == "text_box")
                 {
@@ -303,8 +277,8 @@ private:
 
                     newControls.push_back(textControl);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Text control \""
-                                + textControl->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Text control \"" + textControl->label
+                                + "\" extracted.");
                 }
                 else if (type == "number_box")
                 {
@@ -313,8 +287,8 @@ private:
 
                     newControls.push_back(numberControl);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Number box control \""
-                                + numberControl->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Number box control \"" + numberControl->label
+                                + "\" extracted.");
                 }
                 else if (type == "toggle")
                 {
@@ -323,8 +297,8 @@ private:
 
                     newControls.push_back(toggleControl);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Toggle control \""
-                                + toggleControl->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Toggle control \"" + toggleControl->label
+                                + "\" extracted.");
                 }
                 else if (type == "slider")
                 {
@@ -333,8 +307,8 @@ private:
 
                     newControls.push_back(sliderControl);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Slider control \""
-                                + sliderControl->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Slider control \"" + sliderControl->label
+                                + "\" extracted.");
                 }
                 else if (type == "dropdown")
                 {
@@ -343,8 +317,8 @@ private:
 
                     newControls.push_back(dropdownControl);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Dropdown control \""
-                                + dropdownControl->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractInputs: Dropdown control \"" + dropdownControl->label
+                                + "\" extracted.");
                 }
                 else
                 {
@@ -354,7 +328,7 @@ private:
             }
             else
             {
-                return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                return OpResult::fail(JsonError { JsonError::Type::MissingKey,
                                                   JSON::toString(var(controlsDict), true),
                                                   typeKey.toString() });
             }
@@ -365,28 +339,16 @@ private:
 
     OpResult extractOutputs(DynamicObject::Ptr& controls, ModelComponentInfoList& newOutputs)
     {
-        if (controls == nullptr)
-        {
-            return OpResult::fail(JSONError { JSONError::Type::NotADictionary, {} });
-        }
-
         static const Identifier outputsKey { "outputs" };
 
-        if (! controls->hasProperty(outputsKey))
+        Array<var>* outputComponents;
+
+        OpResult result = getRequiredArrayProperty(controls, outputsKey, outputComponents);
+
+        if (result.failed())
         {
-            return OpResult::fail(JSONError { JSONError::Type::MissingKey,
-                                              JSON::toString(var(controls.get()), true),
-                                              outputsKey.toString() });
+            return result;
         }
-
-        const var& outputsValue = controls->getProperty(outputsKey);
-
-        if (! outputsValue.isArray())
-        {
-            return OpResult::fail(JSONError { JSONError::Type::NotAList, outputsValue.toString() });
-        }
-
-        Array<var>* outputComponents = outputsValue.getArray();
 
         for (int i = 0; i < outputComponents->size(); i++)
         {
@@ -395,7 +357,7 @@ private:
             if (! controlsVar.isObject())
             {
                 return OpResult::fail(
-                    JSONError { JSONError::Type::NotADictionary, controlsVar.toString() });
+                    JsonError { JsonError::Type::NotADictionary, controlsVar.toString() });
             }
 
             DynamicObject* controlsDict = controlsVar.getDynamicObject();
@@ -413,8 +375,8 @@ private:
 
                     newOutputs.push_back(audioTrack);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: Audio track output \""
-                                + audioTrack->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractOutputs: Audio track output \"" + audioTrack->label
+                                + "\" extracted.");
                 }
                 else if (type == "midi_track")
                 {
@@ -423,8 +385,8 @@ private:
 
                     newOutputs.push_back(midiTrack);
 
-                    DBG_AND_LOG("Model::extractControlsFromJSON: MIDI track output \""
-                                + midiTrack->label + "\" extracted.");
+                    DBG_AND_LOG("Model::extractOutputs: MIDI track output \"" + midiTrack->label
+                                + "\" extracted.");
                 }
                 else
                 {
@@ -434,7 +396,7 @@ private:
             }
             else
             {
-                return OpResult::fail(JSONError { JSONError::Type::MissingKey,
+                return OpResult::fail(JsonError { JsonError::Type::MissingKey,
                                                   JSON::toString(var(controlsDict), true),
                                                   typeKey.toString() });
             }
