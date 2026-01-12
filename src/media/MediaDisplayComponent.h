@@ -12,7 +12,7 @@
 
 using namespace juce;
 
-enum DisplayMode
+enum class DisplayMode
 {
     Input,
     Output,
@@ -70,10 +70,10 @@ public:
     bool isRequired() const { return required; }
     bool isLinkedToDAW() const { return linkedToDAW; }
 
-    bool isInputTrack() { return (displayMode == 0) || isHybridTrack(); }
-    bool isOutputTrack() { return (displayMode == 1) || isHybridTrack(); }
-    bool isHybridTrack() { return displayMode == 2; }
-    bool isThumbnailTrack() { return displayMode == 3; }
+    bool isInputTrack() { return (displayMode == DisplayMode::Input) || isHybridTrack(); }
+    bool isOutputTrack() { return (displayMode == DisplayMode::Output) || isHybridTrack(); }
+    bool isHybridTrack() { return displayMode == DisplayMode::Hybrid; }
+    bool isThumbnailTrack() { return displayMode == DisplayMode::Thumbnail; }
 
     //void setDisplayID(Uuid id) { displayID = id; }
     //Uuid getDisplayID() { return displayID; }

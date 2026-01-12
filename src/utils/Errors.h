@@ -139,7 +139,8 @@ inline String toUserMessage(const HttpError& e)
             if (e.request == HttpError::Request::POST)
             {
                 userMessage += " If this is a valid Hugging Face space, this "
-                               "could indicate the space is sleeping or restarting.";
+                               "could indicate the space is sleeping or restarting. "
+                               "Please try again in a few minutes.";
             }
 
             return userMessage;
@@ -430,7 +431,11 @@ public:
     /**
      * Obtain the error associated with this result if one exists.
      */
-    const Error* getError() const noexcept { return error ? &*error : nullptr; }
+    const Error& getError() const noexcept
+    {
+        jassert(error.has_value());
+        return *error;
+    }
 
     explicit operator bool() const noexcept { return wasOk(); }
 

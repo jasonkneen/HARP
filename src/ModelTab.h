@@ -85,7 +85,7 @@ private:
                         }
                         else
                         {
-                            const Error* error = result.getError();
+                            const Error error = result.getError();
 
                             MessageBoxOptions errorPopup =
                                 MessageBoxOptions()
@@ -93,9 +93,9 @@ private:
                                     .withTitle(
                                         "Error") // TODO - Name of error family would be nice here
                                     // error ? toUserMessage(*error) : "An unknown error occurred."
-                                    .withMessage(toUserMessage(*error));
+                                    .withMessage(toUserMessage(error));
 
-                            std::optional<String> openablePath = getOpenablePath(*error);
+                            std::optional<String> openablePath = getOpenablePath(error);
 
                             if (openablePath.has_value())
                             {
@@ -104,10 +104,10 @@ private:
 
                             errorPopup = errorPopup.withButton("Open Logs").withButton("Ok");
 
-                            auto alertCallback = [this, openablePath, errorPopup](int choice)
+                            auto alertCallback = [this, error, openablePath, errorPopup](int choice)
                             {
                                 DBG_AND_LOG(
-                                    "ModelTab::loadModelCallback::alertCallback: Chosen button index: "
+                                    "ModelTab::loadModelCallback::alertCallback: Chose button index: "
                                     << choice << ".");
 
                                 enum Choice
@@ -153,58 +153,14 @@ private:
                                 {
                                     // Nothing to do
                                 }
+
+                                modelSelectionWidget.setUnsuccessfulState(error);
                             };
 
                             AlertWindow::showAsync(errorPopup, alertCallback);
-
-                            //if (loadingError.userMessage.containsIgnoreCase("sleeping"))
-                            //{
-                            //    MessageManager::callAsync(
-                            //        [this]
-                            //        {
-                            //            addCustomPathToDropdown(customPath, true); // mark as sleeping
-                            //        });
-                            //}
-                            ////NEW: reopen custom path dialog if sleeping or 404
-                            //if (loadingError.type == ErrorType::InvalidURL
-                            //    || loadingError.devMessage.contains("404")
-                            //    || loadingError.userMessage.containsIgnoreCase("sleeping"))
-                            //{
-                            //    MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
-                            //}
-
-                            modelSelectionWidget.setUnsuccessfulState();
-                            // TODO - set other state for unsuccessful load here
                         }
                     });
             });
-
-        /*
-        // loading happens asynchronously.
-        loadingThreadPool.addJob(
-            [this]
-            {
-                catch (Error& loadingError)
-                {
-    
-                }
-                catch (const std::exception& e)
-                {
-                    // Catch any other standard exceptions (like std::runtime_error)
-                    DBG_AND_LOG("Caught std::exception: " << e.what());
-                    AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                                     "Error",
-                                                     "An unexpected error occurred: "
-                                                         + juce::String(e.what()));
-                }
-                catch (...) // Catch any other exceptions
-                {
-                    DBG_AND_LOG("Caught unknown exception");
-                    AlertWindow::showMessageBoxAsync(
-                        AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
-                }
-            });
-            */
     }
 
     /*void processLoadingResult(OpResult result)

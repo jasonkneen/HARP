@@ -130,10 +130,10 @@ public:
 
     int getNumTracks() { return mediaDisplays.size(); }
 
-    bool isInputWidget() { return (displayMode == 0) || isHybridWidget(); }
-    bool isOutputWidget() { return (displayMode == 1) || isHybridWidget(); }
-    bool isHybridWidget() { return displayMode == 2; }
-    bool isThumbnailWidget() { return displayMode == 3; }
+    bool isInputWidget() { return (displayMode == DisplayMode::Input) || isHybridWidget(); }
+    bool isOutputWidget() { return (displayMode == DisplayMode::Output) || isHybridWidget(); }
+    bool isHybridWidget() { return displayMode == DisplayMode::Hybrid; }
+    bool isThumbnailWidget() { return displayMode == DisplayMode::Thumbnail; }
 
     bool isInterestedInFileDrag(const StringArray& /*files*/) override
     {
