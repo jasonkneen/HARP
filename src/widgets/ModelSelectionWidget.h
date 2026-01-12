@@ -63,6 +63,7 @@ struct SharedChoices : public ChangeBroadcaster
         "teamup-tech/text2midi-symbolic-music-generation",
         "teamup-tech/demucs-source-separation",
         "teamup-tech/solo-piano-audio-to-midi-transcription",
+        "teamup-tech/transkun", // TODO - more intuitive name
         "teamup-tech/TRIA", // TODO - more intuitive name: (The Rhythm In Anything) conditional drum generation
         "teamup-tech/anticipatory-music-transformer",
         "teamup-tech/vampnet-conditional-music-generation",
@@ -70,6 +71,7 @@ struct SharedChoices : public ChangeBroadcaster
         "teamup-tech/Kokoro-TTS",
         "teamup-tech/MegaTTS3-Voice-Cloning",
         "teamup-tech/midi-synthesizer",
+        "teamup-tech/audioseal", // TODO - more intuitive name
         // "xribene/HARP-UI-TEST-v3"
     };
 };

@@ -401,6 +401,12 @@ private:
                     DBG_AND_LOG("Model::extractOutputs: MIDI track output \"" + midiTrack->label
                                 + "\" extracted.");
                 }
+                else if (type == "json")
+                {
+                    // Labels are handled separately
+
+                    DBG_AND_LOG("Model::extractOutputs: JSON (labels) output extracted.");
+                }
                 else
                 {
                     return OpResult::fail(
