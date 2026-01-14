@@ -89,8 +89,8 @@ target_sources(${PROJECT_NAME}
         src/windows/settings/GeneralSettingsTab.cpp #
         #src/windows/settings/LoginTab.cpp #
 
-        src/widgets/ModelSelectionWidget.h #
-        #src/widgets/ModelInfoWidget.h #
+        src/widgets/ModelSelectionWidget.h
+        src/widgets/ModelInfoWidget.h #
         #src/widgets/ControlAreaWidget.h #
         src/widgets/TrackAreaWidget.h
         src/widgets/StatusAreaWidget.h
@@ -100,7 +100,7 @@ target_sources(${PROJECT_NAME}
         src/gui/TitledTextBox.h #
         src/gui/SliderWithLabel.h #
         src/gui/ComboBoxWithLabel.h #
-        src/gui/HoverableLabel.h #
+        src/gui/HoverableLabel.h
         src/gui/HoverHandler.cpp #
 
         src/media/MediaDisplayComponent.cpp

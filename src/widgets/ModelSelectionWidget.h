@@ -329,6 +329,7 @@ public:
             updatedEntry += validPathErrorTag;
         }
 
+        // Check for previously added unsuccessful tags before querying
         if (sharedChoices->containsPath(originalEntry + validPathErrorTag))
         {
             originalEntry += validPathErrorTag;

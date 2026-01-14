@@ -331,37 +331,3 @@ private:
     // is the same as the order of the outputTracksInfo
     std::vector<juce::String> outputFilePaths;
 };
-
-// a timer that checks the status of the model and broadcasts a change if if there is one
-class ModelStatusTimer : public juce::Timer, public juce::ChangeBroadcaster
-{
-public:
-    ModelStatusTimer(std::shared_ptr<WebModel> model) : m_model(model) {}
-
-    void timerCallback() override
-    {
-        // get the status of the model
-        ModelStatus status = m_model->getStatus();
-        // DBG_AND_LOG("ModelStatusTimer::timerCallback status: " + std::to_string(status)
-        //     + " lastStatus: " + std::to_string(lastStatus));
-
-        // if the status has changed, broadcast a change
-        if (status != lastStatus)
-        {
-            lastStatus = status;
-            sendChangeMessage();
-        }
-    }
-
-    void setModel(std::shared_ptr<WebModel> model)
-    {
-        // stopTimer();
-        m_model = model;
-        // lastStatus = ModelStatus::INITIALIZED;
-        // startTimer(50);
-    }
-
-private:
-    std::shared_ptr<WebModel> m_model;
-    ModelStatus lastStatus;
-};

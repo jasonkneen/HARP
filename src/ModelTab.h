@@ -10,6 +10,7 @@
 
 #include "Model.h"
 
+#include "widgets/ModelInfoWidget.h"
 #include "widgets/ModelSelectionWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
@@ -24,7 +25,7 @@ public:
     ModelTab()
     {
         addAndMakeVisible(modelSelectionWidget);
-        //addAndMakeVisible(modelDisplayWidget);
+        addAndMakeVisible(modelInfoWidget);
 
         modelSelectionWidget.addChangeListener(this);
     }
@@ -39,6 +40,7 @@ public:
         tabArea.flexDirection = FlexBox::Direction::column;
 
         tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
+        tabArea.items.add(FlexItem(modelInfoWidget).withFlex(1.0).withMaxHeight(100));
 
         tabArea.performLayout(getLocalBounds());
     }
@@ -79,9 +81,11 @@ private:
                         if (result.wasOk())
                         {
                             modelSelectionWidget.setSuccessfulState();
+
+                            modelInfoWidget.updateLabels(model->getMetadata());
+                            modelInfoWidget.addOpenablePath(model->getOpenablePath());
+
                             // TODO - set other state for successful load here
-                            // TODO - set model / author label URL to model's documentation URL
-                            model->getLoadedPath();
                         }
                         else
                         {
@@ -168,8 +172,6 @@ private:
         // return;
         if (result.wasOk())
         {
-            mModelStatusTimer->setModel(model);
-
             //Apply saved Stability token
             SpaceInfo spaceInfo = model->getClient().getSpaceInfo();
             if (spaceInfo.status == SpaceInfo::Status::STABILITY && ! savedStabilityToken.isEmpty())
@@ -177,9 +179,6 @@ private:
                 model->getClient().setToken(savedStabilityToken);
                 setStatus("Applied saved Stability AI token to loaded model.");
             }
-
-
-            modelAuthorLabel.setURL(URL(spaceInfo.gradio));
         }
 
         // now, we can enable the buttons
@@ -220,7 +219,7 @@ private:
     std::shared_ptr<Model> model { new Model() };
 
     ModelSelectionWidget modelSelectionWidget;
-    //ModelDisplayWidget modelDisplayWidget;
+    ModelInfoWidget modelInfoWidget;
 
     ThreadPool loadingThreadPool { 1 };
 

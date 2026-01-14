@@ -91,7 +91,7 @@ public:
 
     ~Model() { resetState(); }
 
-    bool isEmpty() { return client == nullptr && currentlyLoadedPath.isEmpty(); }
+    bool isEmpty() { return client == nullptr; }
     bool isLoaded() { return ! isEmpty(); }
 
     void setStatus(ModelStatus newStatus)
@@ -106,7 +106,7 @@ public:
         }
     }
 
-    String getLoadedPath() { return currentlyLoadedPath; }
+    String getOpenablePath() { return openablePath; }
 
     ModelMetadata getMetadata() { return metadata; }
 
@@ -120,7 +120,7 @@ public:
 
         client.reset();
 
-        currentlyLoadedPath.clear();
+        openablePath.clear();
 
         setStatus(ModelStatus::EMPTY);
     }
@@ -203,7 +203,7 @@ public:
         // Replace existing client
         client = std::move(tempClient);
         // Keep track of loaded path
-        currentlyLoadedPath = pathToLoad;
+        openablePath = client->inferDocumentationPath(pathToLoad);
 
         setStatus(ModelStatus::READY);
 
@@ -428,7 +428,7 @@ private:
 
     std::unique_ptr<Client> client;
 
-    String currentlyLoadedPath;
+    String openablePath;
 
     ModelMetadata metadata;
 
