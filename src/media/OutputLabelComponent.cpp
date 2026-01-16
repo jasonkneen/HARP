@@ -129,9 +129,7 @@ void OutputLabelComponent::mouseExit(const juce::MouseEvent& /*e*/)
     setFillVisibility(false);
     setMarkerVisibility(false);
 
-    String desc = getDescription();
-
-    if (desc.isNotEmpty() && instructionsMessage != nullptr)
+    if (instructionsMessage != nullptr)
     {
         instructionsMessage->clearMessage();
     }

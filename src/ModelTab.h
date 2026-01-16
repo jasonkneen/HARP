@@ -12,6 +12,7 @@
 
 #include "widgets/ModelInfoWidget.h"
 #include "widgets/ModelSelectionWidget.h"
+#include "widgets/ControlAreaWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
 #include "utils/Errors.h"
@@ -26,6 +27,7 @@ public:
     {
         addAndMakeVisible(modelSelectionWidget);
         addAndMakeVisible(modelInfoWidget);
+        addAndMakeVisible(controlAreaWidget);
 
         modelSelectionWidget.addChangeListener(this);
     }
@@ -41,6 +43,7 @@ public:
 
         tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
         tabArea.items.add(FlexItem(modelInfoWidget).withFlex(1.0).withMaxHeight(100));
+        tabArea.items.add(FlexItem(controlAreaWidget).withFlex(1.0).withMaxHeight(200));
 
         tabArea.performLayout(getLocalBounds());
     }
@@ -84,6 +87,8 @@ private:
 
                             modelInfoWidget.updateLabels(model->getMetadata());
                             modelInfoWidget.addOpenablePath(model->getOpenablePath());
+
+                            controlAreaWidget.updateControls(model->getControls());
 
                             // TODO - set other state for successful load here
                         }
@@ -220,6 +225,7 @@ private:
 
     ModelSelectionWidget modelSelectionWidget;
     ModelInfoWidget modelInfoWidget;
+    ControlAreaWidget controlAreaWidget;
 
     ThreadPool loadingThreadPool { 1 };
 

@@ -109,6 +109,7 @@ public:
     String getOpenablePath() { return openablePath; }
 
     ModelMetadata getMetadata() { return metadata; }
+    ModelComponentInfoList getControls() { return controlComponents; }
 
     void resetState()
     {
@@ -135,6 +136,8 @@ public:
 
         if (result.failed())
         {
+            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+
             return result;
         }
 
@@ -150,7 +153,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(ModelStatus::EMPTY);
+            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
 
             return result;
         }
@@ -162,7 +165,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(ModelStatus::EMPTY);
+            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
 
             return result;
         }
@@ -175,7 +178,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(ModelStatus::EMPTY);
+            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
 
             return result;
         }
@@ -187,7 +190,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(ModelStatus::EMPTY);
+            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
 
             return result;
         }

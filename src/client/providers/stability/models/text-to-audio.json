@@ -14,7 +14,7 @@
             "minimum": 1,
             "maximum": 190,
             "step": 1,
-            "value": 1,
+            "value": 10,
             "type": "slider"
         },
         {

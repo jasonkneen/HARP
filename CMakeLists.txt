@@ -71,8 +71,6 @@ target_sources(${PROJECT_NAME}
         src/MainComponent.cpp #
         #src/ModelTab.cpp #
         src/ModelTab.h #
-
-        # TODO - subject to change
         src/Model.h #
         #src/WebModel.h #
 
@@ -90,18 +88,18 @@ target_sources(${PROJECT_NAME}
         #src/windows/settings/LoginTab.cpp #
 
         src/widgets/ModelSelectionWidget.h
-        src/widgets/ModelInfoWidget.h #
-        #src/widgets/ControlAreaWidget.h #
+        src/widgets/ModelInfoWidget.h
+        src/widgets/ControlAreaWidget.h
         src/widgets/TrackAreaWidget.h
         src/widgets/StatusAreaWidget.h
         src/widgets/MediaClipboardWidget.h
 
         src/gui/MultiButton.cpp #
-        src/gui/TitledTextBox.h #
-        src/gui/SliderWithLabel.h #
-        src/gui/ComboBoxWithLabel.h #
         src/gui/HoverableLabel.h
-        src/gui/HoverHandler.cpp #
+        src/gui/TextBoxWithLabel.h
+        src/gui/SliderWithLabel.h
+        src/gui/ComboBoxWithLabel.h
+        src/gui/HoverHandler.h
 
         src/media/MediaDisplayComponent.cpp
         src/media/AudioDisplayComponent.cpp

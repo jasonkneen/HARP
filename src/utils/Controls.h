@@ -28,6 +28,7 @@ struct ModelComponentInfo
     std::string info { "" };
 
     ModelComponentInfo() = default;
+    virtual ~ModelComponentInfo() = default;
 
     ModelComponentInfo(DynamicObject* input)
     {
