@@ -10,9 +10,10 @@
 
 #include "Model.h"
 
+#include "widgets/ControlAreaWidget.h"
 #include "widgets/ModelInfoWidget.h"
 #include "widgets/ModelSelectionWidget.h"
-#include "widgets/ControlAreaWidget.h"
+#include "widgets/TrackAreaWidget.h"
 //#include "widgets/ModelDisplayWidget.h"
 
 #include "utils/Errors.h"
@@ -25,11 +26,22 @@ class ModelTab : public Component, private ChangeListener
 public:
     ModelTab()
     {
+        modelSelectionWidget.addChangeListener(this);
+
         addAndMakeVisible(modelSelectionWidget);
         addAndMakeVisible(modelInfoWidget);
         addAndMakeVisible(controlAreaWidget);
 
-        modelSelectionWidget.addChangeListener(this);
+        inputTracksLabel.setJustificationType(juce::Justification::centred);
+        inputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
+
+        outputTracksLabel.setJustificationType(juce::Justification::centred);
+        outputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
+
+        addAndMakeVisible(inputTracksLabel);
+        addAndMakeVisible(inputTrackAreaWidget);
+        addAndMakeVisible(outputTracksLabel);
+        addAndMakeVisible(outputTrackAreaWidget);
     }
 
     ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
@@ -41,11 +53,80 @@ public:
         FlexBox tabArea;
         tabArea.flexDirection = FlexBox::Direction::column;
 
+        /* Model Selection */
+
         tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
+
+        /* Model Info */
+
         tabArea.items.add(FlexItem(modelInfoWidget).withFlex(1.0).withMaxHeight(100));
-        tabArea.items.add(FlexItem(controlAreaWidget).withFlex(1.0).withMaxHeight(200));
+
+        /* Model Controls */
+
+        if (controlAreaWidget.getNumControls() > 0)
+        {
+            // TODO - set min/max height based on limits of control element scaling
+            tabArea.items.add(FlexItem(controlAreaWidget).withFlex(1.0).withMaxHeight(200));
+        }
+        else
+        {
+            controlAreaWidget.setBounds(0, 0, 0, 0);
+        }
+
+        /* Input Tracks Area Widget */
+
+        float numInputTracks = inputTrackAreaWidget.getNumTracks();
+        float numOutputTracks = outputTrackAreaWidget.getNumTracks();
+        float totalTracks = numInputTracks + numOutputTracks;
+
+        if (numInputTracks > 0)
+        {
+            float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
+
+            tabArea.items.add(
+                juce::FlexItem(inputTracksLabel).withHeight(20).withMargin(marginSize));
+            tabArea.items.add(juce::FlexItem(inputTrackAreaWidget)
+                                  .withFlex(inputTrackAreaFlex)
+                                  .withMargin(marginSize));
+        }
+        else
+        {
+            inputTracksLabel.setBounds(0, 0, 0, 0);
+            inputTrackAreaWidget.setBounds(0, 0, 0, 0);
+        }
+
+        /* Output Tracks Area Widget */
+
+        if (numOutputTracks > 0)
+        {
+            float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
+
+            tabArea.items.add(
+                juce::FlexItem(outputTracksLabel).withHeight(20).withMargin(marginSize));
+            tabArea.items.add(juce::FlexItem(outputTrackAreaWidget)
+                                  .withFlex(outputTrackAreaFlex)
+                                  .withMargin(marginSize));
+        }
+        else
+        {
+            outputTracksLabel.setBounds(0, 0, 0, 0);
+            outputTrackAreaWidget.setBounds(0, 0, 0, 0);
+        }
 
         tabArea.performLayout(getLocalBounds());
+    }
+
+    void resetState()
+    {
+        model.reset();
+
+        modelSelectionWidget.resetState();
+        modelInfoWidget.resetState();
+        controlAreaWidget.resetState();
+        inputTrackAreaWidget.resetState();
+        outputTrackAreaWidget.resetState();
+
+        // TODO - process / cancel button
     }
 
 private:
@@ -90,7 +171,12 @@ private:
 
                             controlAreaWidget.updateControls(model->getControls());
 
+                            inputTrackAreaWidget.updateTracks(model->getInputTracks());
+                            outputTrackAreaWidget.updateTracks(model->getOutputTracks());
+
                             // TODO - set other state for successful load here
+
+                            resized();
                         }
                         else
                         {
@@ -194,10 +280,6 @@ private:
             tryLoadSavedToken();
         }
 
-        loadModelButton.setEnabled(true);
-        modelPathComboBox.setEnabled(true);
-        loadModelButton.setButtonText("Load");
-
         // Set the focus to the process button
         // so that the user can press SPACE to trigger the playback
         // cb: I don't understand this.
@@ -226,6 +308,16 @@ private:
     ModelSelectionWidget modelSelectionWidget;
     ModelInfoWidget modelInfoWidget;
     ControlAreaWidget controlAreaWidget;
+
+    Label inputTracksLabel { "Input Tracks", "Input Tracks" };
+    TrackAreaWidget inputTrackAreaWidget { DisplayMode::Input };
+
+    MultiButton processCancelButton;
+    MultiButton::Mode processButtonInfo;
+    MultiButton::Mode cancelButtonInfo;
+
+    Label outputTracksLabel { "Output Tracks", "Output Tracks" };
+    TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
 
     ThreadPool loadingThreadPool { 1 };
 

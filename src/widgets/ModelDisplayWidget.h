@@ -21,39 +21,6 @@ using namespace juce;
 class ModelDisplayWidget : public Component
 {
 public:
-    ModelDisplayWidget()
-    {
-        // TODO: what happens if the model is nullptr rn?
-        if (model == nullptr)
-        {
-            DBG_AND_LOG("FATAL HARPProcessorEditor::HARPProcessorEditor: model is null");
-            jassertfalse;
-            return;
-        }
-
-        // model controls
-        controlAreaWidget.setModel(model);
-        addAndMakeVisible(controlAreaWidget);
-        controlAreaWidget.populateControls();
-
-        inputTracksLabel.setJustificationType(juce::Justification::centred);
-        inputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-        addAndMakeVisible(inputTracksLabel);
-
-        outputTracksLabel.setJustificationType(juce::Justification::centred);
-        outputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-        addAndMakeVisible(outputTracksLabel);
-
-        populateTracks();
-        addAndMakeVisible(inputTrackAreaWidget);
-        addAndMakeVisible(outputTrackAreaWidget);
-
-        // model card component
-        // Get the modelCard from the EditorView
-        auto& card = model->card();
-        setModelCard(card);
-    }
-
     ~ModelDisplayWidget()
     {
         // remove listeners
@@ -70,10 +37,6 @@ public:
     {
         int margin = 2;
 
-        // Row 4: Control Area Widget
-        // TODO - set min/max height based on limits of control element scaling
-        mainPanel.items.add(juce::FlexItem(controlAreaWidget).withFlex(1).withMargin(margin));
-
         // Row 5: Process Cancel Button
         juce::FlexBox rowProcessCancelButton;
         rowProcessCancelButton.flexDirection = juce::FlexBox::Direction::row;
@@ -84,54 +47,6 @@ public:
         rowProcessCancelButton.items.add(juce::FlexItem().withFlex(1));
         mainPanel.items.add(
             juce::FlexItem(rowProcessCancelButton).withHeight(30).withMargin(margin));
-
-        // Row 6: Input Tracks Area Widget
-        float numInputTracks = inputTrackAreaWidget.getNumTracks();
-        float numOutputTracks = outputTrackAreaWidget.getNumTracks();
-        float totalTracks = numInputTracks + numOutputTracks;
-
-        if (numInputTracks > 0)
-        {
-            float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
-            mainPanel.items.add(juce::FlexItem(inputTracksLabel).withHeight(20).withMargin(margin));
-            mainPanel.items.add(juce::FlexItem(inputTrackAreaWidget)
-                                    .withFlex(inputTrackAreaFlex)
-                                    .withMargin(margin));
-        }
-        else
-        {
-            inputTracksLabel.setBounds(0, 0, 0, 0);
-            inputTrackAreaWidget.setBounds(0, 0, 0, 0);
-        }
-
-        // Row 7: Output Tracks Area Widget
-        if (numOutputTracks > 0)
-        {
-            float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
-            mainPanel.items.add(
-                juce::FlexItem(outputTracksLabel).withHeight(20).withMargin(margin));
-            mainPanel.items.add(juce::FlexItem(outputTrackAreaWidget)
-                                    .withFlex(outputTrackAreaFlex)
-                                    .withMargin(margin));
-        }
-        else
-        {
-            outputTracksLabel.setBounds(0, 0, 0, 0);
-            outputTrackAreaWidget.setBounds(0, 0, 0, 0);
-        }
-    }
-
-    void populateTracks()
-    {
-        for (const ComponentInfo& info : model->getInputTracksInfo())
-        {
-            inputTrackAreaWidget.addTrackFromComponentInfo(info);
-        }
-
-        for (const ComponentInfo& info : model->getOutputTracksInfo())
-        {
-            outputTrackAreaWidget.addTrackFromComponentInfo(info);
-        }
     }
 
     void initProcessCancelButton()
@@ -190,17 +105,6 @@ public:
         repaint();
     }
 
-    void resetUI()
-    {
-        controlAreaWidget.resetUI();
-        inputTrackAreaWidget.resetUI();
-        outputTrackAreaWidget.resetUI();
-        // Also clear the model card components
-        ModelCard empty;
-        setModelCard(empty);
-        // modelAuthorLabelHandler.detach();
-    }
-
     void changeListenerCallback(ChangeBroadcaster* source)
     {
         // The processBroadcaster should be also replaced in a similar way
@@ -243,19 +147,4 @@ public:
         DBG_AND_LOG("HARPProcessorEditor::changeListenerCallback: unhandled change broadcaster");
         return;
     }
-
-    void processLoadingResult(OpResult result);
-
-private
-    ControlAreaWidget controlAreaWidget;
-
-    Label inputTracksLabel { "Input Tracks", "Input Tracks" };
-    TrackAreaWidget inputTrackAreaWidget { DisplayMode::Input };
-
-    MultiButton processCancelButton;
-    MultiButton::Mode processButtonInfo;
-    MultiButton::Mode cancelButtonInfo;
-
-    Label outputTracksLabel { "Output Tracks", "Output Tracks" };
-    TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
 };

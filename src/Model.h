@@ -110,6 +110,8 @@ public:
 
     ModelMetadata getMetadata() { return metadata; }
     ModelComponentInfoList getControls() { return controlComponents; }
+    ModelComponentInfoList getInputTracks() { return inputTrackComponents; }
+    ModelComponentInfoList getOutputTracks() { return outputTrackComponents; }
 
     void resetState()
     {

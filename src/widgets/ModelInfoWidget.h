@@ -146,6 +146,14 @@ public:
         }
     }
 
+    void resetState()
+    {
+        ModelMetadata emptyMetadata;
+
+        updateLabels(emptyMetadata);
+        modelAuthorLabel.setURL(URL(""));
+    }
+
     void updateLabels(const ModelMetadata& metadata)
     {
         if (metadata.name.empty())

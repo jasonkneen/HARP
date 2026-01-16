@@ -29,6 +29,8 @@ public:
     {
     }
 
+    ~TrackAreaWidget() { resetState(); }
+
     void paint(Graphics& g) override
     {
         g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
@@ -148,11 +150,8 @@ public:
         resized();
     }
 
-    void resetUI()
+    void resetState()
     {
-        // TODO - is this necessary?
-        // TODO - does this need to go in the destructor?
-
         for (auto& m : mediaDisplays)
         {
             m->removeChangeListener(this);
@@ -162,20 +161,19 @@ public:
         mediaDisplays.clear();
     }
 
-    void addTrackFromComponentInfo(std::unique_ptr<TrackComponentInfo>& trackInfo,
-                                   bool fromDAW = false)
+    void addTrackFromComponentInfo(TrackComponentInfo* trackInfo, bool fromDAW = false)
     {
         std::unique_ptr<MediaDisplayComponent> m;
 
         std::string label =
             trackInfo->label.empty() ? "Track-" + std::to_string(getNumTracks()) : trackInfo->label;
 
-        if (auto audioTrackInfo = dynamic_cast<AudioTrackComponentInfo*>(trackInfo.get()))
+        if (auto audioTrackInfo = dynamic_cast<AudioTrackComponentInfo*>(trackInfo))
         {
             m = std::make_unique<AudioDisplayComponent>(
                 label, audioTrackInfo->required, fromDAW, displayMode);
         }
-        else if (auto midiTrackInfo = dynamic_cast<MidiTrackComponentInfo*>(trackInfo.get()))
+        else if (auto midiTrackInfo = dynamic_cast<MidiTrackComponentInfo*>(trackInfo))
         {
             m = std::make_unique<MidiDisplayComponent>(
                 label, midiTrackInfo->required, fromDAW, displayMode);
@@ -205,6 +203,25 @@ public:
                 mediaDisplays.back()->selectTrack();
             }
         }
+    }
+
+    void updateTracks(const ModelComponentInfoList& trackComponents)
+    {
+        resetState();
+
+        for (const auto& info : trackComponents)
+        {
+            if (auto* trackInfo = dynamic_cast<TrackComponentInfo*>(info.get()))
+            {
+                addTrackFromComponentInfo(trackInfo);
+            }
+            else
+            {
+                // TODO - error handling / logging
+            }
+        }
+
+        resized();
     }
 
     void addTrackFromFilePath(URL filePath, bool fromDAW = false)
@@ -260,7 +277,7 @@ public:
 
         if (validExt)
         {
-            addTrackFromComponentInfo(trackInfo, fromDAW);
+            addTrackFromComponentInfo(trackInfo.get(), fromDAW);
             mediaDisplays.back()->initializeDisplay(filePath);
             mediaDisplays.back()->setTrackName(filePath.getFileName());
         }

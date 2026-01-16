@@ -24,8 +24,8 @@ using namespace juce;
 class ControlAreaWidget : public Component
 {
 public:
-    ControlAreaWidget() { clearControls(); }
-    ~ControlAreaWidget() { clearControls(); }
+    ControlAreaWidget() { resetState(); }
+    ~ControlAreaWidget() { resetState(); }
 
     //void paint(Graphics& g) {}
 
@@ -114,7 +114,13 @@ public:
         controlsArea.performLayout(getLocalBounds());
     }
 
-    void clearControls()
+    int getNumControls()
+    {
+        return textComponents.size() + toggleComponents.size() + sliderComponents.size()
+               + dropdownComponents.size();
+    }
+
+    void resetState()
     {
         for (auto& c : textComponents)
         {
@@ -147,7 +153,7 @@ public:
 
     void updateControls(const ModelComponentInfoList& controlsInfo)
     {
-        clearControls();
+        resetState();
 
         for (const auto& info : controlsInfo)
         {
@@ -186,7 +192,6 @@ private:
         auto& textBox = textComponent->getTextBox();
 
         textComponent->setText(info->value);
-        //textComponent->addListener(this);
 
         addHandler(&textBox, info);
 
@@ -204,7 +209,6 @@ private:
         toggleComponent->setTitle(info->label);
         toggleComponent->setButtonText(info->label);
         toggleComponent->setToggleState(info->value, dontSendNotification);
-        //toggleComponent->addListener(this);
 
         addHandler(toggleComponent.get(), info);
 
@@ -223,7 +227,6 @@ private:
         slider.setRange(info->minimum, info->maximum, info->step);
         slider.setValue(info->value);
         slider.setTextBoxStyle(Slider::TextBoxBelow, false, 80, 20);
-        //slider.addListener(this);
 
         addHandler(&slider, info);
 
@@ -258,7 +261,6 @@ private:
             dropdown.setSelectedItemIndex(0, dontSendNotification);
         }
         dropdown.setTextWhenNoChoicesAvailable("Empty");
-        //dropdown.addListener(this);
 
         addHandler(&dropdown, info);
 
