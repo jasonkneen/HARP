@@ -28,53 +28,10 @@ public:
         processBroadcaster.removeChangeListener(this);
     }
 
-    void paint(Graphics& g)
-    {
-        // TODO
-    }
-
-    void resized() override
-    {
-        int margin = 2;
-
-        // Row 5: Process Cancel Button
-        juce::FlexBox rowProcessCancelButton;
-        rowProcessCancelButton.flexDirection = juce::FlexBox::Direction::row;
-        rowProcessCancelButton.justifyContent = juce::FlexBox::JustifyContent::center;
-        rowProcessCancelButton.items.add(juce::FlexItem().withFlex(1));
-        rowProcessCancelButton.items.add(
-            juce::FlexItem(processCancelButton).withWidth(150).withMargin(margin));
-        rowProcessCancelButton.items.add(juce::FlexItem().withFlex(1));
-        mainPanel.items.add(
-            juce::FlexItem(rowProcessCancelButton).withHeight(30).withMargin(margin));
-    }
-
+    /*
     void initProcessCancelButton()
     {
-        // The Process/Cancel button
-        processButtonInfo = MultiButton::Mode {
-            "Process",
-            [this] { processCallback(); },
-            Colours::orangered,
-            "Click to send the input for processing",
-            MultiButton::DrawingMode::TextOnly,
-            fontaudio::Pause,
-        };
-
-        cancelButtonInfo = MultiButton::Mode {
-            "Cancel",
-            [this] { cancelCallback(); },
-            Colours::lightgrey,
-            "Click to cancel the processing",
-            MultiButton::DrawingMode::TextOnly,
-            fontaudio::Pause,
-        };
-
-        processCancelButton.addMode(processButtonInfo);
-        processCancelButton.addMode(cancelButtonInfo);
-        processCancelButton.setMode(processButtonInfo.label);
         processCancelButton.setEnabled(false);
-        addAndMakeVisible(processCancelButton);
 
         processBroadcaster.addChangeListener(this);
         // saveEnabled = false;
@@ -93,6 +50,7 @@ public:
         }
         setStatus(currentStatus);
     }
+    */
 
     void resetProcessingButtons()
     {

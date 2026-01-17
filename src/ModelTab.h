@@ -14,7 +14,6 @@
 #include "widgets/ModelInfoWidget.h"
 #include "widgets/ModelSelectionWidget.h"
 #include "widgets/TrackAreaWidget.h"
-//#include "widgets/ModelDisplayWidget.h"
 
 #include "utils/Errors.h"
 #include "utils/Logging.h"
@@ -32,14 +31,17 @@ public:
         addAndMakeVisible(modelInfoWidget);
         addAndMakeVisible(controlAreaWidget);
 
-        inputTracksLabel.setJustificationType(juce::Justification::centred);
-        inputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-
-        outputTracksLabel.setJustificationType(juce::Justification::centred);
-        outputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
+        inputTracksLabel.setJustificationType(Justification::centred);
+        inputTracksLabel.setFont(Font(20.0f, Font::bold));
 
         addAndMakeVisible(inputTracksLabel);
         addAndMakeVisible(inputTrackAreaWidget);
+
+        initializeProcessCancelButton();
+
+        outputTracksLabel.setJustificationType(Justification::centred);
+        outputTracksLabel.setFont(Font(20.0f, Font::bold));
+
         addAndMakeVisible(outputTracksLabel);
         addAndMakeVisible(outputTrackAreaWidget);
     }
@@ -83,16 +85,34 @@ public:
         {
             float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
 
+            tabArea.items.add(FlexItem(inputTracksLabel).withHeight(20).withMargin(marginSize));
             tabArea.items.add(
-                juce::FlexItem(inputTracksLabel).withHeight(20).withMargin(marginSize));
-            tabArea.items.add(juce::FlexItem(inputTrackAreaWidget)
-                                  .withFlex(inputTrackAreaFlex)
-                                  .withMargin(marginSize));
+                FlexItem(inputTrackAreaWidget).withFlex(inputTrackAreaFlex).withMargin(marginSize));
         }
         else
         {
             inputTracksLabel.setBounds(0, 0, 0, 0);
             inputTrackAreaWidget.setBounds(0, 0, 0, 0);
+        }
+
+        /* Process / Cancel Button */
+
+        FlexBox processCancelButtonRow;
+        processCancelButtonRow.flexDirection = FlexBox::Direction::row;
+
+        if (model->isLoaded())
+        {
+            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+            processCancelButtonRow.items.add(
+                FlexItem(processCancelButton).withWidth(150).withMargin(marginSize));
+            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+
+            tabArea.items.add(
+                FlexItem(processCancelButtonRow).withHeight(30).withMargin(marginSize));
+        }
+        else
+        {
+            processCancelButton.setBounds(0, 0, 0, 0);
         }
 
         /* Output Tracks Area Widget */
@@ -101,9 +121,8 @@ public:
         {
             float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
 
-            tabArea.items.add(
-                juce::FlexItem(outputTracksLabel).withHeight(20).withMargin(marginSize));
-            tabArea.items.add(juce::FlexItem(outputTrackAreaWidget)
+            tabArea.items.add(FlexItem(outputTracksLabel).withHeight(20).withMargin(marginSize));
+            tabArea.items.add(FlexItem(outputTrackAreaWidget)
                                   .withFlex(outputTrackAreaFlex)
                                   .withMargin(marginSize));
         }
@@ -126,10 +145,33 @@ public:
         inputTrackAreaWidget.resetState();
         outputTrackAreaWidget.resetState();
 
-        // TODO - process / cancel button
+        processCancelButton.setMode(processButtonInfo.label);
+        processCancelButton.setEnabled(false);
     }
 
 private:
+    void initializeProcessCancelButton()
+    {
+        // Mode when a model is loaded and not currently processing (process enabled)
+        processButtonInfo = MultiButton::Mode { "Process",
+                                                [this] {}, //{ processCallback(); },
+                                                Colours::orangered,
+                                                "Click to execute model with selected inputs.",
+                                                MultiButton::DrawingMode::TextOnly };
+        // Mode when a model is loaded and currently processing (cancel enabled)
+        cancelButtonInfo = MultiButton::Mode { "Cancel",
+                                               [this] {}, //{ cancelCallback(); },
+                                               Colours::lightgrey,
+                                               "Click to cancel processing.",
+                                               MultiButton::DrawingMode::TextOnly };
+
+        processCancelButton.addMode(processButtonInfo);
+        processCancelButton.addMode(cancelButtonInfo);
+        processCancelButton.setMode(processButtonInfo.label);
+
+        addAndMakeVisible(processCancelButton);
+    }
+
     void changeListenerCallback(ChangeBroadcaster* source)
     {
         if (source == &modelSelectionWidget)
@@ -142,10 +184,8 @@ private:
     {
         modelSelectionWidget.setLoadingState();
 
-        /* TODO - other state changes
-        // disable the process button until the model is loaded
-        //processCancelButton.setEnabled(false);
-        */
+        // Disable processing until next model is loaded
+        processCancelButton.setEnabled(false);
 
         // Obtain currently selected path
         String selectedPath = modelSelectionWidget.getCurrentlySelectedPath();
@@ -174,9 +214,10 @@ private:
                             inputTrackAreaWidget.updateTracks(model->getInputTracks());
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
-                            // TODO - set other state for successful load here
-
                             resized();
+
+                            // Re-enable processing immediately
+                            processCancelButton.setEnabled(true);
                         }
                         else
                         {
@@ -250,6 +291,9 @@ private:
                                 }
 
                                 modelSelectionWidget.setUnsuccessfulState(error);
+
+                                // Re-enable processing after closing error window
+                                processCancelButton.setEnabled(true);
                             };
 
                             AlertWindow::showAsync(errorPopup, alertCallback);

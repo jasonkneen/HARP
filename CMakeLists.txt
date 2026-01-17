@@ -72,9 +72,8 @@ target_sources(${PROJECT_NAME}
         #src/ModelTab.cpp #
         src/ModelTab.h #
         src/Model.h #
-        #src/WebModel.h #
 
-        # TODO - subject to change
+        # TODO - will probably remove
         #src/callbacks/Edit.cpp #
         #src/callbacks/Authenticate.cpp #
         #src/callbacks/Process.cpp #
@@ -82,7 +81,6 @@ target_sources(${PROJECT_NAME}
 
         src/windows/AboutWindow.h #
         src/windows/WelcomeWindow.h #
-
         src/windows/settings/SettingsWindow.cpp #
         src/windows/settings/GeneralSettingsTab.cpp #
         #src/windows/settings/LoginTab.cpp #
