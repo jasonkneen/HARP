@@ -118,7 +118,7 @@ void OutputLabelComponent::mouseEnter(const juce::MouseEvent& /*e*/)
 
     String desc = getDescription();
 
-    if (desc.isNotEmpty() && instructionsMessage != nullptr)
+    if (instructionsMessage != nullptr && desc.isNotEmpty())
     {
         instructionsMessage->setMessage(desc);
     }

@@ -15,9 +15,6 @@ MainComponent::MainComponent()
     showStatusArea = Settings::getBoolValue("showStatusArea", true);
     showMediaClipboard = Settings::getBoolValue("showMediaClipboard", false);
 
-    //fontaudioHelper = std::make_shared<fontaudio::IconHelper>();
-    //fontawesomeHelper = std::make_shared<fontawesome::IconHelper>();
-
     setSize(800, 2000);
 
     //setOpaque(true);

@@ -145,7 +145,7 @@ public:
         inputTrackAreaWidget.resetState();
         outputTrackAreaWidget.resetState();
 
-        processCancelButton.setMode(processButtonInfo.label);
+        processCancelButton.setMode(processButtonInfo.displayLabel);
         processCancelButton.setEnabled(false);
     }
 
@@ -153,21 +153,20 @@ private:
     void initializeProcessCancelButton()
     {
         // Mode when a model is loaded and not currently processing (process enabled)
-        processButtonInfo = MultiButton::Mode { "Process",
-                                                [this] {}, //{ processCallback(); },
-                                                Colours::orangered,
-                                                "Click to execute model with selected inputs.",
-                                                MultiButton::DrawingMode::TextOnly };
+        processButtonInfo =
+            MultiButton::Mode { "Process",
+                                "Click to execute model with selected parameters and inputs.",
+                                [this] {}, //{ processCallback(); },
+                                MultiButton::DrawingMode::TextOnly };
         // Mode when a model is loaded and currently processing (cancel enabled)
         cancelButtonInfo = MultiButton::Mode { "Cancel",
-                                               [this] {}, //{ cancelCallback(); },
-                                               Colours::lightgrey,
                                                "Click to cancel processing.",
+                                               [this] {}, //{ cancelCallback(); },
                                                MultiButton::DrawingMode::TextOnly };
 
         processCancelButton.addMode(processButtonInfo);
         processCancelButton.addMode(cancelButtonInfo);
-        processCancelButton.setMode(processButtonInfo.label);
+        processCancelButton.setMode(processButtonInfo.displayLabel);
 
         addAndMakeVisible(processCancelButton);
     }

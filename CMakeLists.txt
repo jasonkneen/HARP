@@ -92,7 +92,7 @@ target_sources(${PROJECT_NAME}
         src/widgets/StatusAreaWidget.h
         src/widgets/MediaClipboardWidget.h
 
-        src/gui/MultiButton.cpp #
+        src/gui/MultiButton.cpp
         src/gui/HoverableLabel.h
         src/gui/TextBoxWithLabel.h
         src/gui/SliderWithLabel.h

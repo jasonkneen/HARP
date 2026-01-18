@@ -219,7 +219,6 @@ public:
         modelPathComboBox.setSelectedId(lastSelectedPathIndex);
         modelPathComboBox.setEnabled(true);
 
-        //loadModelButton.setMode(loadButtonInactiveInfo.label);
         loadModelButton.setEnabled(false);
     }
 
@@ -410,7 +409,6 @@ private:
                                 << lastSelectedPathIndex << " selected.");
                 }
 
-                //loadModelButton.setMode(loadButtonActiveInfo.label);
                 loadModelButton.setEnabled(true);
             }
         };
@@ -465,22 +463,12 @@ private:
 
         // Mode when a model is selected and not currently being loaded (load enabled)
         loadButtonActiveInfo = MultiButton::Mode { "Load",
-                                                   loadCallback,
-                                                   Colours::lightgrey,
                                                    "Click to load currently selected model path.",
+                                                   loadCallback,
                                                    MultiButton::DrawingMode::TextOnly };
-        // Mode when a model has not been selected or is currently being loaded (load disabled)
-        /*loadButtonInactiveInfo = MultiButton::Mode { "Load",
-                                                     [this] {},
-                                                     Colours::darkgrey,
-                                                     "No model is currently selected.",
-                                                     MultiButton::DrawingMode::TextOnly };*/
         loadModelButton.addMode(loadButtonActiveInfo);
-        //loadModelButton.addMode(loadButtonInactiveInfo);
-        loadModelButton.setMode(loadButtonActiveInfo.label);
+        loadModelButton.setMode(loadButtonActiveInfo.displayLabel);
         addAndMakeVisible(loadModelButton);
-
-        //loadBroadcaster.addChangeListener(this); // TODO - necessary?
     }
 
     /**
@@ -553,7 +541,6 @@ private:
 
     MultiButton loadModelButton;
     MultiButton::Mode loadButtonActiveInfo;
-    MultiButton::Mode loadButtonInactiveInfo;
 
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
 };

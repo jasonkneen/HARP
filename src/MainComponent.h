@@ -119,7 +119,7 @@ private:
     void deinitializeMenuBar();
 
     std::unique_ptr<MenuBarComponent> menuBar;
-    //std::unique_ptr<PopupMenu> macExtraMenu; // TODO - is this actually used?
+    std::unique_ptr<PopupMenu> macExtraMenu; // TODO - is this actually used?
 
     /* Application */
 
@@ -157,11 +157,6 @@ private:
     ThreadPool jobProcessorThread { 10 };
 
     //bool isProcessing = false;
-
-    /* Miscellaneous */
-
-    //std::shared_ptr<fontawesome::IconHelper> fontawesomeHelper;
-    //std::shared_ptr<fontaudio::IconHelper> fontaudioHelper;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
