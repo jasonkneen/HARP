@@ -149,13 +149,13 @@ public:
             { "Welcome to HARP",
               "HARP is your hub for hosted, asynchronous, remote audio processing.\n\n"
               "HARP operates as a standalone app or plugin-like editor within your DAW, allowing you to process tracks using ML models hosted on platforms like Hugging Face or Stability AI.\n\n"
-              "This quick tutorial will guide you through the main features of the application.",
+              "This quick tutorial will guide you through the main features of the application. Click 'Learn more' for additional online documentation.",
               [](MainComponent*) { return Rectangle<int>(); } });
 
         // 2. Select Model
         steps.push_back(
             { "Select a Model",
-              "Select a model from the dropdown at the top and click Load.\n\n"
+              "Select a model from the dropdown menu at the top and click Load.\n\n"
               "Once loaded, the model's details and controls will appear below.\n\n"
               "If you don't select another model, HARP uses the Demucs Stem Separator by default.",
               [](MainComponent* c) { return c->getModelSelectBounds(); } });
@@ -179,8 +179,8 @@ public:
 
         steps.push_back(
             { stepTitle,
-              "This is the " + modelName
-                  + ".\n\n"
+              "This is the " + modelName + ".\n" + getFriendlyModelSummary(modelName)
+                  + "\n\n"
                     "1. Add input\n"
                     "Drag an audio or MIDI file into the Input track, use the folder icon to browse, or the play button to preview.\n\n"
                     "2. Process\n"
@@ -216,13 +216,9 @@ public:
             {
                 String stepTitle = "Configure Parameters (Optional)";
                 String baseText =
-                    "These settings let you customize how the model behaves. The default values are recommended for first-time use. What these controls do (at a high level):\n\n"
-                    "1. Quality vs Speed\n"
-                    "Adjusts the tradeoff between faster processing and higher-quality results.\n\n"
-                    "2. Model Variants\n"
-                    "Some models offer different variants optimized for different use cases.\n\n"
-                    "3. Advanced Options\n"
-                    "Fine-tuning controls for experienced users who want more control over the output.\n\n";
+                    "Some models will have controls to customize model behavior. Typical controls include ones that balance quality vs speed, allow selection of model variants, or provide advanced options for experienced users.\n\n"
+                    "To see descriptions of what controls do for a model Click on the button below. Do this now to see the control descriptions for "
+                    + modelName + ".\n\n";
 
                 String fullText = baseText;
 
@@ -321,9 +317,10 @@ public:
 
         steps.push_back(
             { "All Set!",
-              "Most models in HARP are hosted on Hugging Face and Stability AI. To use them, you will need API tokens.\n\n"
-              "You can get your tokens at https://huggingface.co/settings/tokens\n\n"
-              "Once you have them, please add them under 'File -> Settings' to start creating!",
+              "Most models in HARP are hosted on external service like Hugging Face and Stability AI. To use them, you will need API tokens.\n\n"
+              "An API token is a private access key that lets HARP securely connect to these services on your behalf. It tells the service that you are allowed to use the model\n\n"
+              "You can get these tokens from your account settings on the respective service websites. You can find the exact link in 'File -> Settings' to help you add your token.\n\n"
+              "You are now ready to start creating!",
               [](MainComponent*) { return Rectangle<int>(); } });
 
         // Refresh if we are showing the tutorial
@@ -333,6 +330,28 @@ public:
                 currentStep = (int) steps.size() - 1;
             updateStep();
         }
+    }
+
+    String getFriendlyModelSummary(const String& name)
+    {
+        if (name.containsIgnoreCase("demucs"))
+        {
+            return "It separates music audio into drums, bass, vocals, and 'other' stems.";
+        }
+        if (name.containsIgnoreCase("megatts") || name.containsIgnoreCase("voice"))
+        {
+            return "It generates realistic speech or clones voices from reference audio.";
+        }
+        if (name.containsIgnoreCase("musicgen") || name.containsIgnoreCase("audioldm"))
+        {
+            return "It generates new music or audio based on text descriptions.";
+        }
+        if (name.containsIgnoreCase("stability") || name.containsIgnoreCase("stable audio"))
+        {
+            return "It generates or transforms audio using state-of-the-art diffusion models.";
+        }
+
+        return "It is an advanced audio processing model hosted in the cloud.";
     }
 
     String getFriendlyModelOverview(const String& name)
@@ -380,7 +399,7 @@ public:
                "Processed audio or MIDI results.";
     }
 
-    String getFriendlyModelDescription(const String& name, const String& rawDesc)
+    String getFriendlyModelDescription(const String& /*name*/, const String& rawDesc)
     {
         // Unused but kept for API consistency if needed later
         return rawDesc;
@@ -569,7 +588,7 @@ private:
 
         bool isLast = currentStep == (int) steps.size() - 1;
         bool isFirst = currentStep == 0;
-        bool isSecond = currentStep == 1; // "Select a Model"
+        // bool isSecond = currentStep == 1; // "Select a Model"
 
         nextButton.setButtonText(isLast ? "Finish" : "Next");
         skipButton.setVisible(! isLast);
