@@ -1,7 +1,7 @@
 #include "LoginTab.h"
 
-//LoginTab::LoginTab(const juce::String& providerName, WebModel* m)
-LoginTab::LoginTab(const juce::String& providerName)
+//LoginTab::LoginTab(const String& providerName, WebModel* m)
+LoginTab::LoginTab(const String& providerName)
 {
     // Setup toggle button
     provider = getProvider(providerName);
@@ -16,26 +16,26 @@ LoginTab::LoginTab(const juce::String& providerName)
 
     bool isHuggingFace = (provider == LoginTab::Provider::HUGGINGFACE);
     // Set provider-specific values
-    juce::String title =
-        "Login to " + juce::String(isHuggingFace ? "Hugging Face" : "Stability AI");
-    juce::String message =
+    String title =
+        "Login to " + String(isHuggingFace ? "Hugging Face" : "Stability AI");
+    String message =
         "Paste your "
-        + juce::String(isHuggingFace ? "Hugging Face access token" : "Stability AI API key")
+        + String(isHuggingFace ? "Hugging Face access token" : "Stability AI API key")
         + " below.";
 
     // TODO - use this term on the rest of the tab as well
-    juce::String tokenLabel = isHuggingFace ? "Access Token" : "API Key";
+    String tokenLabel = isHuggingFace ? "Access Token" : "API Key";
 
     // Create token prompt window
-    titleLabel.setText(title, juce::dontSendNotification);
-    infoLabel.setText(message, juce::dontSendNotification);
-    registerLabel.setText("New User?", juce::dontSendNotification);
+    titleLabel.setText(title, dontSendNotification);
+    infoLabel.setText(message, dontSendNotification);
+    registerLabel.setText("New User?", dontSendNotification);
     linkLabel.setButtonText("Get token");
     linkLabel.setURL(getTokenURL());
     linkLabel.setFont(
-        juce::Font(registerLabel.getFont().getHeight(), juce::Font::FontStyleFlags::underlined),
+        Font(registerLabel.getFont().getHeight(), Font::FontStyleFlags::underlined),
         false,
-        juce::Justification::centredLeft);
+        Justification::centredLeft);
 
     addAndMakeVisible(titleLabel);
     addAndMakeVisible(infoLabel);
@@ -44,7 +44,7 @@ LoginTab::LoginTab(const juce::String& providerName)
 
     addAndMakeVisible(statusLabel);
 
-    userToken.setTextToShowWhenEmpty(tokenLabel, juce::Colours::grey);
+    userToken.setTextToShowWhenEmpty(tokenLabel, Colours::grey);
     userToken.setReturnKeyStartsNewLine(false);
     userToken.setSelectAllWhenFocused(true);
     userToken.onTextChange = [this]()
@@ -59,7 +59,7 @@ LoginTab::LoginTab(const juce::String& providerName)
     // rememberTokenToggle.setSize(200, 24);
     // addAndMakeVisible(rememberTokenToggle);
 
-    juce::String savedToken = Settings::getString(getStorageKey());
+    String savedToken = Settings::getString(getStorageKey());
     if (savedToken.isNotEmpty())
     {
         OpResult result = validateToken(savedToken);
@@ -81,7 +81,7 @@ LoginTab::LoginTab(const juce::String& providerName)
         forgetButton.setEnabled(false);
     }
 
-    submitButton.addShortcut(juce::KeyPress(juce::KeyPress::returnKey));
+    submitButton.addShortcut(KeyPress(KeyPress::returnKey));
     submitButton.onClick = [this] { handleSubmit(); };
     // tokenButton.onClick = [this] { handleToken(); };
     forgetButton.onClick = [this] { handleForget(); };
@@ -91,14 +91,14 @@ LoginTab::LoginTab(const juce::String& providerName)
     // addAndMakeVisible(tokenButton);
 }
 
-LoginTab::Provider LoginTab::getProvider(const juce::String& providerName)
+LoginTab::Provider LoginTab::getProvider(const String& providerName)
 {
-    static const juce::StringArray names { "huggingface", "stability" };
+    static const StringArray names { "huggingface", "stability" };
     auto i = names.indexOf(providerName.trim().toLowerCase());
     return (i >= 0) ? static_cast<LoginTab::Provider>(i) : LoginTab::Provider::UNKNOWN;
 }
 
-juce::String LoginTab::getStorageKey()
+String LoginTab::getStorageKey()
 {
     switch (provider)
     {
@@ -113,7 +113,7 @@ juce::String LoginTab::getStorageKey()
     }
 }
 
-OpResult LoginTab::validateToken(const juce::String& token)
+OpResult LoginTab::validateToken(const String& token)
 {
     switch (provider)
     {
@@ -147,7 +147,7 @@ void LoginTab::handleSubmit()
             AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                              "Invalid Token",
                                              "The provided token is invalid:\n" + err.userMessage);
-            juce::String savedToken = Settings::getString(getStorageKey());
+            String savedToken = Settings::getString(getStorageKey());
             if (savedToken.isNotEmpty())
             {
                 userToken.setText(savedToken);
@@ -193,9 +193,9 @@ void LoginTab::handleSubmit()
     }
 }
 
-juce::URL LoginTab::getTokenURL()
+URL LoginTab::getTokenURL()
 {
-    juce::String tokenURL;
+    String tokenURL;
     switch (provider)
     {
         case LoginTab::Provider::HUGGINGFACE:
@@ -207,8 +207,8 @@ juce::URL LoginTab::getTokenURL()
         default:
             break;
     }
-    // juce::URL(tokenURL).launchInDefaultBrowser();
-    return juce::URL(tokenURL);
+    // URL(tokenURL).launchInDefaultBrowser();
+    return URL(tokenURL);
 }
 
 void LoginTab::resized()
@@ -244,15 +244,9 @@ void LoginTab::resized()
     statusLabel.setBounds(area.removeFromBottom(rowH));
 }
 
-void LoginTab::paint(juce::Graphics& g)
+void LoginTab::setStatus(String text)
 {
-    //DBG_AND_LOG("LoginTab::paint()");
-    // g.fillAll(juce::Colours::lightgrey);
-}
-
-void LoginTab::setStatus(juce::String text)
-{
-    statusLabel.setText(std::move(text), juce::dontSendNotification);
+    statusLabel.setText(std::move(text), dontSendNotification);
 }
 
 void LoginTab::handleForget()

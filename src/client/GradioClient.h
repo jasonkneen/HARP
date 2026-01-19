@@ -107,6 +107,7 @@ public:
                 String host = array[0];
                 String model = array[1];
 
+                // TODO - this can load paths that were incorrectly added with "-" instead of "_" resulting in a broken documentation link
                 endpointPath = "https://" + host + "-" + model.replace("_", "-") + ".hf.space/";
             }
         }

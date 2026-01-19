@@ -75,15 +75,14 @@ target_sources(${PROJECT_NAME}
 
         # TODO - will probably remove
         #src/callbacks/Edit.cpp #
-        #src/callbacks/Authenticate.cpp #
         #src/callbacks/Process.cpp #
         #src/callbacks/Miscellaneous.cpp #
 
         src/windows/AboutWindow.h #
         src/windows/WelcomeWindow.h #
-        src/windows/settings/SettingsWindow.cpp #
-        src/windows/settings/GeneralSettingsTab.cpp #
-        #src/windows/settings/LoginTab.cpp #
+        src/windows/settings/SettingsWindow.h
+        src/windows/settings/GeneralSettingsTab.cpp
+        src/windows/settings/LoginTab.h #
 
         src/widgets/ModelSelectionWidget.h
         src/widgets/ModelInfoWidget.h

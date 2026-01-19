@@ -2,27 +2,30 @@
 
 AudioSettingsTab::AudioSettingsTab()
 {
-    deviceInfoLabel.setText("Audio Settings Placeholder", juce::dontSendNotification);
-    deviceInfoLabel.setJustificationType(juce::Justification::centredLeft);
+    deviceInfoLabel.setText("Audio Settings", dontSendNotification);
+    deviceInfoLabel.setJustificationType(Justification::centredLeft);
     addAndMakeVisible(deviceInfoLabel);
 
-    openAudioSettingsButton.setButtonText("Configure Audio Device...");
+    openAudioSettingsButton.setButtonText("Configure Audio Device");
     openAudioSettingsButton.onClick = [this] { handleOpenAudioSettings(); };
     addAndMakeVisible(openAudioSettingsButton);
 }
 
 void AudioSettingsTab::resized()
 {
-    auto area = getLocalBounds().reduced(10);
+    Rectangle<int> area = getLocalBounds().reduced(10);
+
     deviceInfoLabel.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10);
+
+    area.removeFromTop(10); // Filler space
+
     openAudioSettingsButton.setBounds(area.removeFromTop(30));
 }
 
 void AudioSettingsTab::handleOpenAudioSettings()
 {
-    // Placeholder: Open JUCE's built-in audio device selector (if needed later)
-    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+    // Open JUCE's built-in audio device selector (placeholder)
+    AlertWindow::showMessageBoxAsync(AlertWindow::InfoIcon,
                                            "Audio Settings",
                                            "Audio settings configuration will go here.");
 }

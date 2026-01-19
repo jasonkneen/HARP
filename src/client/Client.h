@@ -1,11 +1,30 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <juce_core/juce_core.h>
 
 #include "../utils/Errors.h"
 #include "../utils/Logging.h"
+#include "../utils/Settings.h"
 
 using namespace juce;
+
+enum class Provider
+{
+    HuggingFace,
+    Stability
+};
+
+struct SharedAPIKeys : public ChangeBroadcaster
+{
+    // TODO - initialize function that reads from settings
+
+    // TOOD - update function that updates token here and in settings
+    // TOOD - remove function that clears token here and in settings
+
+    //std::unordered_map<Provider, String> savedTokens = {};
+};
 
 inline OpResult parseJSONString(const String& stringJSON, var& outData)
 {
@@ -163,6 +182,8 @@ private:
 
         return authorizationHeader;
     }
+
+    //SharedResourcePointer<SharedAPIKeys> sharedTokens;
 
     String accessToken;
 };

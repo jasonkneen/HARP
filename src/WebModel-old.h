@@ -22,16 +22,6 @@
 class WebModel : public Model
 {
 public:
-    WebModel() { status2 = ModelStatus::INITIALIZED; }
-
-    ~WebModel() {}
-
-    bool ready() const override { return m_loaded; }
-
-    ComponentInfoList& getControlsInfo() { return controlsInfo; }
-    ComponentInfoList& getInputTracksInfo() { return inputTracksInfo; }
-    ComponentInfoList& getOutputTracksInfo() { return outputTracksInfo; }
-
     // A getter function that gets a Uuid and returns the corresponding info object
     // from any of the three maps
     // This is when using ComponentInfoList
@@ -153,17 +143,6 @@ public:
         status2 = ModelStatus::CANCELLED;
         return result;
     }
-
-    ModelStatus getStatus() { return status2; }
-
-    void setStatus(ModelStatus status) { status2 = status; }
-
-    ModelStatus getLastStatus() { return lastStatus; }
-    void setLastStatus(ModelStatus status) { lastStatus = status; }
-
-    Client& getClient() { return *loadedClient; }
-    Client& getTempClient() { return *tempClient; }
-    // StabilityClient& getStabilityClient() { return stabilityClient; }
 
     LabelList& getLabels() { return labels; }
 
@@ -315,14 +294,6 @@ private:
     //    1. c++ had an ordered map (like python)
     //    2. the gradio server would accept key:value pairs instead of list
     std::vector<juce::Uuid> uuidsInOrder;
-    std::unique_ptr<Client> loadedClient;
-    // GradioClient gradioClient;
-    // StabilityClient stabilityClient;
-
-    // A helper variable to store the status of the model
-    // before loading a new model. If the new model fails to load,
-    // we want to go back to the status we had before the failed attempt
-    ModelStatus lastStatus;
 
     // A variable to store the latest labelList received during processing
     LabelList labels;
