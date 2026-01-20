@@ -11,6 +11,22 @@
 
 using namespace juce;
 
+inline std::unique_ptr<Client> multiplexClients(Provider provider)
+{
+    if (provider == Provider::Stability)
+    {
+        DBG_AND_LOG("utils::multiplexClients: Initializing Stability client.");
+
+        return std::make_unique<StabilityClient>();
+    }
+    else
+    {
+        DBG_AND_LOG("utils::multiplexClients: Initializing Gradio client.");
+
+        return std::make_unique<GradioClient>();
+    }
+}
+
 inline OpResult multiplexClients(String modelPath, std::unique_ptr<Client>& client)
 {
     if (StabilityClient::matchesPathSpec(modelPath))

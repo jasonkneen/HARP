@@ -4,10 +4,6 @@
 #include "../utils/Errors.h"
 
 /*
-GradioClient::GradioClient() { tokenValidationURL = URL("https://huggingface.co/api/whoami-v2"); }
-*/
-
-/*
 // Requests
 OpResult GradioClient::processRequest(Error& error,
                                       String& processingPayload,
@@ -440,103 +436,6 @@ OpResult GradioClient::downloadFileFromURL(const URL& fileURL,
 
     // Store the file path where the file was downloaded
     downloadedFilePath = downloadedFile.getFullPathName();
-
-    return OpResult::ok();
-}
-*/
-
-/*
-OpResult GradioClient::validateToken(const String& newToken) const
-{
-    // Create the error here, in case we need it
-    Error error;
-    int statusCode = 0;
-
-    // Create a GET request to account API with provided token
-    auto options = URL::InputStreamOptions(URL::ParameterHandling::inAddress)
-                       .withExtraHeaders(getAuthorizationHeader(newToken))
-                       .withConnectionTimeoutMs(5000)
-                       .withStatusCode(&statusCode);
-
-    std::unique_ptr<InputStream> stream(tokenValidationURL.createInputStream(options));
-
-    if (stream == nullptr)
-    {
-        error.code = statusCode;
-        error.devMessage = "Failed to create input stream for GET request \nto validate token.";
-        return OpResult::fail(error);
-    }
-
-    String response = stream->readEntireStreamAsString();
-
-    // Check the status code to ensure the request was successful
-    if (statusCode != 200)
-    {
-        error.code = statusCode;
-        error.devMessage = "Authentication failed with status code: " + String(statusCode);
-        return OpResult::fail(error);
-    }
-
-    // Parse the response
-    var parsedResponse = JSON::parse(response);
-    if (! parsedResponse.isObject())
-    {
-        error.devMessage = "Failed to parse JSON response from validation API.";
-        return OpResult::fail(error);
-    }
-
-    DynamicObject* obj = parsedResponse.getDynamicObject();
-    if (obj == nullptr)
-    {
-        error.devMessage = "Parsed JSON from validation API is not an object.";
-        return OpResult::fail(error);
-    }
-
-    // TODO - split into queryToken and validateToken and reuse Client.cpp code
-
-    auto* tokenJSON =
-        obj->getProperty("auth").getDynamicObject()->getProperty("accessToken").getDynamicObject();
-
-    String role = tokenJSON->getProperty("role").toString();
-
-    if (! (role == "write" || role == "read"))
-    {
-        bool hasAllPermissions = false;
-
-        auto* scopedArray = tokenJSON->getProperty("fineGrained")
-                                .getDynamicObject()
-                                ->getProperty("scoped")
-                                .getArray();
-
-        for (const auto& scopeEntry : *scopedArray)
-        {
-            if (! scopeEntry.isObject())
-                continue;
-
-            var permissionsVar = scopeEntry.getDynamicObject()->getProperty("permissions");
-
-            if (! permissionsVar.isArray())
-                continue;
-
-            auto* permissionsArray = permissionsVar.getArray();
-            bool hasAll = permissionsArray->contains("repo.content.read")
-                          && permissionsArray->contains("repo.write")
-                          && permissionsArray->contains("inference.serverless.write")
-                          && permissionsArray->contains("inference.endpoints.infer.write");
-
-            if (hasAll)
-            {
-                hasAllPermissions = true;
-                break;
-            }
-        }
-
-        if (! hasAllPermissions)
-        {
-            error.devMessage = "Provided token does not have suitable read/write permissions.";
-            return OpResult::fail(error);
-        }
-    }
 
     return OpResult::ok();
 }

@@ -14,6 +14,8 @@
 
 #include "ModelTab.h"
 
+#include "client/Client.h"
+
 #include "widgets/MediaClipboardWidget.h"
 #include "widgets/StatusAreaWidget.h"
 

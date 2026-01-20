@@ -2,10 +2,9 @@
 
 #include <JuceHeader.h>
 
-#include "../../external/magic_enum.hpp"
-
 #include "../../client/Client.h"
 
+#include "../../utils/Clients.h"
 #include "../../utils/Logging.h"
 #include "../../utils/Settings.h"
 
@@ -14,109 +13,185 @@ using namespace juce;
 class ProviderPage : public Component
 {
 public:
-    explicit ProviderPage(Provider p) : provider(p)
+    ProviderPage(Provider p, String n) : provider(p), displayName(n)
     {
-        String providerName = std::string(magic_enum::enum_name(p)).c_str();
+        // Load appropriate client
+        client = multiplexClients(provider);
 
-        titleLabel.setText(providerName, dontSendNotification);
+        String titleText = "Update or remove your API key for " + displayName + ".";
+
+        titleLabel.setText(titleText, dontSendNotification);
+        titleLabel.setJustificationType(Justification::centred);
+
+        getTokenLink.setButtonText("Click here to register a new API key.");
+        getTokenLink.setURL(client->tokenRegistrationURL);
+        getTokenLink.setColour(HyperlinkButton::textColourId, Colours::blue);
 
         addAndMakeVisible(titleLabel);
-        addAndMakeVisible(infoLabel);
-        addAndMakeVisible(registerLabel);
-        addAndMakeVisible(linkLabel);
+        addAndMakeVisible(getTokenLink);
+
+        String emptyText = "Enter API key here";
+
+        tokenEditor.setTextToShowWhenEmpty(emptyText, Colours::grey);
+        tokenEditor.setReturnKeyStartsNewLine(false);
+        tokenEditor.setSelectAllWhenFocused(true);
+        tokenEditor.onTextChange = [this]()
+        {
+            bool hasText = tokenEditor.getText().trim().isNotEmpty();
+
+            updateButton.setEnabled(hasText);
+        };
+        tokenEditor.onReturnKey = [this] { updateButton.triggerClick(); };
 
         addAndMakeVisible(tokenEditor);
 
+        updateButton.addShortcut(KeyPress(KeyPress::returnKey));
+        updateButton.onClick = [this] { updateTokenCallback(); };
+        removeButton.onClick = [this] { removeTokenCallback(); };
+
+        if (sharedTokens->savedTokens.contains(p))
+        {
+            String savedToken = sharedTokens->savedTokens[p];
+
+            OpResult result = client->validateToken(savedToken);
+
+            if (result.failed())
+            {
+                statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
+            }
+            else
+            {
+                statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
+            }
+
+            tokenEditor.setText(savedToken);
+            removeButton.setEnabled(true);
+        }
+        else
+        {
+            statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+            updateButton.setEnabled(false);
+            removeButton.setEnabled(false);
+        }
+
         addAndMakeVisible(updateButton);
         addAndMakeVisible(removeButton);
+
+        statusLabel.setJustificationType(Justification::centred);
 
         addAndMakeVisible(statusLabel);
     }
 
     void resized() override
     {
-        //DBG_AND_LOG("LoginTab::resized()");
-        auto area = getLocalBounds().reduced(10);
-        const int rowH = 26;
-        const int gap = 10;
-        const int btnW = 120;
-        // Messages
-        titleLabel.setBounds(area.removeFromTop(rowH));
-        area.removeFromTop(gap);
-        infoLabel.setBounds(area.removeFromTop(rowH));
-        area.removeFromTop(gap);
-        auto registerRow = area.removeFromTop(rowH);
-        registerLabel.setBounds(registerRow.removeFromLeft(100));
-        linkLabel.setBounds(registerRow.removeFromLeft(btnW));
+        FlexBox pageArea;
+        pageArea.flexDirection = FlexBox::Direction::column;
 
-        // Token and Toggle
-        tokenEditor.setBounds(area.removeFromTop(rowH));
-        // rememberTokenToggle.setBounds(area.removeFromTop(rowH));
-        area.removeFromTop(gap);
-        // Buttons
-        auto buttonsRow = area.removeFromTop(rowH);
-        const int totalBtnW = btnW * 2 + gap;
-        auto right = buttonsRow.removeFromRight(totalBtnW);
-        updateButton.setBounds(right.removeFromLeft(btnW));
-        right.removeFromLeft(gap);
-        removeButton.setBounds(right.removeFromLeft(btnW));
-        // right.removeFromLeft(gap);
-        // tokenButton.setBounds(right); // remaining btnW
-        // Status
-        statusLabel.setBounds(area.removeFromBottom(rowH));
+        pageArea.items.add(FlexItem(titleLabel).withHeight(rowHeight).withMargin(marginSize));
+        pageArea.items.add(FlexItem().withHeight(gapSize)); // Filler space
+        pageArea.items.add(FlexItem(tokenEditor).withHeight(rowHeight).withMargin(marginSize));
+
+        FlexBox buttonsArea;
+        buttonsArea.flexDirection = FlexBox::Direction::row;
+
+        buttonsArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+        buttonsArea.items.add(FlexItem(updateButton).withWidth(buttonWidth));
+        buttonsArea.items.add(FlexItem().withWidth(gapSize)); // Filler space
+        buttonsArea.items.add(FlexItem(removeButton).withWidth(buttonWidth));
+        buttonsArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+        pageArea.items.add(FlexItem().withHeight(gapSize)); // Filler space
+        pageArea.items.add(FlexItem(buttonsArea).withHeight(rowHeight));
+        pageArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+        pageArea.items.add(FlexItem(statusLabel).withHeight(rowHeight));
+        pageArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+        pageArea.items.add(FlexItem(getTokenLink).withHeight(rowHeight).withMargin(marginSize));
+
+        pageArea.performLayout(getLocalBounds());
     }
 
+    String getDisplayName() { return displayName; }
+
 private:
+    void updateTokenCallback()
+    {
+        // TODO
+    }
+
+    void removeTokenCallback()
+    {
+        // TODO
+    }
+
+    const float marginSize = 2;
+    const float gapSize = 10;
+    const float rowHeight = 26;
+    const float buttonWidth = 120;
+
     Provider provider;
+    String displayName;
 
     Label titleLabel;
-    Label infoLabel;
-    Label registerLabel;
-    HyperlinkButton linkLabel;
+    HyperlinkButton getTokenLink;
 
     TextEditor tokenEditor;
 
     TextButton updateButton { "Update" };
     TextButton removeButton { "Remove" };
 
+    std::unique_ptr<Client> client;
+
+    String tokenMissingMessage = "No token has been added for this provider.";
+    String tokenInvalidMessage = "This token is invalid.";
+    String tokenLoadedMessage = "This token has been loaded.";
     Label statusLabel;
+
+    SharedResourcePointer<SharedAPIKeys> sharedTokens;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProviderPage)
 };
 
-class ComponentSwitcher : public Component
+class PageSwitcher : public Component
 {
 public:
+    struct Entry
+    {
+        String displayName;
+        std::unique_ptr<ProviderPage> page;
+    };
+
     void resized() override
     {
-        for (auto* c : components)
+        for (auto& e : entries)
         {
-            c->setBounds(getLocalBounds());
+            e.page->setBounds(getLocalBounds());
         }
     }
 
-    int getNumComponents() { return components.size(); }
+    int getNumPages() { return entries.size(); }
 
-    void addComponent(std::unique_ptr<Component> c)
+    const String& getNameForIndex(int idx) const { return entries[(size_t) idx].displayName; }
+
+    void showPageByIndex(int idx)
     {
-        Component* c_ptr = c.get();
-        components.add(std::move(c));
-        addAndMakeVisible(c_ptr);
-
-        // Make visible if this is only component
-        c_ptr->setVisible(components.size() == 1);
+        for (int i = 0; i < (int) entries.size(); ++i)
+        {
+            entries[i].page->setVisible(i == idx);
+        }
     }
 
-    void showComponent(int idx)
+    void addPage(std::unique_ptr<ProviderPage> page)
     {
-        for (int i = 0; i < components.size(); ++i)
-        {
-            components[i]->setVisible(i == idx);
-        }
+        addAndMakeVisible(page.get());
+        page->setVisible(entries.empty());
+
+        entries.push_back({ std::move(page->getDisplayName()), std::move(page) });
     }
 
 private:
-    OwnedArray<Component> components;
+    std::vector<Entry> entries;
 };
 
 class LoginTab : public Component, private ListBoxModel
@@ -124,16 +199,13 @@ class LoginTab : public Component, private ListBoxModel
 public:
     LoginTab()
     {
-        names = { "Hugging Face", "Stability AI" };
-
         sidebar.setModel(this);
         sidebar.setRowHeight(36);
         sidebar.setOutlineThickness(0);
         addAndMakeVisible(sidebar);
 
-        loginPages.addComponent(
-            std::make_unique<ProviderPage>(Provider::HuggingFace));
-        loginPages.addComponent(std::make_unique<ProviderPage>(Provider::Stability));
+        loginPages.addPage(std::make_unique<ProviderPage>(Provider::HuggingFace, "Hugging Face"));
+        loginPages.addPage(std::make_unique<ProviderPage>(Provider::Stability, "Stability AI"));
         addAndMakeVisible(loginPages);
 
         sidebar.updateContent();
@@ -150,7 +222,7 @@ public:
     }
 
 private:
-    int getNumRows() override { return names.size(); }
+    int getNumRows() override { return loginPages.getNumPages(); }
 
     void paintListBoxItem(int rowNumber,
                           Graphics& g,
@@ -165,15 +237,14 @@ private:
 
         g.setColour(Colours::white);
         g.setFont(14.0f);
-        g.drawText(names[rowNumber], 0, 0, width, height, Justification::centred);
+        g.drawText(
+            loginPages.getNameForIndex(rowNumber), 0, 0, width, height, Justification::centred);
     }
 
-    void selectedRowsChanged(int row) override { loginPages.showComponent(row); }
+    void selectedRowsChanged(int row) override { loginPages.showPageByIndex(row); }
 
     ListBox sidebar;
-    ComponentSwitcher loginPages;
-
-    StringArray names;
+    PageSwitcher loginPages;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LoginTab)
 };

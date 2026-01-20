@@ -61,7 +61,7 @@ public:
         continueButton.onClick = [this]()
         {
             const bool dontShow = dontShowAgain.getToggleState();
-            Settings::setValue("showWelcomePopup", dontShow ? 0 : 1, true);
+            Settings::setValue("view.showWelcomePopup", dontShow ? 0 : 1, true);
 
             if (auto* window = findParentComponentOfClass<DialogWindow>())
                 window->closeButtonPressed();

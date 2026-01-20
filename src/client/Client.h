@@ -4,6 +4,8 @@
 
 #include <juce_core/juce_core.h>
 
+#include "../external/magic_enum.hpp"
+
 #include "../utils/Errors.h"
 #include "../utils/Logging.h"
 #include "../utils/Settings.h"
@@ -18,12 +20,33 @@ enum class Provider
 
 struct SharedAPIKeys : public ChangeBroadcaster
 {
-    // TODO - initialize function that reads from settings
+    void initializeAPIKeys()
+    {
+        for (auto provider : { Provider::HuggingFace, Provider::Stability })
+        {
+            String savedToken = Settings::getString(
+                settingsCategory + "." + std::string(magic_enum::enum_name(provider)).c_str());
 
-    // TOOD - update function that updates token here and in settings
-    // TOOD - remove function that clears token here and in settings
+            if (savedToken.isNotEmpty())
+            {
+                savedTokens[provider] = savedToken;
+            }
+        }
+    }
 
-    //std::unordered_map<Provider, String> savedTokens = {};
+    void updateKey(Provider provider, String newAPIKey)
+    {
+        // TOOD - update token here and in settings
+    }
+
+    void updateKey(Provider provider)
+    {
+        // TOOD - clear token here and in settings
+    }
+
+    String settingsCategory = "apikeys";
+
+    std::unordered_map<Provider, String> savedTokens = {};
 };
 
 inline OpResult parseJSONString(const String& stringJSON, var& outData)
@@ -154,6 +177,74 @@ public:
     virtual String inferEndpointPath(String modelPath) = 0;
     virtual String inferDocumentationPath(String modelPath) = 0;
 
+    const URL tokenValidationURL;
+    const URL tokenRegistrationURL;
+
+    OpResult queryToken(const String& tokenToQuery, String& response, const int timeoutMs = 5000)
+    {
+        String tokenValidationPath = tokenValidationURL.toString(true);
+
+        DBG_AND_LOG("Client::queryToken: Attempting to query client at \""
+                    << tokenValidationPath << "\" with token \"" << tokenToQuery << "\".");
+
+        if (! tokenValidationURL.isWellFormed())
+        {
+            return OpResult::fail(HttpError {
+                HttpError::Type::InvalidURL, HttpError::Request::GET, tokenValidationPath });
+        }
+
+        int statusCode = 0;
+
+        auto options = URL::InputStreamOptions(URL::ParameterHandling::inAddress)
+                           .withExtraHeaders(getAuthorizationHeader(tokenToQuery))
+                           .withConnectionTimeoutMs(timeoutMs)
+                           .withStatusCode(&statusCode);
+
+        std::unique_ptr<InputStream> stream(tokenValidationURL.createInputStream(options));
+
+        if (stream == nullptr)
+        {
+            return OpResult::fail(HttpError {
+                HttpError::Type::ConnectionFailed, HttpError::Request::GET, tokenValidationPath });
+        }
+
+        response = stream->readEntireStreamAsString();
+
+        DBG_AND_LOG("Client::queryToken: Received status code \""
+                    << String(statusCode) << "\" with response \"" << response << "\".");
+
+        if (statusCode != 200)
+        {
+            return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
+                                              HttpError::Request::GET,
+                                              tokenValidationPath,
+                                              statusCode });
+        }
+
+        return OpResult::ok();
+    }
+
+    virtual OpResult validateToken(const String& tokenToValidate)
+    {
+        String responseJSON;
+
+        OpResult result = queryToken(tokenToValidate, responseJSON);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        DynamicObject::Ptr responseDict;
+
+        result = stringJSONToDict(responseJSON, responseDict);
+
+        if (result.failed())
+        {
+            return result;
+        }
+    }
+
     virtual OpResult queryControls(String modelPath, DynamicObject::Ptr& controls) = 0;
 
     const String emptyJSONBody = R"({"data": []})";
@@ -173,6 +264,13 @@ protected:
 private:
     String getAuthorizationHeader() const
     {
+        // TODO - look up appropriate token here
+        //return getAuthorizationHeader(sharedTokens);
+        return "";
+    }
+
+    String getAuthorizationHeader(String accessToken) const
+    {
         String authorizationHeader;
 
         if (! accessToken.isEmpty())
@@ -183,7 +281,5 @@ private:
         return authorizationHeader;
     }
 
-    //SharedResourcePointer<SharedAPIKeys> sharedTokens;
-
-    String accessToken;
+    SharedResourcePointer<SharedAPIKeys> sharedTokens;
 };

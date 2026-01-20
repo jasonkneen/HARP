@@ -12,8 +12,11 @@ MainComponent::MainComponent()
     addAndMakeVisible(statusAreaWidget);
     addAndMakeVisible(mediaClipboardWidget);
 
-    showStatusArea = Settings::getBoolValue("showStatusArea", true);
-    showMediaClipboard = Settings::getBoolValue("showMediaClipboard", false);
+    showStatusArea = Settings::getBoolValue("view.showStatusArea", true);
+    showMediaClipboard = Settings::getBoolValue("view.showMediaClipboard", false);
+
+    SharedResourcePointer<SharedAPIKeys> sharedTokens;
+    sharedTokens->initializeAPIKeys();
 
     setSize(800, 2000);
 

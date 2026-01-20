@@ -399,7 +399,7 @@ void MainComponent::viewStatusAreaCallback()
     }
 
     // Add view preference to persistent settings
-    Settings::setValue("showStatusArea", showStatusArea ? "1" : "0", true);
+    Settings::setValue("view.showStatusArea", showStatusArea ? "1" : "0", true);
 
     // Send status message to add check to file menu
     commandManager.commandStatusChanged();
@@ -458,7 +458,7 @@ void MainComponent::viewMediaClipboardCallback()
     }
 
     // Add view preference to persistent settings
-    Settings::setValue("showMediaClipboard", showMediaClipboard ? "1" : "0", true);
+    Settings::setValue("view.showMediaClipboard", showMediaClipboard ? "1" : "0", true);
 
     // Send status message to add check to file menu
     commandManager.commandStatusChanged();
