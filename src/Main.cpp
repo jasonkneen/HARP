@@ -75,9 +75,9 @@ public:
 
         if (! forceShowWelcome)
         {
-            if (Settings::containsKey("showWelcomePopup"))
+            if (Settings::containsKey("view.showWelcomePopup"))
             {
-                showWelcome = Settings::getIntValue("showWelcomePopup", 1) == 1;
+                showWelcome = Settings::getIntValue("view.showWelcomePopup", 1) == 1;
             }
         }
 

@@ -16,7 +16,7 @@
 
 using namespace juce;
 
-enum ModelStatus
+enum class ModelStatus
 {
     EMPTY,
 

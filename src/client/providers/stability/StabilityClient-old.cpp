@@ -1,13 +1,6 @@
 #include "StabilityClient.h"
 
 /*
-StabilityClient::StabilityClient()
-{
-    tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
-}
-*/
-
-/*
 String StabilityClient::mimeForAudioFile(const File& f)
 {
     auto ext = f.getFileExtension().toLowerCase(); // includes the dot

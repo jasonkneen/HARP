@@ -2,12 +2,12 @@
 
 GeneralSettingsTab::GeneralSettingsTab()
 {
-    // Setup button to open log folder
+    // Set up button to open log folder
     openLogFolderButton.setButtonText("Open Log Folder");
     openLogFolderButton.onClick = [this] { handleOpenLogFolder(); };
     addAndMakeVisible(openLogFolderButton);
 
-    // Setup button to open settings file
+    // Set up button to open settings file
     openSettingsButton.setButtonText("Open Settings File");
     openSettingsButton.onClick = [this] { handleOpenSettings(); };
     addAndMakeVisible(openSettingsButton);
@@ -15,17 +15,13 @@ GeneralSettingsTab::GeneralSettingsTab()
 
 void GeneralSettingsTab::resized()
 {
-    //DBG_AND_LOG("GeneralSettingsTab::resized()");
-    auto area = getLocalBounds().reduced(10);
-    openLogFolderButton.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10); // Spacer
-    openSettingsButton.setBounds(area.removeFromTop(30));
-}
+    Rectangle<int> area = getLocalBounds().reduced(10);
 
-void GeneralSettingsTab::paint(juce::Graphics& g)
-{
-    //DBG_AND_LOG("GeneralSettingsTab::paint()");
-    // g.fillAll(juce::Colours::lightgrey);
+    openLogFolderButton.setBounds(area.removeFromTop(30));
+
+    area.removeFromTop(10); // Filler space
+
+    openSettingsButton.setBounds(area.removeFromTop(30));
 }
 
 void GeneralSettingsTab::handleOpenLogFolder()
@@ -41,6 +37,6 @@ void GeneralSettingsTab::handleOpenSettings()
     }
     else
     {
-        // TODO - popup
+        // TODO - handler error case
     }
 }

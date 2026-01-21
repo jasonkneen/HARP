@@ -15,13 +15,15 @@ struct ClientError
     enum class Type
     {
         UnknownClient,
-        InvalidModelPath
+        InvalidModelPath,
+        InsufficientPermissions
     };
 
     Type type;
 
     String path;
     String client;
+    String token;
 };
 
 inline String toUserMessage(const ClientError& e)
@@ -60,6 +62,26 @@ inline String toUserMessage(const ClientError& e)
             }
 
             userMessage += ".";
+
+            return userMessage;
+
+        case ClientError::Type::InsufficientPermissions:
+
+            userMessage = "Token ";
+
+            if (e.token.isNotEmpty())
+            {
+                userMessage += "\"" + e.token + "\" ";
+            }
+
+            userMessage += "for client";
+
+            if (e.client.isNotEmpty())
+            {
+                userMessage += " \"" + e.client + "\"";
+            }
+
+            userMessage += " does not have sufficient permissions.";
 
             return userMessage;
     }

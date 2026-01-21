@@ -20,7 +20,8 @@ public:
 
     GradioClient()
     {
-        // TODO
+        tokenValidationURL = URL("https://huggingface.co/api/whoami-v2");
+        tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
     }
 
     //~GradioClient() override {} // TODO
@@ -107,6 +108,7 @@ public:
                 String host = array[0];
                 String model = array[1];
 
+                // TODO - this can load paths that were incorrectly added with "-" instead of "_" resulting in a broken documentation link
                 endpointPath = "https://" + host + "-" + model.replace("_", "-") + ".hf.space/";
             }
         }
@@ -131,7 +133,8 @@ public:
         {
             if (isValidShortHuggingFacePath(modelPath) || isValidAbbrevHuggingFacePath(modelPath))
             {
-                documentationPath = "https://huggingface.co/spaces/" + inferHostSlashModel(modelPath);
+                documentationPath =
+                    "https://huggingface.co/spaces/" + inferHostSlashModel(modelPath);
             }
             else if (isValidLongHuggingFacePath(modelPath))
             {
@@ -145,6 +148,77 @@ public:
         }
 
         return documentationPath;
+    }
+
+    virtual OpResult validateToken(const String& tokenToValidate) override
+    {
+        String responseJSON;
+
+        OpResult result = queryToken(tokenToValidate, responseJSON);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        DynamicObject::Ptr responseDict;
+
+        result = stringJSONToDict(responseJSON, responseDict);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        auto* tokenJSON = responseDict->getProperty("auth")
+                              .getDynamicObject()
+                              ->getProperty("accessToken")
+                              .getDynamicObject();
+
+        String role = tokenJSON->getProperty("role").toString();
+
+        if (! (role == "write" || role == "read"))
+        {
+            bool hasAllPermissions = false;
+
+            auto* scopedArray = tokenJSON->getProperty("fineGrained")
+                                    .getDynamicObject()
+                                    ->getProperty("scoped")
+                                    .getArray();
+
+            for (const auto& scopeEntry : *scopedArray)
+            {
+                if (! scopeEntry.isObject())
+                    continue;
+
+                var permissionsVar = scopeEntry.getDynamicObject()->getProperty("permissions");
+
+                if (! permissionsVar.isArray())
+                    continue;
+
+                auto* permissionsArray = permissionsVar.getArray();
+                bool hasAll = permissionsArray->contains("repo.content.read")
+                              && permissionsArray->contains("repo.write")
+                              && permissionsArray->contains("inference.serverless.write")
+                              && permissionsArray->contains("inference.endpoints.infer.write");
+
+                if (hasAll)
+                {
+                    hasAllPermissions = true;
+                    break;
+                }
+            }
+
+            if (! hasAllPermissions)
+            {
+                return OpResult::fail(ClientError { ClientError::Type::InsufficientPermissions,
+                                                    "",
+                                                    "Hugging Face",
+                                                    tokenToValidate });
+            }
+        }
+
+        return OpResult::ok();
     }
 
     OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
@@ -331,8 +405,9 @@ private:
 
         if (! endpoint.isWellFormed())
         {
-            return OpResult::fail(HttpError {
-                HttpError::Type::InvalidURL, HttpError::Request::POST, inferDocumentationPath(modelPath) });
+            return OpResult::fail(HttpError { HttpError::Type::InvalidURL,
+                                              HttpError::Request::POST,
+                                              inferDocumentationPath(modelPath) });
         }
 
         int statusCode = 0;
@@ -388,8 +463,9 @@ private:
 
         if (! endpoint.isWellFormed())
         {
-            return OpResult::fail(HttpError {
-                HttpError::Type::InvalidURL, HttpError::Request::GET, inferDocumentationPath(modelPath) });
+            return OpResult::fail(HttpError { HttpError::Type::InvalidURL,
+                                              HttpError::Request::GET,
+                                              inferDocumentationPath(modelPath) });
         }
 
         int statusCode = 0;

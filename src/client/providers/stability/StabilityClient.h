@@ -13,7 +13,8 @@ class StabilityClient : public Client
 public:
     StabilityClient()
     {
-        // TODO
+        tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
+        tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
     }
 
     //~StabilityClient() override {} // TODO

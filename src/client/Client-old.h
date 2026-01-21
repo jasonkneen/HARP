@@ -31,9 +31,6 @@ public:
     void setToken(const String& t) { accessToken = t; }
     String getToken() const { return accessToken; }
 
-    //OpResult queryToken(const String& token) const;
-    virtual OpResult validateToken(const String& newToken) const;
-
 protected:
 
     String accessToken;
