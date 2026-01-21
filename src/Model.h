@@ -143,8 +143,6 @@ public:
             return result;
         }
 
-        // TODO - link access token if available
-
         setStatus(ModelStatus::QUERYING_CONTROLS);
 
         // Initialize empty dictionary to hold query response

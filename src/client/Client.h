@@ -262,6 +262,8 @@ public:
         return headers.replace("\r", "\\r").replace("\n", "\\n");
     }
 
+    Provider provider;
+
     URL tokenValidationURL;
     URL tokenRegistrationURL;
 
@@ -272,9 +274,14 @@ protected:
 private:
     String getAuthorizationHeader() const
     {
-        // TODO - look up appropriate token here
-        //return getAuthorizationHeader(sharedTokens);
-        return "";
+        String accessToken;
+
+        if (sharedTokens->savedTokens.contains(provider))
+        {
+            accessToken = sharedTokens->savedTokens[provider];
+        }
+
+        return getAuthorizationHeader(accessToken);
     }
 
     String getAuthorizationHeader(String accessToken) const

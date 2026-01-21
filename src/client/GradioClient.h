@@ -20,6 +20,8 @@ public:
 
     GradioClient()
     {
+        provider = Provider::HuggingFace;
+
         tokenValidationURL = URL("https://huggingface.co/api/whoami-v2");
         tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
     }

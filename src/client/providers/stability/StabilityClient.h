@@ -13,6 +13,8 @@ class StabilityClient : public Client
 public:
     StabilityClient()
     {
+        provider = Provider::Stability;
+
         tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
         tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
     }
