@@ -20,7 +20,8 @@ public:
 
     GradioClient()
     {
-        // TODO
+        tokenValidationURL = URL("https://huggingface.co/api/whoami-v2");
+        tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
     }
 
     //~GradioClient() override {} // TODO
@@ -149,10 +150,7 @@ public:
         return documentationPath;
     }
 
-    const URL tokenValidationURL = URL("https://huggingface.co/api/whoami-v2");
-    const URL tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
-
-    virtual OpResult validateToken(const String& tokenToValidate)
+    virtual OpResult validateToken(const String& tokenToValidate) override
     {
         String responseJSON;
 

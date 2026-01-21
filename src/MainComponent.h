@@ -144,6 +144,7 @@ private:
     StatusAreaWidget statusAreaWidget;
     MediaClipboardWidget mediaClipboardWidget;
 
+    SharedResourcePointer<SharedAPIKeys> sharedTokens;
     SharedResourcePointer<StatusMessage> statusMessage;
 
     // ---

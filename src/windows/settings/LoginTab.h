@@ -37,9 +37,36 @@ public:
         tokenEditor.setSelectAllWhenFocused(true);
         tokenEditor.onTextChange = [this]()
         {
-            bool hasText = tokenEditor.getText().trim().isNotEmpty();
+            String currentText = tokenEditor.getText().trim();
 
-            updateButton.setEnabled(hasText);
+            if (currentText.isNotEmpty())
+            {
+                if (sharedTokens->savedTokens.contains(provider))
+                {
+                    String savedToken = sharedTokens->savedTokens[provider];
+
+                    if (currentText == savedToken)
+                    {
+                        updateButton.setEnabled(false);
+                        removeButton.setEnabled(true);
+                    }
+                    else
+                    {
+                        updateButton.setEnabled(true);
+                        removeButton.setEnabled(false);
+                    }
+                }
+                else
+                {
+                    updateButton.setEnabled(true);
+                    removeButton.setEnabled(false);
+                }
+            }
+            else
+            {
+                updateButton.setEnabled(false);
+                removeButton.setEnabled(false);
+            }
         };
         tokenEditor.onReturnKey = [this] { updateButton.triggerClick(); };
 
@@ -49,30 +76,7 @@ public:
         updateButton.onClick = [this] { updateTokenCallback(); };
         removeButton.onClick = [this] { removeTokenCallback(); };
 
-        if (sharedTokens->savedTokens.contains(p))
-        {
-            String savedToken = sharedTokens->savedTokens[p];
-
-            OpResult result = client->validateToken(savedToken);
-
-            if (result.failed())
-            {
-                statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
-            }
-            else
-            {
-                statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
-            }
-
-            tokenEditor.setText(savedToken);
-            removeButton.setEnabled(true);
-        }
-        else
-        {
-            statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
-            updateButton.setEnabled(false);
-            removeButton.setEnabled(false);
-        }
+        resetState();
 
         addAndMakeVisible(updateButton);
         addAndMakeVisible(removeButton);
@@ -114,15 +118,76 @@ public:
 
     String getDisplayName() { return displayName; }
 
+    void resetState()
+    {
+        if (sharedTokens->savedTokens.contains(provider))
+        {
+            String savedToken = sharedTokens->savedTokens[provider];
+
+            OpResult result = client->validateToken(savedToken);
+
+            if (result.failed())
+            {
+                statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
+            }
+            else
+            {
+                statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
+            }
+
+            tokenEditor.setText(savedToken);
+            removeButton.setEnabled(true);
+        }
+        else
+        {
+            statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+            updateButton.setEnabled(false);
+            removeButton.setEnabled(false);
+        }
+    }
+
 private:
     void updateTokenCallback()
     {
-        // TODO
+        String enteredToken = tokenEditor.getText().trim();
+
+        if (enteredToken.isNotEmpty())
+        {
+            OpResult result = client->validateToken(enteredToken);
+
+            if (result.failed())
+            {
+                statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
+            }
+            else
+            {
+                sharedTokens->updateKey(provider, enteredToken);
+
+                statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
+                removeButton.setEnabled(true);
+            }
+
+            updateButton.setEnabled(false);
+        }
+        else
+        {
+            statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+        }
     }
 
     void removeTokenCallback()
     {
-        // TODO
+        if (sharedTokens->savedTokens.contains(provider))
+        {
+            sharedTokens->removeKey(provider);
+
+            tokenEditor.clear();
+
+            statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+
+            updateButton.setEnabled(false);
+            removeButton.setEnabled(false);
+        }
     }
 
     const float marginSize = 2;
@@ -174,11 +239,12 @@ public:
 
     const String& getNameForIndex(int idx) const { return entries[(size_t) idx].displayName; }
 
-    void showPageByIndex(int idx)
+    void showPage(int idx)
     {
         for (int i = 0; i < (int) entries.size(); ++i)
         {
             entries[i].page->setVisible(i == idx);
+            entries[i].page->resetState();
         }
     }
 
@@ -241,7 +307,7 @@ private:
             loginPages.getNameForIndex(rowNumber), 0, 0, width, height, Justification::centred);
     }
 
-    void selectedRowsChanged(int row) override { loginPages.showPageByIndex(row); }
+    void selectedRowsChanged(int row) override { loginPages.showPage(row); }
 
     ListBox sidebar;
     PageSwitcher loginPages;

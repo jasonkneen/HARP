@@ -13,7 +13,8 @@ class StabilityClient : public Client
 public:
     StabilityClient()
     {
-        // TODO
+        tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
+        tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
     }
 
     //~StabilityClient() override {} // TODO
@@ -89,9 +90,6 @@ public:
 
         return documentationPath;
     }
-
-    const URL tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
-    const URL tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
 
     OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
     {

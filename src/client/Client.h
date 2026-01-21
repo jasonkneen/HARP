@@ -18,14 +18,13 @@ enum class Provider
     Stability
 };
 
-struct SharedAPIKeys : public ChangeBroadcaster
+struct SharedAPIKeys // : public ChangeBroadcaster
 {
     void initializeAPIKeys()
     {
         for (auto provider : { Provider::HuggingFace, Provider::Stability })
         {
-            String savedToken = Settings::getString(
-                settingsCategory + "." + std::string(magic_enum::enum_name(provider)).c_str());
+            String savedToken = Settings::getString(providerToSettingsKey(provider));
 
             if (savedToken.isNotEmpty())
             {
@@ -34,17 +33,26 @@ struct SharedAPIKeys : public ChangeBroadcaster
         }
     }
 
+    String providerToSettingsKey(Provider p)
+    {
+        return settingsPrefix + "." + std::string(magic_enum::enum_name(p)).c_str();
+    }
+
     void updateKey(Provider provider, String newAPIKey)
     {
-        // TOOD - update token here and in settings
+        savedTokens[provider] = newAPIKey;
+
+        Settings::setValue(providerToSettingsKey(provider), newAPIKey, true);
     }
 
-    void updateKey(Provider provider)
+    void removeKey(Provider provider)
     {
-        // TOOD - clear token here and in settings
+        savedTokens.erase(provider);
+
+        Settings::removeValue(providerToSettingsKey(provider), true);
     }
 
-    String settingsCategory = "apikeys";
+    String settingsPrefix = "apikeys";
 
     std::unordered_map<Provider, String> savedTokens = {};
 };
@@ -177,9 +185,6 @@ public:
     virtual String inferEndpointPath(String modelPath) = 0;
     virtual String inferDocumentationPath(String modelPath) = 0;
 
-    const URL tokenValidationURL;
-    const URL tokenRegistrationURL;
-
     OpResult queryToken(const String& tokenToQuery, String& response, const int timeoutMs = 5000)
     {
         String tokenValidationPath = tokenValidationURL.toString(true);
@@ -256,6 +261,9 @@ public:
     {
         return headers.replace("\r", "\\r").replace("\n", "\\n");
     }
+
+    URL tokenValidationURL;
+    URL tokenRegistrationURL;
 
 protected:
     String getCommonHeaders() const { return getAuthorizationHeader() + acceptHeader; }

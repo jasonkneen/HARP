@@ -15,7 +15,6 @@ MainComponent::MainComponent()
     showStatusArea = Settings::getBoolValue("view.showStatusArea", true);
     showMediaClipboard = Settings::getBoolValue("view.showMediaClipboard", false);
 
-    SharedResourcePointer<SharedAPIKeys> sharedTokens;
     sharedTokens->initializeAPIKeys();
 
     setSize(800, 2000);
