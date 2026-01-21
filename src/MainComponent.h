@@ -4,7 +4,7 @@
 
 #include "ModelTab.h"
 
-#include "client/Client.h"
+#include "clients/Client.h"
 
 #include "widgets/MediaClipboardWidget.h"
 #include "widgets/StatusAreaWidget.h"

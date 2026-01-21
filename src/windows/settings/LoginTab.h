@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 
-#include "../../client/Client.h"
+#include "../../clients/Client.h"
 
 #include "../../utils/Clients.h"
 #include "../../utils/Logging.h"

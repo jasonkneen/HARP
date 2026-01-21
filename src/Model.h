@@ -5,7 +5,7 @@
 
 #include <juce_core/juce_core.h>
 
-#include "client/Client.h"
+#include "clients/Client.h"
 
 #include "widgets/StatusAreaWidget.h"
 

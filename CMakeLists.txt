@@ -103,12 +103,12 @@ target_sources(${PROJECT_NAME}
         src/media/pianoroll/PianoRollComponent.cpp
         src/media/pianoroll/SynthAudioSource.h
 
-        #src/client/Client.cpp #
-        src/client/Client.h #
-        #src/client/GradioClient.cpp #
-        src/client/GradioClient.h #
-        #src/client/StabilityClient.cpp #
-        src/client/GradioClient.h #
+        #src/clients/Client.cpp #
+        src/clients/Client.h #
+        #src/clients/GradioClient.cpp #
+        src/clients/GradioClient.h #
+        #src/clients/StabilityClient.cpp #
+        src/clients/GradioClient.h #
 
         src/utils/Logging.h
         src/utils/Settings.h
@@ -173,8 +173,8 @@ target_compile_definitions(${PROJECT_NAME}
 
 juce_add_binary_data(stability_controls
     SOURCES
-        ${CMAKE_SOURCE_DIR}/src/client/providers/stability/models/text-to-audio.json
-        ${CMAKE_SOURCE_DIR}/src/client/providers/stability/models/audio-to-audio.json
+        ${CMAKE_SOURCE_DIR}/src/clients/providers/stability/models/text-to-audio.json
+        ${CMAKE_SOURCE_DIR}/src/clients/providers/stability/models/audio-to-audio.json
 )
 
 # `target_link_libraries` links libraries and JUCE modules to other libraries or executables. Here,

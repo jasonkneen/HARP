@@ -2,9 +2,9 @@
 
 #include <juce_core/juce_core.h>
 
-#include "../client/Client.h"
-#include "../client/GradioClient.h"
-#include "../client/providers/stability/StabilityClient.h"
+#include "../clients/Client.h"
+#include "../clients/GradioClient.h"
+#include "../clients/providers/stability/StabilityClient.h"
 
 #include "Errors.h"
 #include "Logging.h"
