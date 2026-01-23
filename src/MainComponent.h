@@ -165,6 +165,9 @@ public:
     {
         auto aboutComponent = std::make_unique<AboutWindow>();
 
+        // Set up the tutorial callback before releasing ownership
+        aboutComponent->onShowTutorial = [this]() { showTutorialFromAbout(); };
+
         DialogWindow::LaunchOptions dialog;
         dialog.content.setOwned(aboutComponent.release());
         dialog.dialogTitle = "About " + String(APP_NAME);
@@ -175,6 +178,18 @@ public:
 
         dialog.launchAsync();
     }
+
+    void showTutorialFromAbout()
+    {
+        // Trigger the static callback if it's been set by the application
+        if (showTutorialCallback)
+        {
+            showTutorialCallback();
+        }
+    }
+
+    // Static callback that the application sets to trigger the welcome window
+    static std::function<void()> showTutorialCallback;
 
     void undoCallback();
 

@@ -4,6 +4,9 @@
 
 using namespace juce;
 
+// Define the static callback member from MainComponent
+std::function<void()> MainComponent::showTutorialCallback = nullptr;
+
 class GuiAppApplication : public JUCEApplication
 {
 public:
@@ -75,25 +78,11 @@ public:
 
         if (showWelcome)
         {
-            MessageManager::callAsync(
-                [this]()
-                {
-                    auto* mainComp =
-                        dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
-                    if (mainComp)
-                    {
-                        welcomeWindow.reset(new WelcomeWindow(mainComp));
-
-                        // Handle window closing
-                        welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
-
-                        // Position relative to main window or center
-                        welcomeWindow->centreWithSize(500, 420);
-                        welcomeWindow->setVisible(true);
-                        welcomeWindow->toFront(true);
-                    }
-                });
+            showWelcomeWindow();
         }
+
+        // Set up the static callback for MainComponent to trigger Welcome window
+        MainComponent::showTutorialCallback = [this]() { showWelcomeWindow(); };
 
         StringArray args;
 
@@ -196,6 +185,31 @@ public:
      * the app will continue to run, or quit() can be called to close the app.
      */
     void systemRequestedQuit() override { quit(); }
+
+    /**
+     * Public method to show the Welcome/Tutorial window.
+     * Called from MainComponent when user clicks "Show Tutorial" in About.
+     */
+    void showWelcomeWindow()
+    {
+        MessageManager::callAsync(
+            [this]()
+            {
+                auto* mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
+                if (mainComp)
+                {
+                    welcomeWindow.reset(new WelcomeWindow(mainComp));
+
+                    // Handle window closing
+                    welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
+
+                    // Position relative to main window or center
+                    welcomeWindow->centreWithSize(500, 420);
+                    welcomeWindow->setVisible(true);
+                    welcomeWindow->toFront(true);
+                }
+            });
+    }
 
     /**
      * Implements desktop window that contains instance of MainComponent.
