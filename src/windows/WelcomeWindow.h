@@ -182,7 +182,7 @@ public:
               "This is the " + modelName + ".\n" + getFriendlyModelSummary(modelName)
                   + "\n\n"
                     "1. Add input\n"
-                    "Drag an audio or MIDI file into the Input track, use the folder icon to browse, or the play button to preview.\n\n"
+                    "Drag an audio file into the Input track, use the folder icon to browse, or the play button to preview.\n\n"
                     "2. Process\n"
                     "Click Process to run the model.\n\n"
                     "3. Output\n"
@@ -295,7 +295,8 @@ public:
         steps.push_back(
             { "Media Clipboard",
               "This clipboard is a scratch space. Tracks here do not interact with the models directly.\n\n"
-              "However, you can stash model outputs here to reuse them later.",
+              "However, you can stash model outputs here to reuse them later.\n\n"
+              "To stash the input or output track in the clipboard, drag the track here to re-use it later.",
               [](MainComponent* c) { return c->getClipboardBounds(); },
               nullptr });
 
@@ -318,8 +319,8 @@ public:
         steps.push_back(
             { "All Set!",
               "Most models in HARP are hosted on external service like Hugging Face and Stability AI. To use them, you will need API tokens.\n\n"
-              "An API token is a private access key that lets HARP securely connect to these services on your behalf. It tells the service that you are allowed to use the model\n\n"
-              "You can get these tokens from your account settings on the respective service websites. You can find the exact link in 'File -> Settings' to help you add your token.\n\n"
+              "An API token is a private access key that lets HARP securely connect to these services on your behalf. It tells the service that you are allowed to use the model.\n\n"
+              "You can get these tokens from your account settings on the respective service websites. You can find the exact link in 'File -> Settings' and select the tab of the service whose tokens you need to use.\n\n"
               "You are now ready to start creating!",
               [](MainComponent*) { return Rectangle<int>(); } });
 
