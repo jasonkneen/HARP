@@ -22,91 +22,15 @@
 class WebModel : public Model
 {
 public:
-    // A getter function that gets a Uuid and returns the corresponding info object
-    // from any of the three maps
-    // This is when using ComponentInfoList
-    // Not as efficient as the map version, but it's easier to use vector<pair<>> in the GUI
-    std::shared_ptr<PyHarpComponentInfo> findComponentInfoByUuid(const juce::Uuid& id) const
-    {
-        for (const auto& pair : controlsInfo)
-        {
-            if (pair.first == id)
-                return pair.second;
-        }
-        for (const auto& pair : inputTracksInfo)
-        {
-            if (pair.first == id)
-                return pair.second;
-        }
-        for (const auto& pair : outputTracksInfo)
-        {
-            if (pair.first == id)
-                return pair.second;
-        }
-        return nullptr;
-    }
-
     // The input is a vector of String:File objects corresponding to
     // the files currently loaded in each inputMediaDisplay
     OpResult process(std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles)
     {
-        status2 = ModelStatus::STARTING;
-        // Create an Error object in case we need it
-        // and a successful result
-        Error error;
-        error.type = ErrorType::JsonParseError;
-        OpResult result = OpResult::ok();
-
-        status2 = ModelStatus::SENDING;
 
         // Clear the outputFilePaths and the labels
         // They will be populated with the new processing results
-        outputFilePaths.clear();
-        labels.clear();
-
-        // We need to upload all the localInputTrackFiles to the gradio server
-        // and get the vector of the remote (uploaded) file paths
-        // iterate over the localInputTrackFiles map
-        // and upload each file
-        // and get the corresponding remote file path
-        // juce::StringArray remoteTrackFilePaths;
-        // std::map<juce::Uuid, std::string> remoteTrackFilePaths;
-        for (auto& tuple : localInputTrackFiles)
-        {
-            juce::String remoteTrackFilePath;
-            result = loadedClient->uploadFileRequest(std::get<2>(tuple), remoteTrackFilePath);
-            if (result.failed())
-            {
-                result.getError().userMessage = "Failed to upload file for track "
-                                                + std::get<1>(tuple) + ": "
-                                                + std::get<2>(tuple).getFileName();
-                status2 = ModelStatus::ERROR;
-                return result;
-            }
-            // remoteTrackFilePaths[std::get<0>(tuple)] = remoteTrackFilePath.toStdString();
-            // The following line would be a better way to do it, instead of using the remoteTrackFilePaths dict
-            // it won't work though because the pyharpCOmponentInfo in the inputTracksInfo
-            // needs to dynamically casted to the correct type AudioTrackInfo or MidiTrackInfo
-            // inputTracksInfo[std::get<0>(tuple)]->value = remoteTrackFilePath.toStdString();
-            // Here is how to do it:
-            auto trackInfo = findComponentInfoByUuid(std::get<0>(tuple));
-            if (trackInfo == nullptr)
-            {
-                status2 = ModelStatus::ERROR;
-                error.devMessage = "Failed to upload file for track " + std::get<1>(tuple) + ": "
-                                   + std::get<2>(tuple).getFileName()
-                                   + ". The track is not an audio or midi track.";
-                return OpResult::fail(error);
-            }
-            if (auto audioTrackInfo = dynamic_cast<AudioTrackInfo*>(trackInfo.get()))
-            {
-                audioTrackInfo->value = remoteTrackFilePath.toStdString();
-            }
-            else if (auto midiTrackInfo = dynamic_cast<MidiTrackInfo*>(trackInfo.get()))
-            {
-                midiTrackInfo->value = remoteTrackFilePath.toStdString();
-            }
-        }
+        //outputFilePaths.clear();
+        //labels.clear();
 
         // the jsonBody is created by controlsToJson
         juce::String processingPayload;

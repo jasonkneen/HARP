@@ -113,9 +113,9 @@ target_sources(${PROJECT_NAME}
         src/utils/Logging.h
         src/utils/Settings.h
         src/utils/Interface.h
-        src/utils/Controls.h #
+        src/utils/Controls.h
         src/utils/Labels.h
-        src/utils/Clients.h #
+        src/utils/Clients.h
         #src/utils/Threading.h #
         src/utils/Errors.h #
         src/utils/Enums.h #

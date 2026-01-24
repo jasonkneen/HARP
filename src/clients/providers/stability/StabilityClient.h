@@ -141,6 +141,13 @@ public:
         return OpResult::ok();
     }
 
+    OpResult process(String modelPath)
+    {
+        // TODO
+
+        return OpResult::ok();
+    }
+
 private:
     static bool isValidTextToAudioPath(String modelPath)
     {

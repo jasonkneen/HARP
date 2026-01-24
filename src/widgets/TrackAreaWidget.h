@@ -186,6 +186,8 @@ public:
 
         if (m)
         {
+            m->setTrackID(trackInfo->id);
+
             if (! trackInfo->info.empty())
             {
                 m->setMediaInstructions(trackInfo->info);

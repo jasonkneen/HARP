@@ -64,6 +64,9 @@ public:
     virtual void resized() override;
     void repositionLabels();
 
+    void setTrackID(Uuid id) { trackID = id; }
+    Uuid getTrackID() { return trackID; }
+
     void setTrackName(String name);
     String getTrackName() { return trackName; }
 
@@ -74,9 +77,6 @@ public:
     bool isOutputTrack() { return (displayMode == DisplayMode::Output) || isHybridTrack(); }
     bool isHybridTrack() { return displayMode == DisplayMode::Hybrid; }
     bool isThumbnailTrack() { return displayMode == DisplayMode::Thumbnail; }
-
-    //void setDisplayID(Uuid id) { displayID = id; }
-    //Uuid getDisplayID() { return displayID; }
 
     void setMediaInstructions(String instructions) { mediaInstructions = instructions; }
 
@@ -252,7 +252,7 @@ private:
     // Flex for media / overhead panel (if any)
     FlexBox mediaAreaFlexBox;
 
-    Uuid displayID;
+    Uuid trackID;
     String trackName;
     const bool required = true;
     bool linkedToDAW = false;

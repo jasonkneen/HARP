@@ -22,7 +22,7 @@ inline bool stringToBool(const String& str)
 
 struct ModelComponentInfo
 {
-    //Uuid id { "" }; // TODO - is this field necessary?
+    Uuid id { "" };
 
     std::string label { "" };
     std::string info { "" };
@@ -32,7 +32,7 @@ struct ModelComponentInfo
 
     ModelComponentInfo(DynamicObject* input)
     {
-        //id = juce::Uuid();
+        id = Uuid();
 
         // TODO - check that the following properties are of the correct type
 
@@ -50,6 +50,8 @@ struct ModelComponentInfo
 struct TrackComponentInfo : public ModelComponentInfo
 {
     bool required = true;
+
+    std::string remotePath { "" }; // Used when uploading files
 
     TrackComponentInfo() = default;
     virtual ~TrackComponentInfo() = default; // Make child-tree polymorphic
@@ -213,8 +215,4 @@ struct ComboBoxComponentInfo : public ModelComponentInfo
     }
 };
 
-// TODO - are all of these necessary?
-//using ModelComponentInfoPair = std::pair<Uuid, std::shared_ptr<ModelComponentInfo>>;
-//using ModelComponentInfoMap = std::map<Uuid, std::shared_ptr<ModelComponentInfo>>;
-//using ModelComponentInfoPairList = std::vector<ModelComponentInfoPair>;
 using ModelComponentInfoList = std::vector<std::shared_ptr<ModelComponentInfo>>;

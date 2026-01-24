@@ -252,6 +252,16 @@ public:
 
     virtual OpResult queryControls(String modelPath, DynamicObject::Ptr& controls) = 0;
 
+    virtual OpResult uploadFile(String modelPath, const File& fileToUpload, String& remoteFilePath)
+    {
+        // By default, simply pass through original file
+        remoteFilePath = fileToUpload.getFullPathName();
+
+        return OpResult::ok();
+    }
+
+    virtual OpResult process(String modelPath) = 0;
+
     const String emptyJSONBody = R"({"data": []})";
 
     const String acceptHeader = "Accept: */*\r\n";

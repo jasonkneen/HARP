@@ -156,7 +156,7 @@ private:
         processButtonInfo =
             MultiButton::Mode { "Process",
                                 "Click to execute model with selected parameters and inputs.",
-                                [this] {}, //{ processCallback(); },
+                                [this] { processCallback(); },
                                 MultiButton::DrawingMode::TextOnly };
         // Mode when a model is loaded and currently processing (cancel enabled)
         cancelButtonInfo = MultiButton::Mode { "Cancel",
@@ -177,6 +177,13 @@ private:
         {
             loadModelCallback();
         }
+
+        /*
+        if (source == &processBroadcaster)
+        {
+            // TODO - load output file paths into display components
+        }
+        */
     }
 
     void loadModelCallback()
@@ -195,7 +202,7 @@ private:
         loadingThreadPool.addJob(
             [this, selectedPath]
             {
-                OpResult result = model->loadPath(selectedPath);
+                OpResult result = model->load(selectedPath);
 
                 // Perform updates on message (GUI) thread
                 MessageManager::callAsync(
@@ -301,17 +308,9 @@ private:
             });
     }
 
-    // TODO - what does processing really consist of:
-    //        - todo - input file paths
-    //        - todo - client requests
-    //        - todo - output file paths
-    //        - todo - labels
-    //        - tracking status / stages of processing
-    //        - handling modes of error
-
-    /*
     void processCallback()
     {
+        /*
         if (model == nullptr)
         {
             AlertWindow("Error",
@@ -333,48 +332,47 @@ private:
         modelPathComboBox.setEnabled(false);
         //saveEnabled = false;
         //isProcessing = true;
+        */
 
-        // mediaDisplay->addNewTempFile();
-        auto& inputMediaDisplays = inputTrackAreaWidget.getMediaDisplays();
+        std::map<Uuid, File> loadedInputFiles;
 
-        // Get all the getTempFilePaths from the inputMediaDisplays
-        // and store them in a map/dictionary with the track name as the key
-        std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles;
-        for (auto& inputMediaDisplay : inputMediaDisplays)
+        for (std::unique_ptr<MediaDisplayComponent>& inputTrack :
+             inputTrackAreaWidget.getMediaDisplays())
         {
-            if (! inputMediaDisplay->isFileLoaded() && inputMediaDisplay->isRequired())
+            if (inputTrack->isRequired() && ! inputTrack->isFileLoaded())
             {
-                AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                                 "Error",
-                                                 "Input file is not loaded for track "
-                                                     + inputMediaDisplay->getTrackName()
-                                                     + ". Please load an input file first.");
-                processCancelButton.setMode(processButtonInfo.label);
-                //isProcessing = false;
-                //saveEnabled = true;
-                loadModelButton.setEnabled(true);
-                modelPathComboBox.setEnabled(true);
+                // Make sure all required inputs have been set
+                AlertWindow::showMessageBoxAsync(
+                    AlertWindow::WarningIcon,
+                    "Error",
+                    "Required input track \"" + inputTrack->getTrackName()
+                        + "\" is empty. Please load a file before processing.");
+
                 return;
             }
-            if (inputMediaDisplay->isFileLoaded())
+            else if (inputTrack->isFileLoaded())
             {
-                //inputMediaDisplay->addNewTempFile();
-                localInputTrackFiles.push_back(
-                    std::make_tuple(inputMediaDisplay->getDisplayID(),
-                                    inputMediaDisplay->getTrackName(),
-                                    //inputMediaDisplay->getTempFilePath().getLocalFile()));
-                                    inputMediaDisplay->getOriginalFilePath().getLocalFile()));
+                loadedInputFiles[inputTrack->getTrackID()] =
+                    inputTrack->getOriginalFilePath().getLocalFile();
+            }
+            else
+            {
+                // Optional track skipped
             }
         }
 
+        /*
         // Directly add the job to the thread pool
         jobProcessorThread.addJob(
             new CustomThreadPoolJob(
                 [this, localInputTrackFiles](String jobProcessID) { // &jobsFinished, totalJobs
                     // Individual job code for each iteration
                     // copy the audio file, with the same filename except for an added _harp to the stem
-                    OpResult processingResult =
-                        model->process(localInputTrackFiles);
+        */
+
+        OpResult processingResult = model->process(loadedInputFiles);
+
+        /*
                     processMutex.lock();
                     if (jobProcessID != currentProcessID)
                     {
@@ -418,13 +416,8 @@ private:
             true);
         DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
         DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
+        */
     }
-    */
-
-    // TODO - what does canceling really consist of:
-    //        - todo - TODO
-    //        - tracking status / stages of canceling
-    //        - handling modes of error
 
     /*
     void cancelCallback()

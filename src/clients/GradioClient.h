@@ -223,11 +223,20 @@ public:
         return OpResult::ok();
     }
 
-    OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
+    OpResult makeRequest(String modelPath, String requestType, Array<var>& output)
     {
+        URL endpoint = URL(inferEndpointPath(modelPath))
+                           .getChildURL("gradio_api")
+                           .getChildURL("call")
+                           .getChildURL(requestType);
+
         String responseJSON;
 
-        OpResult result = makePOSTRequest(modelPath, "controls", emptyJSONBody, responseJSON);
+        OpResult result = makePOSTRequest(endpoint,
+                                          getJSONHeaders(),
+                                          emptyJSONBody,
+                                          responseJSON,
+                                          inferDocumentationPath(modelPath));
 
         if (result.failed())
         {
@@ -256,27 +265,45 @@ public:
 
         DBG_AND_LOG("GradioClient::queryControls: Process created with ID \"" << eventID << "\".");
 
+        endpoint = URL(inferEndpointPath(modelPath))
+                       .getChildURL("gradio_api")
+                       .getChildURL("call")
+                       .getChildURL(requestType)
+                       .getChildURL(eventID);
+
         responseJSON.clear();
 
-        result = makeGETRequest(modelPath, "controls", eventID, responseJSON);
+        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath));
 
         if (result.failed())
         {
             return result;
         }
 
-        Array<var> dataList;
-
-        result = stringJSONToList(responseJSON, dataList);
+        result = stringJSONToList(responseJSON, output);
 
         if (result.failed())
         {
             return result;
         }
 
-        if (dataList.isEmpty())
+        if (output.isEmpty())
         {
             return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
+    {
+        Array<var> dataList;
+
+        OpResult result = makeRequest(modelPath, "controls", dataList);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         var first = dataList.getFirst();
@@ -292,6 +319,59 @@ public:
         if (controls == nullptr)
         {
             return OpResult::fail(JsonError { JsonError::Type::InvalidJSON, first.toString() });
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult uploadFile(String modelPath, const File& fileToUpload, String& remoteFilePath) override
+    {
+        URL endpoint =
+            URL(inferEndpointPath(modelPath)).getChildURL("gradio_api").getChildURL("upload");
+
+        String requestBody; // Empty
+        String responseJSON;
+
+        OpResult result = makePOSTRequest(endpoint,
+                                          getCommonHeaders(),
+                                          requestBody,
+                                          responseJSON,
+                                          inferDocumentationPath(modelPath),
+                                          fileToUpload);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        Array<var> responseArray;
+
+        result = stringJSONToList(responseJSON, responseArray);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        remoteFilePath = responseArray.getFirst().toString();
+
+        if (remoteFilePath.isEmpty())
+        {
+            // TODO - handle mode of error
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult process(String modelPath)
+    {
+        Array<var> dataList;
+
+        OpResult result = makeRequest(modelPath, "process", dataList);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         return OpResult::ok();
@@ -379,44 +459,47 @@ private:
         return array.size() == 2;
     }
 
-    URL getEndpoint(String endpointPath, String functionName)
-    {
-        URL endpointURL = URL(endpointPath)
-                              .getChildURL("gradio_api")
-                              .getChildURL("call")
-                              .getChildURL(functionName);
-
-        return endpointURL;
-    }
-
-    OpResult makePOSTRequest(const String modelPath,
-                             const String functionName,
+    OpResult makePOSTRequest(URL endpoint,
+                             const String headers,
                              const String body,
                              String& response,
+                             const String errorPath = "",
+                             const File& fileToUpload = File(),
                              const int timeoutMs = 10000)
     {
-        URL endpoint = getEndpoint(inferEndpointPath(modelPath), functionName);
+        String debugMessage =
+            "GradioClient::makePOSTRequest: Attempting to make POST request for endpoint \""
+            + endpoint.toString(true) + "\" with headers \"" + toPrintableHeaders(headers);
 
-        String requestHeaders = getJSONHeaders();
+        if (body.isNotEmpty())
+        {
+            endpoint = endpoint.withPOSTData(body);
 
-        DBG_AND_LOG("GradioClient::makePOSTRequest: Attempting to make POST request for endpoint \""
-                    << endpoint.toString(true) << "\" with JSON body \"" << body
-                    << "\" and headers \"" << toPrintableHeaders(requestHeaders) << "\".");
+            debugMessage += "\" and body \"" + body;
+        }
 
-        endpoint = endpoint.withPOSTData(body);
+        if (fileToUpload.existsAsFile())
+        {
+            endpoint = endpoint.withFileToUpload("files", fileToUpload, "audio/midi");
+
+            debugMessage += "\" and file \"" + fileToUpload.getFullPathName();
+        }
+
+        debugMessage += "\".";
+
+        DBG_AND_LOG(debugMessage);
 
         if (! endpoint.isWellFormed())
         {
-            return OpResult::fail(HttpError { HttpError::Type::InvalidURL,
-                                              HttpError::Request::POST,
-                                              inferDocumentationPath(modelPath) });
+            return OpResult::fail(
+                HttpError { HttpError::Type::InvalidURL, HttpError::Request::POST, errorPath });
         }
 
         int statusCode = 0;
         StringPairArray responseHeaders;
 
         auto options = URL::InputStreamOptions(URL::ParameterHandling::inPostData)
-                           .withExtraHeaders(requestHeaders)
+                           .withExtraHeaders(headers)
                            .withConnectionTimeoutMs(timeoutMs)
                            .withResponseHeaders(&responseHeaders)
                            .withStatusCode(&statusCode)
@@ -427,9 +510,8 @@ private:
 
         if (stream == nullptr)
         {
-            return OpResult::fail(HttpError { HttpError::Type::ConnectionFailed,
-                                              HttpError::Request::POST,
-                                              inferDocumentationPath(modelPath) });
+            return OpResult::fail(HttpError {
+                HttpError::Type::ConnectionFailed, HttpError::Request::POST, errorPath });
         }
 
         DBG_AND_LOG("GradioClient::makePOSTRequest: Received status code \""
@@ -438,10 +520,8 @@ private:
 
         if (statusCode != 200)
         {
-            return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
-                                              HttpError::Request::POST,
-                                              inferDocumentationPath(modelPath),
-                                              statusCode });
+            return OpResult::fail(HttpError {
+                HttpError::Type::BadStatusCode, HttpError::Request::POST, errorPath, statusCode });
         }
 
         response = stream->readEntireStreamAsString();
@@ -449,14 +529,11 @@ private:
         return OpResult::ok();
     }
 
-    OpResult makeGETRequest(const String modelPath,
-                            const String functionName,
-                            const String eventID,
+    OpResult makeGETRequest(const URL endpoint,
                             String& response,
+                            const String errorPath = "",
                             const int timeoutMs = 10000)
     {
-        URL endpoint = getEndpoint(inferEndpointPath(modelPath), functionName).getChildURL(eventID);
-
         String requestHeaders = getCommonHeaders();
 
         DBG_AND_LOG("GradioClient::makeGETRequest: Attempting to make GET request for endpoint \""
@@ -465,9 +542,8 @@ private:
 
         if (! endpoint.isWellFormed())
         {
-            return OpResult::fail(HttpError { HttpError::Type::InvalidURL,
-                                              HttpError::Request::GET,
-                                              inferDocumentationPath(modelPath) });
+            return OpResult::fail(
+                HttpError { HttpError::Type::InvalidURL, HttpError::Request::GET, errorPath });
         }
 
         int statusCode = 0;
@@ -484,9 +560,8 @@ private:
 
         if (stream == nullptr)
         {
-            return OpResult::fail(HttpError { HttpError::Type::ConnectionFailed,
-                                              HttpError::Request::GET,
-                                              inferDocumentationPath(modelPath) });
+            return OpResult::fail(HttpError {
+                HttpError::Type::ConnectionFailed, HttpError::Request::GET, errorPath });
         }
 
         DBG_AND_LOG("GradioClient::makeGETRequest: Received status code \""
@@ -495,10 +570,8 @@ private:
 
         if (statusCode != 200)
         {
-            return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
-                                              HttpError::Request::GET,
-                                              inferDocumentationPath(modelPath),
-                                              statusCode });
+            return OpResult::fail(HttpError {
+                HttpError::Type::BadStatusCode, HttpError::Request::GET, errorPath, statusCode });
         }
 
         while (! stream->isExhausted())

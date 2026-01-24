@@ -13,24 +13,6 @@ String StabilityClient::mimeForAudioFile(const File& f)
 */
 
 /*
-OpResult StabilityClient::uploadFileRequest(const File& fileToUpload,
-                                            String& uploadedFilePath,
-                                            const int timeoutMs) const
-{
-    // TBD. We need the original path of the file.
-
-    if (! fileToUpload.existsAsFile())
-    {
-        Error error;
-        error.devMessage = "File does not exist: " + fileToUpload.getFullPathName();
-        return OpResult::fail(error);
-    }
-
-    uploadedFilePath = fileToUpload.getFullPathName();
-
-    DBG_AND_LOG("uploadFileRequest: returning uploadedFilePath = " + uploadedFilePath);
-    return OpResult::ok();
-}
 
 String StabilityClient::getControlValue(const String& label, const Array<var>* dataArray)
 {
