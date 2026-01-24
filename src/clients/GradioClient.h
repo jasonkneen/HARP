@@ -365,17 +365,21 @@ public:
 
     var wrapPayloadElement(var payloadElement, bool isFile = false) override
     {
-        DynamicObject::Ptr wrappedPayloadElement = payloadElement.getDynamicObject();
-
         if (isFile)
         {
+            DynamicObject::Ptr wrappedPayloadElement = payloadElement.getDynamicObject();
+
             DynamicObject::Ptr meta = new DynamicObject();
 
             meta->setProperty("_type", var("gradio.FileData"));
             wrappedPayloadElement->setProperty("meta", var(meta));
-        }
 
-        return var(wrappedPayloadElement);
+            return var(wrappedPayloadElement);
+        }
+        else
+        {
+            return payloadElement;
+        }
     }
 
     OpResult process(String modelPath)
