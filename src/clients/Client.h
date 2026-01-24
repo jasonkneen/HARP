@@ -260,6 +260,8 @@ public:
         return OpResult::ok();
     }
 
+    virtual var wrapPayloadElement(var payloadElement, bool isFile = false) = 0;
+
     virtual OpResult process(String modelPath) = 0;
 
     const String emptyJSONBody = R"({"data": []})";

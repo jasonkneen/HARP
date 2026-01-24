@@ -141,6 +141,19 @@ public:
         return OpResult::ok();
     }
 
+    var wrapPayloadElement(var payloadElement, bool isFile = false) override
+    {
+        DynamicObject::Ptr wrappedPayloadElement = new DynamicObject();
+
+        // Use "input" label for audio file — required for Stability AI
+        const String label = isFile ? String("input") : String("control");
+
+        wrappedPayloadElement->setProperty("label", label);
+        wrappedPayloadElement->setProperty("value", payloadElement);
+
+        return var(wrappedPayloadElement);
+    }
+
     OpResult process(String modelPath)
     {
         // TODO

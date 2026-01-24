@@ -26,21 +26,10 @@ public:
     // the files currently loaded in each inputMediaDisplay
     OpResult process(std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles)
     {
-
         // Clear the outputFilePaths and the labels
         // They will be populated with the new processing results
         //outputFilePaths.clear();
         //labels.clear();
-
-        // the jsonBody is created by controlsToJson
-        juce::String processingPayload;
-        result = prepareProcessingPayload(processingPayload);
-        if (result.failed())
-        {
-            result.getError().devMessage = "Failed to upload file";
-            status2 = ModelStatus::ERROR;
-            return result;
-        }
 
         status2 = ModelStatus::PROCESSING;
         result = loadedClient->processRequest(error, processingPayload, outputFilePaths, labels);
@@ -75,138 +64,6 @@ public:
     void clearOutputFilePaths() { outputFilePaths.clear(); }
 
 private:
-    OpResult prepareProcessingPayload(juce::String& payloadJson)
-    {
-        // Create a JSON array to hold each control's value
-        juce::Array<juce::var> jsonControlsArray;
-
-        // Iterate through each control in controlsInfo
-        // for (const auto& controlPair : controlsInfo)
-        for (const auto& currentUuid : uuidsInOrder)
-        {
-            auto element = findComponentInfoByUuid(currentUuid);
-            if (! element)
-            {
-                // Control not found, handle the error
-                Error error;
-                // error.type = ErrorType::MissingJsonKey;
-                error.devMessage =
-                    "Control with ID: " + currentUuid.toString() + " not found in controlsInfo.";
-                return OpResult::fail(error);
-            }
-
-            juce::var controlValue;
-            bool isFile = false;
-
-            // Check the type of control and extract its value
-            if (auto sliderControl = dynamic_cast<SliderInfo*>(element.get()))
-            {
-                controlValue = juce::var(sliderControl->value);
-            }
-            else if (auto textBoxControl = dynamic_cast<TextBoxInfo*>(element.get()))
-            {
-                controlValue = juce::var(textBoxControl->value);
-            }
-            else if (auto numberBoxControl = dynamic_cast<NumberBoxInfo*>(element.get()))
-            {
-                controlValue = juce::var(numberBoxControl->value);
-            }
-            else if (auto toggleControl = dynamic_cast<ToggleInfo*>(element.get()))
-            {
-                controlValue = juce::var(toggleControl->value);
-            }
-            else if (auto comboBoxControl = dynamic_cast<ComboBoxInfo*>(element.get()))
-            {
-                controlValue = juce::var(comboBoxControl->value);
-            }
-
-            // Audio Input
-            else if (auto audioInTrackInfo = dynamic_cast<AudioTrackInfo*>(element.get()))
-            {
-                if (audioInTrackInfo->value.empty())
-                {
-                    controlValue = juce::var(); // null
-                }
-                else
-                {
-                    juce::DynamicObject::Ptr fileObj = new juce::DynamicObject();
-                    fileObj->setProperty("path", juce::var(audioInTrackInfo->value));
-
-                    juce::DynamicObject::Ptr meta = new juce::DynamicObject();
-                    meta->setProperty("_type", juce::var("gradio.FileData"));
-                    fileObj->setProperty("meta", juce::var(meta));
-
-                    controlValue = juce::var(fileObj);
-                }
-
-                isFile = true;
-            }
-
-            // MIDI Input
-            else if (auto midiInTrackInfo = dynamic_cast<MidiTrackInfo*>(element.get()))
-            {
-                // skip MIDI input for Stability models
-                if (isStabilityModel)
-                    continue;
-
-                if (midiInTrackInfo->value.empty())
-                {
-                    controlValue = juce::var(); // null
-                }
-                else
-                {
-                    juce::DynamicObject::Ptr fileObj = new juce::DynamicObject();
-                    fileObj->setProperty("path", juce::var(midiInTrackInfo->value));
-
-                    juce::DynamicObject::Ptr meta = new juce::DynamicObject();
-                    meta->setProperty("_type", juce::var("gradio.FileData"));
-                    fileObj->setProperty("meta", juce::var(meta));
-
-                    controlValue = juce::var(fileObj);
-                }
-
-                isFile = true;
-            }
-
-            else
-            {
-                Error error;
-                error.type = ErrorType::UnsupportedControlType;
-                error.devMessage =
-                    "Unsupported control type for control with UUID: " + currentUuid.toString();
-                return OpResult::fail(error);
-            }
-
-            // wrapping for Stability
-            if (isStabilityModel)
-            {
-                juce::DynamicObject::Ptr wrapped = new juce::DynamicObject();
-
-                // Important: use "input" label for audio file — required for Stability AI
-                const juce::String label =
-                    isFile ? juce::String("input") : juce::String(element->label);
-
-                wrapped->setProperty("label", label);
-                wrapped->setProperty("value", controlValue);
-
-                jsonControlsArray.add(juce::var(wrapped));
-            }
-            else
-            {
-                // For Gradio: just add raw values
-                jsonControlsArray.add(controlValue);
-            }
-        }
-
-        juce::DynamicObject::Ptr dataObject = new juce::DynamicObject();
-        dataObject->setProperty("data", jsonControlsArray);
-
-        payloadJson = juce::JSON::toString(juce::var(dataObject), true);
-        DBG_AND_LOG("prepareProcessingPayload: " + payloadJson);
-
-        return OpResult::ok();
-    }
-
     bool isStabilityModel =
         false; // A flag to indicate if the current model is a Stability AI model
 

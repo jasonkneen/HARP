@@ -218,7 +218,7 @@ public:
 
     OpResult process(std::map<Uuid, File> inputFiles /*, &outputFiles, &labels*/)
     {
-        // Upload files to server if necessary and obtain remote paths
+        /* Upload files to server if necessary and obtain remote paths */
 
         for (auto& fileEntry : inputFiles)
         {
@@ -231,40 +231,95 @@ public:
 
             if (result.failed())
             {
-                /*
-                result.getError().userMessage = "Failed to upload file for track "
-                                                + std::get<1>(tuple) + ": "
-                                                + std::get<2>(tuple).getFileName();
-                status2 = ModelStatus::ERROR;
                 return result;
-                */
             }
-            // remoteTrackFilePaths[std::get<0>(tuple)] = remoteTrackFilePath.toStdString();
-            // The following line would be a better way to do it, instead of using the remoteTrackFilePaths dict
-            // it won't work though because the pyharpCOmponentInfo in the inputTracksInfo
-            // needs to dynamically casted to the correct type AudioTrackInfo or MidiTrackInfo
-            // inputTracksInfo[std::get<0>(tuple)]->value = remoteTrackFilePath.toStdString();
-            // Here is how to do it:
-            /*
-            auto trackInfo = findComponentInfoByUuid(std::get<0>(tuple));
-            if (trackInfo == nullptr)
+
+            auto componentInfo = getComponentInfo(trackID);
+
+            if (componentInfo == nullptr)
             {
-                status2 = ModelStatus::ERROR;
-                error.devMessage = "Failed to upload file for track " + std::get<1>(tuple) + ": "
-                                   + std::get<2>(tuple).getFileName()
-                                   + ". The track is not an audio or midi track.";
-                return OpResult::fail(error);
+                // TODO - handle mode of error (none of components match ID)
             }
-            if (auto audioTrackInfo = dynamic_cast<AudioTrackInfo*>(trackInfo.get()))
+
+            else if (auto trackComponentInfo =
+                         dynamic_cast<TrackComponentInfo*>(componentInfo.get()))
             {
-                audioTrackInfo->value = remoteTrackFilePath.toStdString();
+                trackComponentInfo->path = remoteFilePath.toStdString();
             }
-            else if (auto midiTrackInfo = dynamic_cast<MidiTrackInfo*>(trackInfo.get()))
+            else
             {
-                midiTrackInfo->value = remoteTrackFilePath.toStdString();
+                // TODO - handle mode of error (component is not a valid input track)
             }
-            */
         }
+
+        /* Extract control values for JSON payload in order */
+
+        Array<var> controlValues;
+
+        for (const auto& componentID : orderedInputComponentIDs)
+        {
+            auto componentInfo = getComponentInfo(componentID);
+
+            var controlValue;
+            bool wasFile = false;
+
+            if (auto trackComponentInfo = dynamic_cast<TrackComponentInfo*>(componentInfo.get()))
+            {
+                if (trackComponentInfo->path.empty())
+                {
+                    controlValue = var(); // Empty
+                }
+                else
+                {
+                    DynamicObject::Ptr fileObj = new DynamicObject();
+
+                    fileObj->setProperty("path", var(trackComponentInfo->path));
+
+                    controlValue = var(fileObj);
+                }
+
+                wasFile = true;
+            }
+            else if (auto textBoxComponentInfo =
+                         dynamic_cast<TextBoxComponentInfo*>(componentInfo.get()))
+            {
+                controlValue = var(textBoxComponentInfo->value);
+            }
+            else if (auto numberBoxComponentInfo =
+                         dynamic_cast<NumberBoxComponentInfo*>(componentInfo.get()))
+            {
+                controlValue = var(numberBoxComponentInfo->value);
+            }
+            else if (auto toggleComponentInfo =
+                         dynamic_cast<ToggleComponentInfo*>(componentInfo.get()))
+            {
+                controlValue = var(toggleComponentInfo->value);
+            }
+            else if (auto sliderComponentInfo =
+                         dynamic_cast<SliderComponentInfo*>(componentInfo.get()))
+            {
+                controlValue = var(sliderComponentInfo->value);
+            }
+            else if (auto comboBoxComponentInfo =
+                         dynamic_cast<ComboBoxComponentInfo*>(componentInfo.get()))
+            {
+                controlValue = var(comboBoxComponentInfo->value);
+            }
+            else
+            {
+                // TODO - handle error mode (unsupported control has somehow been added)
+            }
+
+            controlValue = client->wrapPayloadElement(controlValue, wasFile);
+            controlValues.add(controlValue);
+        }
+
+        DynamicObject::Ptr dataObject = new DynamicObject();
+        dataObject->setProperty("data", controlValues);
+
+        String payloadJSON = JSON::toString(var(dataObject), true);
+
+        DBG_AND_LOG("Model::process: Payload \"" + payloadJSON + "\" prepared for processing.");
 
         setStatus(ModelStatus::PROCESSING);
 

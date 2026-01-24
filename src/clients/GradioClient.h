@@ -357,10 +357,25 @@ public:
 
         if (remoteFilePath.isEmpty())
         {
-            // TODO - handle mode of error
+            // TODO - handle mode of error (empty file path returned)
         }
 
         return OpResult::ok();
+    }
+
+    var wrapPayloadElement(var payloadElement, bool isFile = false) override
+    {
+        DynamicObject::Ptr wrappedPayloadElement = payloadElement.getDynamicObject();
+
+        if (isFile)
+        {
+            DynamicObject::Ptr meta = new DynamicObject();
+
+            meta->setProperty("_type", var("gradio.FileData"));
+            wrappedPayloadElement->setProperty("meta", var(meta));
+        }
+
+        return var(wrappedPayloadElement);
     }
 
     OpResult process(String modelPath)

@@ -51,7 +51,7 @@ struct TrackComponentInfo : public ModelComponentInfo
 {
     bool required = true;
 
-    std::string remotePath { "" }; // Used when uploading files
+    std::string path { "" }; // Used when uploading files
 
     TrackComponentInfo() = default;
     virtual ~TrackComponentInfo() = default; // Make child-tree polymorphic
