@@ -8,10 +8,15 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "widgets/ModelSelectionWidget.h"
-//#include "widgets/ModelDisplayWidget.h"
+#include "Model.h"
 
-//#include "../utils.h"
+#include "widgets/ControlAreaWidget.h"
+#include "widgets/ModelInfoWidget.h"
+#include "widgets/ModelSelectionWidget.h"
+#include "widgets/TrackAreaWidget.h"
+
+#include "utils/Errors.h"
+#include "utils/Logging.h"
 
 using namespace juce;
 
@@ -20,13 +25,28 @@ class ModelTab : public Component, private ChangeListener
 public:
     ModelTab()
     {
-        addAndMakeVisible(modelSelectionWidget);
-        //addAndMakeVisible(modelDisplayWidget);
+        modelSelectionWidget.addChangeListener(this);
 
-        modelSelectionWidget->addChangeListener(this);
+        addAndMakeVisible(modelSelectionWidget);
+        addAndMakeVisible(modelInfoWidget);
+        addAndMakeVisible(controlAreaWidget);
+
+        inputTracksLabel.setJustificationType(Justification::centred);
+        inputTracksLabel.setFont(Font(20.0f, Font::bold));
+
+        addAndMakeVisible(inputTracksLabel);
+        addAndMakeVisible(inputTrackAreaWidget);
+
+        initializeProcessCancelButton();
+
+        outputTracksLabel.setJustificationType(Justification::centred);
+        outputTracksLabel.setFont(Font(20.0f, Font::bold));
+
+        addAndMakeVisible(outputTracksLabel);
+        addAndMakeVisible(outputTrackAreaWidget);
     }
 
-    ~ModelTab() { modelSelectionWidget->removeChangeListener(this); }
+    ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
 
     //void paint(Graphics& g) {}
 
@@ -35,343 +55,434 @@ public:
         FlexBox tabArea;
         tabArea.flexDirection = FlexBox::Direction::column;
 
-        tabArea.items.add(FlexItem(*modelSelectionWidget).withHeight(30));
+        /* Model Selection */
+
+        tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
+
+        /* Model Info */
+
+        tabArea.items.add(FlexItem(modelInfoWidget).withFlex(1.0).withMaxHeight(100));
+
+        /* Model Controls */
+
+        if (controlAreaWidget.getNumControls() > 0)
+        {
+            // TODO - set min/max height based on limits of control element scaling
+            tabArea.items.add(FlexItem(controlAreaWidget).withFlex(1.0).withMaxHeight(200));
+        }
+        else
+        {
+            controlAreaWidget.setBounds(0, 0, 0, 0);
+        }
+
+        /* Input Tracks Area Widget */
+
+        float numInputTracks = inputTrackAreaWidget.getNumTracks();
+        float numOutputTracks = outputTrackAreaWidget.getNumTracks();
+        float totalTracks = numInputTracks + numOutputTracks;
+
+        if (numInputTracks > 0)
+        {
+            float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
+
+            tabArea.items.add(FlexItem(inputTracksLabel).withHeight(20).withMargin(marginSize));
+            tabArea.items.add(
+                FlexItem(inputTrackAreaWidget).withFlex(inputTrackAreaFlex).withMargin(marginSize));
+        }
+        else
+        {
+            inputTracksLabel.setBounds(0, 0, 0, 0);
+            inputTrackAreaWidget.setBounds(0, 0, 0, 0);
+        }
+
+        /* Process / Cancel Button */
+
+        FlexBox processCancelButtonRow;
+        processCancelButtonRow.flexDirection = FlexBox::Direction::row;
+
+        if (model->isLoaded())
+        {
+            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+            processCancelButtonRow.items.add(
+                FlexItem(processCancelButton).withWidth(150).withMargin(marginSize));
+            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+
+            tabArea.items.add(
+                FlexItem(processCancelButtonRow).withHeight(30).withMargin(marginSize));
+        }
+        else
+        {
+            processCancelButton.setBounds(0, 0, 0, 0);
+        }
+
+        /* Output Tracks Area Widget */
+
+        if (numOutputTracks > 0)
+        {
+            float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
+
+            tabArea.items.add(FlexItem(outputTracksLabel).withHeight(20).withMargin(marginSize));
+            tabArea.items.add(FlexItem(outputTrackAreaWidget)
+                                  .withFlex(outputTrackAreaFlex)
+                                  .withMargin(marginSize));
+        }
+        else
+        {
+            outputTracksLabel.setBounds(0, 0, 0, 0);
+            outputTrackAreaWidget.setBounds(0, 0, 0, 0);
+        }
 
         tabArea.performLayout(getLocalBounds());
     }
 
+    void resetState()
+    {
+        model.reset();
+
+        modelSelectionWidget.resetState();
+        modelInfoWidget.resetState();
+        controlAreaWidget.resetState();
+        inputTrackAreaWidget.resetState();
+        outputTrackAreaWidget.resetState();
+
+        processCancelButton.setMode(processButtonInfo.displayLabel);
+        processCancelButton.setEnabled(false);
+    }
+
 private:
+    void initializeProcessCancelButton()
+    {
+        // Mode when a model is loaded and not currently processing (process enabled)
+        processButtonInfo =
+            MultiButton::Mode { "Process",
+                                "Click to execute model with selected parameters and inputs.",
+                                [this] { processCallback(); },
+                                MultiButton::DrawingMode::TextOnly };
+        // Mode when a model is loaded and currently processing (cancel enabled)
+        cancelButtonInfo = MultiButton::Mode { "Cancel",
+                                               "Click to cancel processing.",
+                                               [this] {}, //{ cancelCallback(); },
+                                               MultiButton::DrawingMode::TextOnly };
+
+        processCancelButton.addMode(processButtonInfo);
+        processCancelButton.addMode(cancelButtonInfo);
+        processCancelButton.setMode(processButtonInfo.displayLabel);
+
+        addAndMakeVisible(processCancelButton);
+    }
+
     void changeListenerCallback(ChangeBroadcaster* source)
     {
-        if (source == modelSelectionWidget)
+        if (source == &modelSelectionWidget)
         {
             loadModelCallback();
         }
+
+        /*
+        if (source == &processBroadcaster)
+        {
+            // TODO - load output file paths into display components
+        }
+        */
     }
 
     void loadModelCallback()
     {
-        modelSelectionWidget->setLoadingState();
+        modelSelectionWidget.setLoadingState();
 
-        String pathToLoad = modelSelectionWidget->getCurrentlySelectedPath();
+        // Disable processing until next model is loaded
+        processCancelButton.setEnabled(false);
 
-        // disable the process button until the model is loaded
-        //processCancelButton.setEnabled(false);
+        // Obtain currently selected path
+        String selectedPath = modelSelectionWidget.getCurrentlySelectedPath();
 
-        std::map<std::string, std::any> params = {
-            { "url", pathToLoad },
-        };
+        DBG_AND_LOG("ModelTab::loadModelCallback: Attempting to load path \"" << selectedPath
+                                                                              << "\".");
 
-        // loading happens asynchronously.
         loadingThreadPool.addJob(
-            [this, params]
+            [this, selectedPath]
             {
-                try
-                {
-                    juce::String loadingError;
+                OpResult result = model->load(selectedPath);
 
-                    // set the last status to the current status
-                    // If loading of the new model fails,
-                    // we want to go back to the status we had before the failed attempt
-                    model->setLastStatus(model->getStatus());
-
-                    OpResult loadingResult = model->load(params);
-                    if (loadingResult.failed())
+                // Perform updates on message (GUI) thread
+                MessageManager::callAsync(
+                    [this, result]
                     {
-                        throw loadingResult.getError();
-                    }
-
-                    // loading succeeded
-                    // Do some UI stuff to add the new model to the comboBox
-                    // if it's not already there
-                    // and update the lastSelectedItemIndex and lastLoadedModelItemIndex
-                    MessageManager::callAsync(
-                        [this, loadingResult]
+                        if (result.wasOk())
                         {
-                            resetUI();
-                            if (modelPathComboBox.getSelectedItemIndex() == 0)
-                            {
-                                bool alreadyInComboBox = false;
+                            modelSelectionWidget.setSuccessfulState();
 
-                                for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+                            modelInfoWidget.updateLabels(model->getMetadata());
+                            modelInfoWidget.addOpenablePath(model->getOpenablePath());
+
+                            controlAreaWidget.updateControls(model->getControls());
+
+                            inputTrackAreaWidget.updateTracks(model->getInputTracks());
+                            outputTrackAreaWidget.updateTracks(model->getOutputTracks());
+
+                            resized();
+
+                            // Re-enable processing immediately
+                            processCancelButton.setEnabled(true);
+                        }
+                        else
+                        {
+                            const Error error = result.getError();
+
+                            MessageBoxOptions errorPopup =
+                                MessageBoxOptions()
+                                    .withIconType(AlertWindow::WarningIcon)
+                                    .withTitle(
+                                        "Error") // TODO - Name of error family would be nice here
+                                    // error ? toUserMessage(*error) : "An unknown error occurred."
+                                    .withMessage(toUserMessage(error));
+
+                            std::optional<String> openablePath = getOpenablePath(error);
+
+                            if (openablePath.has_value())
+                            {
+                                errorPopup = errorPopup.withButton("Open URL");
+                            }
+
+                            errorPopup = errorPopup.withButton("Open Logs").withButton("Ok");
+
+                            auto alertCallback = [this, error, openablePath, errorPopup](int choice)
+                            {
+                                DBG_AND_LOG(
+                                    "ModelTab::loadModelCallback::alertCallback: Chose button index: "
+                                    << choice << ".");
+
+                                enum Choice
                                 {
-                                    if (modelPathComboBox.getItemText(i)
-                                        == (juce::String) customPath)
+                                    OpenURL,
+                                    OpenLogs,
+                                    OK
+                                };
+
+                                /*
+                                  TODO - The button indices assigned by MessageBoxOptions do not follow the order in which
+                                  they were added. This should be fixed in JUCE v8. The following is a temporary workaround.
+
+                                  See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
+
+                                  When this is fixed, remove errorPopup from the argument list.
+                                */
+                                {
+                                    std::map<int, int> observedButtonIndicesMap = {};
+
+                                    if (errorPopup.getNumButtons() == 3)
                                     {
-                                        alreadyInComboBox = true;
-                                        modelPathComboBox.setSelectedId(i + 1);
-                                        lastSelectedItemIndex = i;
-                                        lastLoadedModelItemIndex = i;
+                                        observedButtonIndicesMap.insert({ 1, Choice::OpenURL });
                                     }
+
+                                    observedButtonIndicesMap.insert(
+                                        { errorPopup.getNumButtons() - 1, Choice::OpenLogs });
+
+                                    observedButtonIndicesMap.insert({ 0, Choice::OK });
+
+                                    choice = observedButtonIndicesMap[choice];
                                 }
 
-                                if (! alreadyInComboBox)
+                                if (choice == Choice::OpenURL)
                                 {
-                                    int new_id = modelPathComboBox.getNumItems() + 1;
-                                    modelPathComboBox.addItem(customPath, new_id);
-                                    modelPathComboBox.setSelectedId(new_id);
-                                    lastSelectedItemIndex = new_id - 1;
-                                    lastLoadedModelItemIndex = new_id - 1;
+                                    URL(*openablePath).launchInDefaultBrowser();
                                 }
-                            }
-                            else
-                            {
-                                lastLoadedModelItemIndex = modelPathComboBox.getSelectedItemIndex();
-                            }
-                            processLoadingResult(loadingResult);
-                        });
-                }
-                catch (Error& loadingError)
-                {
-                    Error::fillUserMessage(loadingError);
-                    DBG_AND_LOG("Error in Model Loading:\n" + loadingError.devMessage);
-                    auto msgOpts =
-                        MessageBoxOptions()
-                            .withTitle("Loading Error")
-                            .withIconType(AlertWindow::WarningIcon)
-                            .withTitle("Error")
-                            .withMessage("An error occurred while loading the WebModel: \n"
-                                         + loadingError.userMessage);
-                    // if (! String(e.what()).contains("404")
-                    //     && ! String(e.what()).contains("Invalid URL"))
-                    if (loadingError.type != ErrorType::InvalidURL)
-                    {
-                        msgOpts = msgOpts.withButton("Open Space URL");
-                    }
-
-                    msgOpts = msgOpts.withButton("Open HARP Logs").withButton("Ok");
-                    auto alertCallback = [this, msgOpts, loadingError](int result)
-                    {
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        // NOTE (hugo): there's something weird about the button indices assigned by the msgOpts here
-                        // DBG_AND_LOG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
-                        // auto chosen = msgOpts.getButtonText(result);
-                        // they're not the same as the order of the buttons in the alert
-                        // this is the order that I actually observed them to be.
-                        // UPDATE/TODO (xribene): This should be fixed in Juce v8
-                        // see: https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        std::map<int, std::string> observedButtonIndicesMap = {};
-                        if (msgOpts.getNumButtons() == 3)
-                        {
-                            observedButtonIndicesMap.insert(
-                                { 1, "Open Space URL" }); // should actually be 0 right?
-                        }
-                        observedButtonIndicesMap.insert(
-                            { msgOpts.getNumButtons() - 1,
-                              "Open HARP Logs" }); // should actually be 1
-                        observedButtonIndicesMap.insert({ 0, "Ok" }); // should be 2
-
-                        auto chosen = observedButtonIndicesMap[result];
-
-                        if (chosen == "Open HARP Logs")
-                        {
-                            HarpLogger::getInstance()->getLogFile().revealToUser();
-                        }
-                        else if (chosen == "Open Space URL")
-                        {
-                            // get the spaceInfo
-                            SpaceInfo spaceInfo = model->getTempClient().getSpaceInfo();
-                            if (spaceInfo.status == SpaceInfo::Status::GRADIO)
-                            {
-                                URL spaceUrl = this->model->getTempClient().getSpaceInfo().gradio;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
-                            {
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().huggingface;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
-                            {
-                                // either choose hugingface or gradio, they are the same
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().huggingface;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
-                            {
-                                URL spaceUrl =
-                                    this->model->getTempClient().getSpaceInfo().stability;
-                                spaceUrl.launchInDefaultBrowser();
-                            }
-                            // URL spaceUrl =
-                            //     this->model->getGradioClient().getSpaceInfo().huggingface;
-                            // spaceUrl.launchInDefaultBrowser();
-                        }
-
-                        if (lastLoadedModelItemIndex == -1)
-                        {
-                            // If before the failed attempt to load a new model, we HAD NO model loaded
-                            // TODO: these two functions we call here might be an overkill for this case
-                            // we need to simplify
-                            MessageManager::callAsync(
-                                [this, loadingError]
+                                else if (choice == Choice::OpenLogs)
                                 {
-                                    resetModelPathComboBox();
-                                    model->setStatus(ModelStatus::INITIALIZED);
-                                    processLoadingResult(OpResult::fail(loadingError));
-                                });
-                        }
-                        else
-                        {
-                            // If before the failed attempt to load a new model, we HAD a model loaded
-                            MessageManager::callAsync(
-                                [this, loadingError]
+                                    HARPLogger::getInstance()->getLogFile().revealToUser();
+                                }
+                                else
                                 {
-                                    // We set the status to
-                                    // the status of the model before the failed attempt
-                                    model->setStatus(model->getLastStatus());
-                                    processLoadingResult(OpResult::fail(loadingError));
-                                });
-                        }
+                                    // Nothing to do
+                                }
 
-                        // This if/elseif/else block is responsible for setting the selected item
-                        // in the modelPathComboBox to the correct item (i.e the model/path/app that
-                        // was selected before the failed attempt to load a new model)
-                        // cb: sometimes setSelectedId it doesn't work and I dont know why.
-                        // I've tried nesting it in MessageManage::callAsync, but still nothing.
-                        if (lastLoadedModelItemIndex != -1)
-                        {
-                            modelPathComboBox.setSelectedId(lastLoadedModelItemIndex + 1);
-                        }
-                        else if (lastLoadedModelItemIndex == -1 && lastSelectedItemIndex != -1)
-                        {
-                            modelPathComboBox.setSelectedId(lastSelectedItemIndex + 1);
-                        }
-                        else
-                        {
-                            resetModelPathComboBox();
-                            MessageManager::callAsync([this, loadingError]
-                                                      { loadModelButton.setEnabled(false); });
-                        }
-                        /*
-                        if (loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        {
-                            MessageManager::callAsync(
-                                [this]
-                                {
-                                    addCustomPathToDropdown(customPath, true); // mark as sleeping
-                                });
-                        }
-                        //NEW: reopen custom path dialog if sleeping or 404
-                        if (loadingError.type == ErrorType::InvalidURL
-                            || loadingError.devMessage.contains("404")
-                            || loadingError.userMessage.containsIgnoreCase("sleeping"))
-                        {
-                            MessageManager::callAsync([this] { openCustomPathDialog(customPath); });
-                        }
-                        */
-                    };
+                                modelSelectionWidget.setUnsuccessfulState(error);
 
-                    AlertWindow::showAsync(msgOpts, alertCallback);
-                    //saveEnabled = false;
-                }
-                catch (const std::exception& e)
-                {
-                    // Catch any other standard exceptions (like std::runtime_error)
-                    DBG_AND_LOG("Caught std::exception: " << e.what());
-                    AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                                     "Error",
-                                                     "An unexpected error occurred: "
-                                                         + juce::String(e.what()));
-                }
-                catch (...) // Catch any other exceptions
-                {
-                    DBG_AND_LOG("Caught unknown exception");
-                    AlertWindow::showMessageBoxAsync(
-                        AlertWindow::WarningIcon, "Error", "An unexpected error occurred.");
-                }
+                                // Re-enable processing after closing error window
+                                processCancelButton.setEnabled(true);
+                            };
+
+                            AlertWindow::showAsync(errorPopup, alertCallback);
+                        }
+                    });
             });
     }
 
-    /*void processLoadingResult(OpResult result)
+    void processCallback()
     {
-        // return;
-        if (result.wasOk())
+        /*
+        if (model == nullptr)
         {
-            setModelCard(model->card());
-            controlAreaWidget.setModel(model);
-            mModelStatusTimer->setModel(model);
-            controlAreaWidget.populateControls();
-
-            populateTracks();
-
-            //Apply saved Stability token
-            SpaceInfo spaceInfo = model->getClient().getSpaceInfo();
-            if (spaceInfo.status == SpaceInfo::Status::STABILITY && ! savedStabilityToken.isEmpty())
-            {
-                model->getClient().setToken(savedStabilityToken);
-                setStatus("Applied saved Stability AI token to loaded model.");
-            }
-
-            // juce::String spaceUrlButtonText;
-            if (spaceInfo.status == SpaceInfo::Status::LOCALHOST)
-
-            {
-                // spaceUrlButton.setButtonText("open localhost in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.gradio));
-                modelAuthorLabel.setURL(URL(spaceInfo.gradio));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::HUGGINGFACE)
-            {
-                // spaceUrlButton.setButtonText("open " + spaceInfo.userName + "/"
-                //                              + spaceInfo.modelName + " in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.huggingface));
-                modelAuthorLabel.setURL(URL(spaceInfo.huggingface));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::GRADIO)
-            {
-                // spaceUrlButton.setButtonText("open " + spaceInfo.userName + "-"
-                //                              + spaceInfo.modelName + " in browser");
-                // nameLabelButton.setURL(URL(spaceInfo.gradio));
-                modelAuthorLabel.setURL(URL(spaceInfo.gradio));
-            }
-            else if (spaceInfo.status == SpaceInfo::Status::STABILITY)
-            {
-                modelAuthorLabel.setURL(URL(spaceInfo.stability));
-            }
-            // spaceUrlButton.setFont(Font(15.00f, Font::plain));
-            addAndMakeVisible(modelAuthorLabel);
-            // modelAuthorLabelHandler.onMouseEnter = [this]()
-            // {
-            //     setInstructions("Click to visit "
-            //                     + model->getGradioClient().getSpaceInfo().getModelSlashUser()
-            //                     + "\nin your browser");
-            // };
-            // modelAuthorLabelHandler.onMouseExit = [this]() { clearInstructions(); };
-            // modelAuthorLabelHandler.attach();
+            AlertWindow("Error",
+                        "Model is not loaded. Please load a model first.",
+                        AlertWindow::WarningIcon);
+            return;
         }
 
-        // now, we can enable the buttons
-        if (model->ready())
+        // Get new processID
+        String processID = juce::Uuid().toString();
+        processMutex.lock();
+        currentProcessID = processID;
+        DBG_AND_LOG("Set Process ID: " + processID);
+        processMutex.unlock();
+
+        processCancelButton.setEnabled(true);
+        processCancelButton.setMode(cancelButtonInfo.label);
+        loadModelButton.setEnabled(false);
+        modelPathComboBox.setEnabled(false);
+        //saveEnabled = false;
+        //isProcessing = true;
+        */
+
+        std::map<Uuid, File> loadedInputFiles;
+
+        for (std::unique_ptr<MediaDisplayComponent>& inputTrack :
+             inputTrackAreaWidget.getMediaDisplays())
         {
-            processCancelButton.setEnabled(true);
-            processCancelButton.setMode(processButtonInfo.label);
-            tryLoadSavedToken();
+            if (inputTrack->isRequired() && ! inputTrack->isFileLoaded())
+            {
+                // Make sure all required inputs have been set
+                AlertWindow::showMessageBoxAsync(
+                    AlertWindow::WarningIcon,
+                    "Error",
+                    "Required input track \"" + inputTrack->getTrackName()
+                        + "\" is empty. Please load a file before processing.");
+
+                return;
+            }
+            else if (inputTrack->isFileLoaded())
+            {
+                loadedInputFiles[inputTrack->getTrackID()] =
+                    inputTrack->getOriginalFilePath().getLocalFile();
+            }
+            else
+            {
+                // Optional track skipped
+            }
         }
 
-        loadModelButton.setEnabled(true);
-        modelPathComboBox.setEnabled(true);
-        loadModelButton.setButtonText("Load");
+        /*
+        // Directly add the job to the thread pool
+        jobProcessorThread.addJob(
+            new CustomThreadPoolJob(
+                [this, localInputTrackFiles](String jobProcessID) { // &jobsFinished, totalJobs
+                    // Individual job code for each iteration
+                    // copy the audio file, with the same filename except for an added _harp to the stem
+        */
 
-        // Set the focus to the process button
-        // so that the user can press SPACE to trigger the playback
-        // cb: I don't understand this.
-        processCancelButton.grabKeyboardFocus();
-        resized();
-        repaint();
-    }*/
+        OpResult processingResult = model->process(loadedInputFiles);
+
+        /*
+                    processMutex.lock();
+                    if (jobProcessID != currentProcessID)
+                    {
+                        DBG_AND_LOG("ProcessID " + jobProcessID + " not found");
+                        DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
+                        DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
+                        processMutex.unlock();
+                        return;
+                    }
+                    if (processingResult.failed())
+                    {
+                        Error processingError = processingResult.getError();
+                        Error::fillUserMessage(processingError);
+                        DBG_AND_LOG("Error in Processing:\n"
+                                  + processingError.devMessage.toStdString());
+                        AlertWindow::showMessageBoxAsync(
+                            AlertWindow::WarningIcon,
+                            "Processing Error",
+                            "An error occurred while processing the audio file: \n"
+                                + processingError.userMessage);
+                        // cb: I commented this out, and it doesn't seem to change anything
+                        // it was also causing a crash. If we need it, it needs to run on
+                        // the message thread using MessageManager::callAsync
+                        // hy: Now this line works.
+                        // resetProcessingButtons();
+                        // cb: Needs to be in the message thread or else it crashes
+                        // It's used when the processing fails to reset the process/cancel
+                        // button back to the process mode.
+                        MessageManager::callAsync([this] { resetProcessingButtons(); });
+                        processMutex.unlock();
+                        return;
+                    }
+                    // load the audio file again
+                    DBG_AND_LOG("ProcessID " + jobProcessID + " succeed");
+                    currentProcessID = "";
+                    model->setStatus(ModelStatus::FINISHED);
+                    processBroadcaster.sendChangeMessage();
+                    processMutex.unlock();
+                },
+                processID),
+            true);
+        DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
+        DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
+        */
+    }
+
+    /*
+    void cancelCallback()
+    {
+        DBG_AND_LOG("HARPProcessorEditor::buttonClicked cancel button listener activated");
+
+        OpResult cancelResult = model->cancel();
+
+        if (cancelResult.failed())
+        {
+            DBG_AND_LOG(cancelResult.getError().devMessage.toStdString());
+            AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
+                                             "Cancel Error",
+                                             "An error occurred while cancelling the processing: \n"
+                                                 + cancelResult.getError().devMessage);
+            return;
+        }
+        // Update current process to empty
+        processMutex.lock();
+        DBG_AND_LOG("Cancel ProcessID: " + currentProcessID);
+        currentProcessID = "";
+        processMutex.unlock();
+        // We already added a temp file, so we need to undo that
+        // TODO: this is functionality that I need to add back // #TODO
+        // mediaDisplay->iteratePreviousTempFile();
+        // mediaDisplay->clearFutureTempFiles();
+
+        // processCancelButton.setEnabled(false); // this is the og v3
+        resetProcessingButtons(); // This is the new way
+    }
+    */
 
     const float marginSize = 2;
 
-    ModelSelectionWidget* modelSelectionWidget;
-    //ModelDisplayWidget* modelDisplayWidget;
+    std::shared_ptr<Model> model { new Model() };
+
+    ModelSelectionWidget modelSelectionWidget;
+    ModelInfoWidget modelInfoWidget;
+    ControlAreaWidget controlAreaWidget;
+
+    Label inputTracksLabel { "Input Tracks", "Input Tracks" };
+    TrackAreaWidget inputTrackAreaWidget { DisplayMode::Input };
+
+    MultiButton processCancelButton;
+    MultiButton::Mode processButtonInfo;
+    MultiButton::Mode cancelButtonInfo;
+
+    Label outputTracksLabel { "Output Tracks", "Output Tracks" };
+    TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
 
     ThreadPool loadingThreadPool { 1 };
 
     // TODO - cleanup below
 
     //ChangeBroadcaster loadBroadcaster;
+
+    /* Processing */
+
+    //String currentProcessID;
+
+    //std::mutex processMutex;
+
+    //ChangeBroadcaster processBroadcaster;
+
+    //ThreadPool jobProcessorThread { 10 };
+
+    //bool isProcessing = false;
 };

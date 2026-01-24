@@ -71,37 +71,27 @@ target_sources(${PROJECT_NAME}
         src/MainComponent.cpp #
         #src/ModelTab.cpp #
         src/ModelTab.h #
+        src/Model.h #
 
-        # TODO - subject to change
-        #src/Model.h #
-        #src/WebModel.h #
+        src/windows/AboutWindow.h
+        src/windows/WelcomeWindow.h
+        src/windows/settings/SettingsWindow.h
+        src/windows/settings/GeneralSettingsTab.cpp
+        src/windows/settings/LoginTab.cpp
 
-        # TODO - subject to change
-        #src/callbacks/Edit.cpp #
-        #src/callbacks/Authenticate.cpp #
-        #src/callbacks/Process.cpp #
-        #src/callbacks/Miscellaneous.cpp #
-
-        src/windows/AboutWindow.h #
-        src/windows/WelcomeWindow.h #
-
-        src/windows/settings/SettingsWindow.cpp #
-        src/windows/settings/GeneralSettingsTab.cpp #
-        src/windows/settings/LoginTab.cpp #
-
-        src/widgets/ModelSelectionWidget.h #
-        #src/widgets/ModelInfoWidget.h #
-        #src/widgets/ControlAreaWidget.h #
+        src/widgets/ModelSelectionWidget.h
+        src/widgets/ModelInfoWidget.h
+        src/widgets/ControlAreaWidget.h
         src/widgets/TrackAreaWidget.h
         src/widgets/StatusAreaWidget.h
         src/widgets/MediaClipboardWidget.h
 
-        src/gui/MultiButton.cpp #
-        src/gui/TitledTextBox.h #
-        src/gui/SliderWithLabel.h #
-        src/gui/ComboBoxWithLabel.h #
-        src/gui/HoverableLabel.h #
-        src/gui/HoverHandler.cpp #
+        src/gui/MultiButton.cpp
+        src/gui/HoverableLabel.h
+        src/gui/TextBoxWithLabel.h
+        src/gui/SliderWithLabel.h
+        src/gui/ComboBoxWithLabel.h
+        src/gui/HoverHandler.h
 
         src/media/MediaDisplayComponent.cpp
         src/media/AudioDisplayComponent.cpp
@@ -113,16 +103,19 @@ target_sources(${PROJECT_NAME}
         src/media/pianoroll/PianoRollComponent.cpp
         src/media/pianoroll/SynthAudioSource.h
 
-        src/client/Client.cpp #
-        src/client/GradioClient.cpp #
-        src/client/StabilityClient.cpp #
+        #src/clients/Client.cpp #
+        src/clients/Client.h #
+        #src/clients/GradioClient.cpp #
+        src/clients/GradioClient.h #
+        #src/clients/StabilityClient.cpp #
+        src/clients/GradioClient.h #
 
         src/utils/Logging.h
         src/utils/Settings.h
         src/utils/Interface.h
-        src/utils/Controls.h #
+        src/utils/Controls.h
         src/utils/Labels.h
-        src/utils/Clients.h #
+        src/utils/Clients.h
         #src/utils/Threading.h #
         src/utils/Errors.h #
         src/utils/Enums.h #
@@ -178,9 +171,10 @@ target_compile_definitions(${PROJECT_NAME}
 # static library. These source files can be of any kind (wav data, images, fonts, icons etc.).
 # Conversion to binary-data will happen when your target is built.
 
-juce_add_binary_data(client_controls
+juce_add_binary_data(stability_controls
     SOURCES
-        ${CMAKE_SOURCE_DIR}/src/client/stability-controls.json
+        ${CMAKE_SOURCE_DIR}/src/clients/providers/stability/models/text-to-audio.json
+        ${CMAKE_SOURCE_DIR}/src/clients/providers/stability/models/audio-to-audio.json
 )
 
 # `target_link_libraries` links libraries and JUCE modules to other libraries or executables. Here,
@@ -203,7 +197,7 @@ target_link_libraries(${PROJECT_NAME}
         juce::juce_events
         juce::juce_gui_basics
         juce::juce_gui_extra
-        client_controls
+        stability_controls
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

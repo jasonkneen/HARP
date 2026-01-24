@@ -1,0 +1,228 @@
+/**
+ * @file
+ * @brief Base class for any models that utilize a web api to process
+ * information. Currently we provide an implmentation of a wave 2 wave web based
+ * model. We use the GradioClient class to communicate with a gradio server.
+ * @author hugo flores garcia, aldo aguilar, xribene
+ */
+
+#pragma once
+
+#include <fstream>
+
+#include <juce_core/juce_core.h>
+
+#include "Model.h"
+#include "client/Client.h"
+#include "client/GradioClient.h"
+#include "client/StabilityClient.h"
+
+#include "utils/Logging.h"
+
+class WebModel : public Model
+{
+public:
+    // The input is a vector of String:File objects corresponding to
+    // the files currently loaded in each inputMediaDisplay
+    OpResult process(std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles)
+    {
+
+        // Clear the outputFilePaths and the labels
+        // They will be populated with the new processing results
+        //outputFilePaths.clear();
+        //labels.clear();
+
+        // the jsonBody is created by controlsToJson
+        juce::String processingPayload;
+        result = prepareProcessingPayload(processingPayload);
+        if (result.failed())
+        {
+            result.getError().devMessage = "Failed to upload file";
+            status2 = ModelStatus::ERROR;
+            return result;
+        }
+
+        status2 = ModelStatus::PROCESSING;
+        result = loadedClient->processRequest(error, processingPayload, outputFilePaths, labels);
+        if (result.failed())
+        {
+            status2 = ModelStatus::ERROR;
+        }
+        // Finished status will be set by the MainComponent.h
+        // status2 = ModelStatus::FINISHED;
+        return result;
+    }
+
+    OpResult cancel()
+    {
+        // Create a successful result.
+        // we'll update it to a failure result if something goes wrong
+        status2 = ModelStatus::CANCELLING;
+        OpResult result = loadedClient->cancel();
+        if (result.failed())
+        {
+            status2 = ModelStatus::ERROR;
+            return result;
+        }
+        status2 = ModelStatus::CANCELLED;
+        return result;
+    }
+
+    LabelList& getLabels() { return labels; }
+
+    std::vector<juce::String>& getOutputFilePaths() { return outputFilePaths; }
+
+    void clearOutputFilePaths() { outputFilePaths.clear(); }
+
+private:
+    OpResult prepareProcessingPayload(juce::String& payloadJson)
+    {
+        // Create a JSON array to hold each control's value
+        juce::Array<juce::var> jsonControlsArray;
+
+        // Iterate through each control in controlsInfo
+        // for (const auto& controlPair : controlsInfo)
+        for (const auto& currentUuid : uuidsInOrder)
+        {
+            auto element = findComponentInfoByUuid(currentUuid);
+            if (! element)
+            {
+                // Control not found, handle the error
+                Error error;
+                // error.type = ErrorType::MissingJsonKey;
+                error.devMessage =
+                    "Control with ID: " + currentUuid.toString() + " not found in controlsInfo.";
+                return OpResult::fail(error);
+            }
+
+            juce::var controlValue;
+            bool isFile = false;
+
+            // Check the type of control and extract its value
+            if (auto sliderControl = dynamic_cast<SliderInfo*>(element.get()))
+            {
+                controlValue = juce::var(sliderControl->value);
+            }
+            else if (auto textBoxControl = dynamic_cast<TextBoxInfo*>(element.get()))
+            {
+                controlValue = juce::var(textBoxControl->value);
+            }
+            else if (auto numberBoxControl = dynamic_cast<NumberBoxInfo*>(element.get()))
+            {
+                controlValue = juce::var(numberBoxControl->value);
+            }
+            else if (auto toggleControl = dynamic_cast<ToggleInfo*>(element.get()))
+            {
+                controlValue = juce::var(toggleControl->value);
+            }
+            else if (auto comboBoxControl = dynamic_cast<ComboBoxInfo*>(element.get()))
+            {
+                controlValue = juce::var(comboBoxControl->value);
+            }
+
+            // Audio Input
+            else if (auto audioInTrackInfo = dynamic_cast<AudioTrackInfo*>(element.get()))
+            {
+                if (audioInTrackInfo->value.empty())
+                {
+                    controlValue = juce::var(); // null
+                }
+                else
+                {
+                    juce::DynamicObject::Ptr fileObj = new juce::DynamicObject();
+                    fileObj->setProperty("path", juce::var(audioInTrackInfo->value));
+
+                    juce::DynamicObject::Ptr meta = new juce::DynamicObject();
+                    meta->setProperty("_type", juce::var("gradio.FileData"));
+                    fileObj->setProperty("meta", juce::var(meta));
+
+                    controlValue = juce::var(fileObj);
+                }
+
+                isFile = true;
+            }
+
+            // MIDI Input
+            else if (auto midiInTrackInfo = dynamic_cast<MidiTrackInfo*>(element.get()))
+            {
+                // skip MIDI input for Stability models
+                if (isStabilityModel)
+                    continue;
+
+                if (midiInTrackInfo->value.empty())
+                {
+                    controlValue = juce::var(); // null
+                }
+                else
+                {
+                    juce::DynamicObject::Ptr fileObj = new juce::DynamicObject();
+                    fileObj->setProperty("path", juce::var(midiInTrackInfo->value));
+
+                    juce::DynamicObject::Ptr meta = new juce::DynamicObject();
+                    meta->setProperty("_type", juce::var("gradio.FileData"));
+                    fileObj->setProperty("meta", juce::var(meta));
+
+                    controlValue = juce::var(fileObj);
+                }
+
+                isFile = true;
+            }
+
+            else
+            {
+                Error error;
+                error.type = ErrorType::UnsupportedControlType;
+                error.devMessage =
+                    "Unsupported control type for control with UUID: " + currentUuid.toString();
+                return OpResult::fail(error);
+            }
+
+            // wrapping for Stability
+            if (isStabilityModel)
+            {
+                juce::DynamicObject::Ptr wrapped = new juce::DynamicObject();
+
+                // Important: use "input" label for audio file — required for Stability AI
+                const juce::String label =
+                    isFile ? juce::String("input") : juce::String(element->label);
+
+                wrapped->setProperty("label", label);
+                wrapped->setProperty("value", controlValue);
+
+                jsonControlsArray.add(juce::var(wrapped));
+            }
+            else
+            {
+                // For Gradio: just add raw values
+                jsonControlsArray.add(controlValue);
+            }
+        }
+
+        juce::DynamicObject::Ptr dataObject = new juce::DynamicObject();
+        dataObject->setProperty("data", jsonControlsArray);
+
+        payloadJson = juce::JSON::toString(juce::var(dataObject), true);
+        DBG_AND_LOG("prepareProcessingPayload: " + payloadJson);
+
+        return OpResult::ok();
+    }
+
+    bool isStabilityModel =
+        false; // A flag to indicate if the current model is a Stability AI model
+
+    // A vector that stores the Uuid of the input and control components
+    // in the order they are received from the server
+    // We need to keep track the order to be able to send the data
+    // for processing in the same order.
+    // We wouldn't have to do that if
+    //    1. c++ had an ordered map (like python)
+    //    2. the gradio server would accept key:value pairs instead of list
+    std::vector<juce::Uuid> uuidsInOrder;
+
+    // A variable to store the latest labelList received during processing
+    LabelList labels;
+    // A vector to store the output file paths we get from gradio
+    // after processing. We assume that the order of the output files
+    // is the same as the order of the outputTracksInfo
+    std::vector<juce::String> outputFilePaths;
+};

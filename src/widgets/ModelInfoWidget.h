@@ -1,7 +1,7 @@
-/*
- * @file ModelDisplayWidget.h
+/**
+ * @file ModelInfoWidget.h
  * @brief TODO
- * @author cwitkowitz
+ * @author xribene, cwitkowitz
  */
 
 #pragma once
@@ -9,27 +9,39 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../gui/HoverableLabel.h"
-#include "../gui/StatusComponent.h"
-#include "ControlAreaWidget.h"
-#include "TrackAreaWidget.h"
+#include "../widgets/StatusAreaWidget.h"
 
-#include "../utils/Controls.h"
-#include "../utils/Interface.h"
+#include "../gui/HoverHandler.h"
+
+#include "../utils/Logging.h"
 
 using namespace juce;
 
-class ModelAuthorLabel : public Component, private ChangeListener
+class ModelAuthorLabel : public Component
 {
 public:
-    ModelAuthorLabel()
+    ModelAuthorLabel(const String& modelName = "",
+                     const String& author = "",
+                     const URL& newURL = URL())
     {
+        if (modelName.isNotEmpty())
+        {
+            setModelName(modelName);
+        }
+
+        if (author.isNotEmpty())
+        {
+            setAuthor(author);
+        }
+
+        setURL(newURL);
+
+        modelLabel.setFont(Font(22.0f, Font::bold));
+
         modelLabel.onHover = [this]
-        { instructionsMessage->setMessage("Click to view the model's page"); };
-
+        { instructionsMessage->setMessage("Click to view the model's webpage or documentation."); };
         modelLabel.onExit = [this] { instructionsMessage->clearMessage(); };
-
         modelLabel.onClick = [this] { url.launchInDefaultBrowser(); };
-        modelLabel.setHoverColour(Colours::coral);
 
         addAndMakeVisible(modelLabel);
         addAndMakeVisible(authorLabel);
@@ -37,323 +49,151 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds();
-        modelLabel.setFont(Font(22.0f, Font::bold));
-        auto nameWidth = modelLabel.getFont().getStringWidthFloat(modelLabel.getText()) + 10;
-        modelLabel.setBounds(area.removeFromLeft(static_cast<int>(nameWidth)));
-        authorLabel.setBounds(area.translated(0, 3));
+        Rectangle<int> totalArea = getLocalBounds();
+
+        float modelNameWidth = modelLabel.getFont().getStringWidthFloat(modelLabel.getText()) + 10;
+
+        modelLabel.setBounds(totalArea.removeFromLeft(static_cast<int>(modelNameWidth)));
+        authorLabel.setBounds(totalArea.translated(0, 3));
     }
 
-    void paint(Graphics& g) override
+    // void paint(Graphics& g) override {}
+
+    void setModelName(const String& modelName)
     {
-        g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
-    }
+        modelLabel.setText(modelName, dontSendNotification);
 
-    void setModelText(const String& name) { modelLabel.setText(name, dontSendNotification); }
-    void setAuthorText(const String& name) { authorLabel.setText(name, dontSendNotification); }
-    void setURL(const URL& newURL) { url = newURL; }
+        resized();
+    }
+    void setAuthor(const String& author)
+    {
+        authorLabel.setText(author, dontSendNotification);
+
+        resized();
+    }
+    void setURL(const URL& newURL)
+    {
+        if (newURL.isWellFormed())
+        {
+            url = newURL;
+
+            modelLabel.setHoverColour(Colours::coral);
+            modelLabel.setHoverable(true);
+
+            resized();
+        }
+        else
+        {
+            modelLabel.setHoverColour(Colours::white);
+            modelLabel.setHoverable(false);
+        }
+    }
 
 private:
     HoverableLabel modelLabel;
     Label authorLabel;
+
     URL url;
+
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
 };
 
-class ModelDisplayWidget : public Component
+class ModelInfoWidget : public Component
 {
 public:
-    ModelDisplayWidget()
+    ModelInfoWidget()
     {
-        // TODO: what happens if the model is nullptr rn?
-        if (model == nullptr)
-        {
-            DBG_AND_LOG("FATAL HARPProcessorEditor::HARPProcessorEditor: model is null");
-            jassertfalse;
-            return;
-        }
+        addAndMakeVisible(modelAuthorLabel);
 
-        // add a status timer to update the status label periodically
-        mModelStatusTimer = std::make_unique<ModelStatusTimer>(model);
-        mModelStatusTimer->addChangeListener(this);
-        mModelStatusTimer->startTimer(50); // 100 ms interval
+        description.setFont(Font(15.0f));
+        description.setJustificationType(Justification::topLeft);
+        description.setInterceptsMouseClicks(true, false);
 
-        // model controls
-        controlAreaWidget.setModel(model);
-        addAndMakeVisible(controlAreaWidget);
-        controlAreaWidget.populateControls();
+        descriptionViewport.setViewedComponent(&description, false);
+        descriptionViewport.setScrollBarsShown(true, false);
 
-        inputTracksLabel.setJustificationType(juce::Justification::centred);
-        inputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-        addAndMakeVisible(inputTracksLabel);
-
-        outputTracksLabel.setJustificationType(juce::Justification::centred);
-        outputTracksLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-        addAndMakeVisible(outputTracksLabel);
-
-        populateTracks();
-        addAndMakeVisible(inputTrackAreaWidget);
-        addAndMakeVisible(outputTrackAreaWidget);
-
-        addAndMakeVisible(descriptionLabel);
-
-        // model card component
-        // Get the modelCard from the EditorView
-        auto& card = model->card();
-        setModelCard(card);
+        addAndMakeVisible(descriptionViewport);
     }
 
-    ~ModelDisplayWidget()
-    {
-        // remove listeners
-        loadBroadcaster.removeChangeListener(this);
-        processBroadcaster.removeChangeListener(this);
-        mModelStatusTimer->removeChangeListener(this);
-    }
+    ~ModelInfoWidget() {}
 
-    void paint(Graphics& g)
-    {
-        // TODO
-    }
+    //void paint(Graphics& g) {}
 
     void resized() override
     {
-        int margin = 2;
+        Rectangle<int> bounds = getLocalBounds().reduced(marginSize);
 
-        // Row 2: ModelName / AuthorName Labels
-        juce::FlexBox row2;
-        row2.flexDirection = juce::FlexBox::Direction::row;
-        row2.items.add(juce::FlexItem(modelAuthorLabel).withFlex(0.5).withMargin(margin));
-        row2.items.add(juce::FlexItem().withFlex(0.5).withMargin(margin));
-        mainPanel.items.add(juce::FlexItem(row2).withHeight(30).withMargin(margin));
+        // Set fixed size for model and author labels
+        modelAuthorLabel.setBounds(bounds.removeFromTop(headerHeight));
+        // Grant remaining space to description
+        descriptionViewport.setBounds(bounds);
 
-        // Row 3: Description
-        auto font = Font(15.0f);
-        descriptionLabel.setFont(font);
-        // descriptionLabel.setColour(Label::backgroundColourId, Colours::red);
-        auto maxLabelWidth = mainArea.getWidth() - 2 * margin;
-        auto numberOfLines =
-            font.getStringWidthFloat(descriptionLabel.getText(false)) / maxLabelWidth;
-        float textHeight =
-            (font.getHeight() + 5) * (std::floor(numberOfLines) + 1) + font.getHeight();
-        mainPanel.items.add(
-            juce::FlexItem(descriptionLabel).withHeight(textHeight).withMargin(margin));
+        const int availableWidth = descriptionViewport.getWidth();
 
-        // Row 4: Control Area Widget
-        // TODO - set min/max height based on limits of control element scaling
-        mainPanel.items.add(juce::FlexItem(controlAreaWidget).withFlex(1).withMargin(margin));
-
-        // Row 5: Process Cancel Button
-        juce::FlexBox rowProcessCancelButton;
-        rowProcessCancelButton.flexDirection = juce::FlexBox::Direction::row;
-        rowProcessCancelButton.justifyContent = juce::FlexBox::JustifyContent::center;
-        rowProcessCancelButton.items.add(juce::FlexItem().withFlex(1));
-        rowProcessCancelButton.items.add(
-            juce::FlexItem(processCancelButton).withWidth(150).withMargin(margin));
-        rowProcessCancelButton.items.add(juce::FlexItem().withFlex(1));
-        mainPanel.items.add(
-            juce::FlexItem(rowProcessCancelButton).withHeight(30).withMargin(margin));
-
-        // Row 6: Input Tracks Area Widget
-        float numInputTracks = inputTrackAreaWidget.getNumTracks();
-        float numOutputTracks = outputTrackAreaWidget.getNumTracks();
-        float totalTracks = numInputTracks + numOutputTracks;
-
-        if (numInputTracks > 0)
+        if (availableWidth > 0)
         {
-            float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
-            mainPanel.items.add(juce::FlexItem(inputTracksLabel).withHeight(20).withMargin(margin));
-            mainPanel.items.add(juce::FlexItem(inputTrackAreaWidget)
-                                    .withFlex(inputTrackAreaFlex)
-                                    .withMargin(margin));
+            AttributedString attributedText;
+            attributedText.setText(description.getText());
+            attributedText.setFont(description.getFont());
+            attributedText.setJustification(Justification::topLeft);
+
+            TextLayout layout;
+            layout.createLayout(attributedText, static_cast<float>(availableWidth));
+
+            const int textHeight = static_cast<int>(std::ceil(layout.getHeight()));
+
+            description.setSize(availableWidth, textHeight);
+        }
+    }
+
+    void resetState()
+    {
+        ModelMetadata emptyMetadata;
+
+        updateLabels(emptyMetadata);
+        modelAuthorLabel.setURL(URL(""));
+    }
+
+    void updateLabels(const ModelMetadata& metadata)
+    {
+        if (metadata.name.empty())
+        {
+            modelAuthorLabel.setModelName("");
         }
         else
         {
-            inputTracksLabel.setBounds(0, 0, 0, 0);
-            inputTrackAreaWidget.setBounds(0, 0, 0, 0);
+            modelAuthorLabel.setModelName(String(metadata.name));
         }
 
-        // Row 7: Output Tracks Area Widget
-        if (numOutputTracks > 0)
+        if (metadata.author.empty())
         {
-            float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
-            mainPanel.items.add(
-                juce::FlexItem(outputTracksLabel).withHeight(20).withMargin(margin));
-            mainPanel.items.add(juce::FlexItem(outputTrackAreaWidget)
-                                    .withFlex(outputTrackAreaFlex)
-                                    .withMargin(margin));
+            modelAuthorLabel.setAuthor("");
         }
         else
         {
-            outputTracksLabel.setBounds(0, 0, 0, 0);
-            outputTrackAreaWidget.setBounds(0, 0, 0, 0);
+            modelAuthorLabel.setAuthor("by " + String(metadata.author));
         }
-    }
 
-    void setModelCard(const ModelCard& card)
-    {
-        modelAuthorLabel.setModelText(String(card.name));
-        descriptionLabel.setText(String(card.description), dontSendNotification);
-        // set the author label text to "by {author}" only if {author} isn't empty
-        card.author.empty() ? modelAuthorLabel.setAuthorText("")
-                            : modelAuthorLabel.setAuthorText("by " + String(card.author));
-        modelAuthorLabel.resized();
-    }
-
-    void populateTracks()
-    {
-        for (const ComponentInfo& info : model->getInputTracksInfo())
+        if (metadata.description.empty())
         {
-            inputTrackAreaWidget.addTrackFromComponentInfo(info);
+            description.setText("", dontSendNotification);
+        }
+        else
+        {
+            description.setText(String(metadata.description), dontSendNotification);
         }
 
-        for (const ComponentInfo& info : model->getOutputTracksInfo())
-        {
-            outputTrackAreaWidget.addTrackFromComponentInfo(info);
-        }
+        resized();
     }
 
-    void initProcessCancelButton()
-    {
-        // The Process/Cancel button
-        processButtonInfo = MultiButton::Mode {
-            "Process",
-            [this] { processCallback(); },
-            Colours::orangered,
-            "Click to send the input for processing",
-            MultiButton::DrawingMode::TextOnly,
-            fontaudio::Pause,
-        };
-
-        cancelButtonInfo = MultiButton::Mode {
-            "Cancel",
-            [this] { cancelCallback(); },
-            Colours::lightgrey,
-            "Click to cancel the processing",
-            MultiButton::DrawingMode::TextOnly,
-            fontaudio::Pause,
-        };
-
-        processCancelButton.addMode(processButtonInfo);
-        processCancelButton.addMode(cancelButtonInfo);
-        processCancelButton.setMode(processButtonInfo.label);
-        processCancelButton.setEnabled(false);
-        addAndMakeVisible(processCancelButton);
-
-        processBroadcaster.addChangeListener(this);
-        // saveEnabled = false;
-
-        ModelStatus currentStatus = model->getStatus();
-        if (currentStatus == ModelStatus::LOADED || currentStatus == ModelStatus::FINISHED)
-        {
-            processCancelButton.setEnabled(true);
-            processCancelButton.setMode(processButtonInfo.label);
-        }
-        else if (currentStatus == ModelStatus::PROCESSING || currentStatus == ModelStatus::STARTING
-                 || currentStatus == ModelStatus::SENDING)
-        {
-            processCancelButton.setEnabled(true);
-            processCancelButton.setMode(cancelButtonInfo.label);
-        }
-        setStatus(currentStatus);
-    }
-
-    void resetProcessingButtons()
-    {
-        processCancelButton.setMode(processButtonInfo.label);
-        processCancelButton.setEnabled(true);
-        // saveEnabled = true;
-        // isProcessing = false;
-        loadModelButton.setEnabled(true);
-        modelPathComboBox.setEnabled(true);
-        repaint();
-    }
-
-    void resetUI()
-    {
-        controlAreaWidget.resetUI();
-        inputTrackAreaWidget.resetUI();
-        outputTrackAreaWidget.resetUI();
-        // Also clear the model card components
-        ModelCard empty;
-        setModelCard(empty);
-        // modelAuthorLabelHandler.detach();
-    }
-
-    void changeListenerCallback(ChangeBroadcaster* source)
-    {
-        // The processBroadcaster should be also replaced in a similar way
-        // as the loadBroadcaster (see processLoadingResult)
-        if (source == &processBroadcaster)
-        {
-            // // refresh the display for the new updated file
-            // URL tempFilePath = outputMediaDisplays[0]->getTempFilePath();
-            // outputMediaDisplays[0]->updateDisplay(tempFilePath);
-
-            // // extract generated labels from the model
-
-            // // add the labels to the display component
-            // outputMediaDisplays[0]->addLabels(labels);
-
-            // The above commented code was for the case of a single output media display.
-            // Now, we get from model all the outputPaths using model->getOutputPaths()
-            // and we iterate over both outputMediaDisplays and outputPaths to update the display
-
-            // Additionally, we filter the labels to only show the audio labels to audio output media displays
-            // and midi labels to midi output media displays.
-
-            LabelList& labels = model->getLabels();
-            auto outputProcessedPaths = model->getOutputFilePaths();
-            auto& outputMediaDisplays = outputTrackAreaWidget.getMediaDisplays();
-            for (size_t i = 0; i < outputMediaDisplays.size(); ++i)
-            {
-                URL tempFile = outputProcessedPaths[i];
-                outputMediaDisplays[i]->initializeDisplay(tempFile);
-                outputMediaDisplays[i]->addLabels(labels);
-            }
-            // URL tempFilePath = outputProcessedPaths[0];
-            // outputMediaDisplays[0]->setupDisplay(tempFilePath);
-
-            // now, we can enable the process button
-            resetProcessingButtons();
-            return;
-        }
-
-        if (source == mModelStatusTimer.get())
-        {
-            // update the status label
-            DBG_AND_LOG("HARPProcessorEditor::changeListenerCallback: updating status label");
-            // statusLabel.setText(model->getStatus(), dontSendNotification);
-            setStatus(model->getStatus());
-            return;
-        }
-
-        DBG_AND_LOG("HARPProcessorEditor::changeListenerCallback: unhandled change broadcaster");
-        return;
-    }
-
-    void processLoadingResult(OpResult result);
+    void addOpenablePath(const String& openablePath) { modelAuthorLabel.setURL(URL(openablePath)); }
 
 private:
-    std::shared_ptr<WebModel> model { new WebModel() };
-
-    std::unique_ptr<ModelStatusTimer> mModelStatusTimer { nullptr };
+    const float headerHeight = 30;
+    const float marginSize = 2;
 
     ModelAuthorLabel modelAuthorLabel;
 
-    Label descriptionLabel;
-
-    ControlAreaWidget controlAreaWidget;
-
-    Label inputTracksLabel { "Input Tracks", "Input Tracks" };
-    TrackAreaWidget inputTrackAreaWidget { DisplayMode::Input };
-
-    MultiButton processCancelButton;
-    MultiButton::Mode processButtonInfo;
-    MultiButton::Mode cancelButtonInfo;
-
-    Label outputTracksLabel { "Output Tracks", "Output Tracks" };
-    TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
-
-    std::unique_ptr<ModelStatusTimer> mModelStatusTimer { nullptr };
+    Label description;
+    Viewport descriptionViewport;
 };

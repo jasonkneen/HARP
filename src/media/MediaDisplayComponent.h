@@ -12,7 +12,7 @@
 
 using namespace juce;
 
-enum DisplayMode
+enum class DisplayMode
 {
     Input,
     Output,
@@ -64,19 +64,19 @@ public:
     virtual void resized() override;
     void repositionLabels();
 
+    void setTrackID(Uuid id) { trackID = id; }
+    Uuid getTrackID() { return trackID; }
+
     void setTrackName(String name);
     String getTrackName() { return trackName; }
 
     bool isRequired() const { return required; }
     bool isLinkedToDAW() const { return linkedToDAW; }
 
-    bool isInputTrack() { return (displayMode == 0) || isHybridTrack(); }
-    bool isOutputTrack() { return (displayMode == 1) || isHybridTrack(); }
-    bool isHybridTrack() { return displayMode == 2; }
-    bool isThumbnailTrack() { return displayMode == 3; }
-
-    void setDisplayID(Uuid id) { displayID = id; }
-    Uuid getDisplayID() { return displayID; }
+    bool isInputTrack() { return (displayMode == DisplayMode::Input) || isHybridTrack(); }
+    bool isOutputTrack() { return (displayMode == DisplayMode::Output) || isHybridTrack(); }
+    bool isHybridTrack() { return displayMode == DisplayMode::Hybrid; }
+    bool isThumbnailTrack() { return displayMode == DisplayMode::Thumbnail; }
 
     void setMediaInstructions(String instructions) { mediaInstructions = instructions; }
 
@@ -252,7 +252,7 @@ private:
     // Flex for media / overhead panel (if any)
     FlexBox mediaAreaFlexBox;
 
-    Uuid displayID;
+    Uuid trackID;
     String trackName;
     const bool required = true;
     bool linkedToDAW = false;

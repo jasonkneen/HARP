@@ -26,13 +26,7 @@ public:
     StabilityClient();
     ~StabilityClient() = default;
 
-    // Space Info
-    OpResult setSpaceInfo(const SpaceInfo& info) override;
-
     // Requests
-    OpResult getControls(Array<var>& inputComponents,
-                         Array<var>& outputComponents,
-                         DynamicObject& cardDict) override; // TODO - abstract to ThirdPartyClient
     OpResult uploadFileRequest(const File& fileToUpload,
                                String& uploadedFilePath,
                                const int timeoutMs = 10000) const override;

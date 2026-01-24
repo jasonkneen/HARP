@@ -5,20 +5,22 @@
 #include "../../utils/Logging.h"
 #include "../../utils/Settings.h"
 
-class GeneralSettingsTab : public juce::Component
+using namespace juce;
+
+class GeneralSettingsTab : public Component
 {
 public:
     GeneralSettingsTab();
     ~GeneralSettingsTab() override = default;
 
     void resized() override;
-    void paint(juce::Graphics& g) override;
 
 private:
-    juce::TextButton openSettingsButton;
-    juce::TextButton openLogFolderButton;
     void handleOpenLogFolder();
     void handleOpenSettings();
+
+    TextButton openLogFolderButton;
+    TextButton openSettingsButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GeneralSettingsTab)
 };

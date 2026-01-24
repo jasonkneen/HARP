@@ -1,133 +1,470 @@
 /**
  * @file
- * @brief classes and functions for handling errors in the application
- * @author xribene
+ * @brief Classes and helper functions for error handling.
+ * @author xribene, cwitkowitz
  */
 
 #pragma once
 
 #include <juce_core/juce_core.h>
-// #include <string>
-// #include <vector>
-// #include <juce_core/misc/juce_Result.h>
 
-enum class ErrorType
+using namespace juce;
+
+struct ClientError
 {
-    InvalidURL,
-    MissingJsonKey,
-    JsonParseError,
-    FileUploadError,
-    FileDownloadError,
-    HttpRequestError,
-    UnknownError,
-    UnsupportedControlType,
-    UnknownLabelType,
+    enum class Type
+    {
+        UnknownClient,
+        InvalidModelPath,
+        InsufficientPermissions
+    };
+
+    Type type;
+
+    String path;
+    String client;
+    String token;
 };
 
-struct Error
+inline String toUserMessage(const ClientError& e)
 {
-    ErrorType type;
-    int code = -1;
-    juce::String devMessage;
-    juce::String userMessage;
+    String userMessage = "A client error occurred.";
 
-    /*
-    * In this function, we parse the detailed developer message 
-    * of an Error object, and fill the user message accordingly.
-    * by default, we set the user message to the developer message.
-    * TODO: the if/else statements below are very simple checks, and 
-    * serve just as an example.
-    */
-    static void fillUserMessage(Error& error)
+    switch (e.type)
     {
-        error.userMessage = error.devMessage;
-        if (error.devMessage.contains("503"))
-        {
-            error.userMessage =
-                "The gradio app is currently paused by the developer. Please try again later.";
-        }
-        else if (error.type == ErrorType::HttpRequestError)
-        {
-            // if (error.devMessage.contains("POST request to controls"))
-            if (containsAllSubstrings(error.devMessage, { "POST", "controls", "input stream" }))
+        case ClientError::Type::UnknownClient:
+
+            userMessage = "Path ";
+
+            if (e.path.isNotEmpty())
             {
-                error.userMessage = "TIMEOUT: The gradio app is SLEEPING. Please try again later.";
+                userMessage += "\"" + e.path + "\" ";
             }
-            else if (containsAllSubstrings(error.devMessage, { "GET", "input stream" }))
+
+            userMessage += "does not match valid specification for any supported clients.";
+
+            return userMessage;
+
+        case ClientError::Type::InvalidModelPath:
+
+            userMessage = "Path ";
+
+            if (e.path.isNotEmpty())
             {
-                //
-                error.userMessage = error.devMessage;
-                // error.userMessage += "\n There was some network connectivity issue. Please try again";
-                if (error.code == 0)
-                {
-                    error.userMessage +=
-                        "\n\nProbably a request timeout, e.g the model is taking too long to process the audio file.";
-                }
+                userMessage += "\"" + e.path + "\" ";
             }
-        }
-        else if (error.type == ErrorType::FileUploadError)
-        {
-            error.userMessage =
-                "Failed to upload the file to the gradio app. Please check your internet connection.";
-        }
-        else if (error.type == ErrorType::FileDownloadError)
-        {
-            error.userMessage =
-                "Processing was successful but failed to download the file from the gradio app. Please check your internet connection.";
-        }
+
+            userMessage += "does not match valid specification for client";
+
+            if (e.client.isNotEmpty())
+            {
+                userMessage += " \"" + e.client + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+
+        case ClientError::Type::InsufficientPermissions:
+
+            userMessage = "Token ";
+
+            if (e.token.isNotEmpty())
+            {
+                userMessage += "\"" + e.token + "\" ";
+            }
+
+            userMessage += "for client";
+
+            if (e.client.isNotEmpty())
+            {
+                userMessage += " \"" + e.client + "\"";
+            }
+
+            userMessage += " does not have sufficient permissions.";
+
+            return userMessage;
     }
 
-    // Function to check if all substrings are contained in the given string
-    static bool containsAllSubstrings(const juce::String& str,
-                                      const std::vector<std::string>& substrings)
+    return userMessage;
+}
+
+struct HttpError
+{
+    enum class Type
     {
-        for (const auto& substring : substrings)
-        {
-            if (! str.contains(substring))
-            {
-                return false;
-            }
-        }
-        return true; // All substrings are found
-    }
+        InvalidURL,
+        ConnectionFailed,
+        BadStatusCode,
+        //InvalidResponse
+    };
+
+    Type type;
+
+    enum class Request
+    {
+        POST,
+        GET
+    };
+
+    Request request;
+
+    String endpointPath;
+
+    int statusCode = 0;
 };
-// type: HttpRequestError - Failed to create input stream for POST request to controls
+
+inline String toUserMessage(const HttpError& e)
+{
+    String userMessage = "An HTTP error occurred.";
+
+    switch (e.type)
+    {
+        case HttpError::Type::InvalidURL:
+
+            userMessage = "Endpoint URL ";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += "\"" + e.endpointPath + "\" ";
+            }
+
+            userMessage += "is malformed.";
+
+            return userMessage;
+
+        case HttpError::Type::ConnectionFailed:
+
+            userMessage = "Unable to make ";
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += "POST";
+            }
+            else if (e.request == HttpError::Request::GET)
+            {
+                userMessage += "GET";
+            }
+            else
+            {
+            }
+
+            userMessage += " request to endpoint";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += " \"" + e.endpointPath + "\"";
+            }
+
+            userMessage += ".";
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += " If this is a valid Hugging Face space, this "
+                               "could indicate the space is sleeping or restarting. "
+                               "Please try again in a few minutes.";
+            }
+
+            return userMessage;
+
+        case HttpError::Type::BadStatusCode:
+
+            userMessage.clear();
+
+            if (e.request == HttpError::Request::POST)
+            {
+                userMessage += "POST";
+            }
+            else if (e.request == HttpError::Request::GET)
+            {
+                userMessage += "GET";
+            }
+            else
+            {
+            }
+
+            userMessage += " request to endpoint ";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += "\"" + e.endpointPath + "\" ";
+            }
+
+            userMessage += "failed";
+
+            if (e.statusCode != 0)
+            {
+                userMessage += " with status code " + String(e.statusCode);
+            }
+
+            userMessage += ".";
+
+            if (e.statusCode == 503)
+            {
+                userMessage += " If this is a valid Hugging Face space, this could indicate "
+                               "the space is paused or down due to a build or runtime error.";
+            }
+
+            /*
+        case HttpError::Type::InvalidResponse:
+
+            return userMessage;
+        */
+    }
+
+    return userMessage;
+}
+
+struct GradioError
+{
+    enum class Type
+    {
+        RuntimeError
+    };
+
+    Type type;
+
+    String endpointPath;
+};
+
+inline String toUserMessage(const GradioError& e)
+{
+    String userMessage = "A Gradio error occurred.";
+
+    switch (e.type)
+    {
+        case GradioError::Type::RuntimeError:
+
+            userMessage = "A runtime error occurred at endpoint";
+
+            if (e.endpointPath.isNotEmpty())
+            {
+                userMessage += " \"" + e.endpointPath + "\"";
+            }
+
+            userMessage += ". If this is a Hugging Face space running on ZeroGPU, this "
+                           "can also indicate a user has exceeded their daily ZeroGPU quota.";
+
+            return userMessage;
+    }
+
+    return userMessage;
+}
+
+struct JsonError
+{
+    enum class Type
+    {
+        InvalidJSON,
+        NotADictionary,
+        NotAnArray,
+        Empty,
+        MissingKey
+    };
+
+    Type type;
+
+    String stringJSON;
+    String key;
+};
+
+inline String toUserMessage(const JsonError& e)
+{
+    String userMessage = "A JSON error occurred.";
+
+    switch (e.type)
+    {
+        case JsonError::Type::InvalidJSON:
+
+            userMessage = "Unable to parse JSON";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += " \"" + e.stringJSON + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+
+        case JsonError::Type::NotADictionary:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is not a valid dictionary.";
+
+            return userMessage;
+
+        case JsonError::Type::NotAnArray:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is not a valid array.";
+
+            return userMessage;
+
+        case JsonError::Type::Empty:
+
+            userMessage = "JSON is empty.";
+
+            return userMessage;
+
+        case JsonError::Type::MissingKey:
+
+            userMessage = "JSON ";
+
+            if (e.stringJSON.isNotEmpty())
+            {
+                userMessage += "\"" + e.stringJSON + "\" ";
+            }
+
+            userMessage += "is missing key";
+
+            if (e.key.isNotEmpty())
+            {
+                userMessage += " \"" + e.key + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+    }
+
+    return userMessage;
+}
+
+struct ControlError
+{
+    enum class Type
+    {
+        UnsupportedControl
+    };
+
+    Type type;
+
+    String controlType;
+};
+
+inline String toUserMessage(const ControlError& e)
+{
+    String userMessage = "A control error occurred.";
+
+    switch (e.type)
+    {
+        case ControlError::Type::UnsupportedControl:
+
+            userMessage = "HARP does not currently support controls of type";
+
+            if (e.controlType.isNotEmpty())
+            {
+                userMessage += " \"" + e.controlType + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+    }
+
+    return userMessage;
+}
 
 /*
-* Wrapper class for operation results
-* This class wraps JUCE's Result class and adds an Error object
+struct FileError
+{
+    enum class Type
+    {
+        UploadFailed,
+        DownloadFailed,
+        PermissionDenied
+    };
+
+    Type type;
+};
 */
+
+using Error = std::variant<ClientError, HttpError, GradioError, JsonError, ControlError>;
+
+inline String toUserMessage(const Error& error)
+{
+    return std::visit([](const auto& e) { return toUserMessage(e); }, error);
+}
+
+inline std::optional<String> getOpenablePath(const Error& error)
+{
+    if (const auto* e = std::get_if<HttpError>(&error))
+    {
+        if (e->type == HttpError::Type::ConnectionFailed && e->endpointPath.isNotEmpty())
+        {
+            return e->endpointPath;
+        }
+        else if (e->type == HttpError::Type::BadStatusCode & e->endpointPath.isNotEmpty())
+        {
+            return e->endpointPath;
+        }
+    }
+
+    if (const auto* e = std::get_if<GradioError>(&error))
+    {
+        if (e->type == GradioError::Type::RuntimeError && e->endpointPath.isNotEmpty())
+        {
+            return e->endpointPath;
+        }
+    }
+
+    return std::nullopt;
+}
+
 class OpResult
 {
 public:
-    // Create a successful result
-    static OpResult ok() noexcept { return OpResult(juce::Result::ok(), {}); }
+    /**
+     * Create a result indicating success.
+     */
+    static OpResult ok() noexcept { return OpResult(Result::ok(), std::nullopt); }
 
-    // Create a failure result with an Error object
-    static OpResult fail(const Error& error) noexcept
+    /**
+     * Create a result indicating failure with a specific error.
+     */
+    static OpResult fail(Error error)
     {
-        return OpResult(juce::Result::fail(error.devMessage), error);
+        return OpResult(Result::fail(toUserMessage(error)), std::move(error));
     }
 
-    // Check if this result indicates success
+    /**
+     * Check if this result indicates success.
+     */
     bool wasOk() const noexcept { return result.wasOk(); }
 
-    // Check if this result indicates failure
+    /**
+     * Check if this result indicates failure.
+     */
     bool failed() const noexcept { return result.failed(); }
 
-    // Get the Error object (contains developer and user messages)
-    Error& getError() noexcept { return error; }
-
-    operator bool() const noexcept
+    /**
+     * Obtain the error associated with this result if one exists.
+     */
+    const Error& getError() const noexcept
     {
-        // True if operation was successful (not failed)
-        return ! failed();
+        jassert(error.has_value());
+        return *error;
     }
 
-private:
-    juce::Result result; // Use JUCE's Result internally
-    Error error; // Custom Error object
+    explicit operator bool() const noexcept { return wasOk(); }
 
-    // Private constructor for the wrapper class
-    OpResult(const juce::Result& res, const Error& err) noexcept : result(res), error(err) {}
+private:
+    OpResult(Result r, std::optional<Error> e) : result(std::move(r)), error(std::move(e)) {}
+
+    Result result;
+
+    std::optional<Error> error;
 };

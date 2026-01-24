@@ -295,109 +295,90 @@ private:
         // Mode when a track is selected (rename enabled)
         renameSelectionButtonActiveInfo = MultiButton::Mode {
             "RenameSelection-Active",
+            "Rename the currently selected track.",
             [this] {}, // TODO
-            Colours::darkblue,
-            "Rename the currently selected track",
             MultiButton::DrawingMode::IconOnly,
-            fontawesome::FileText,
+            Colours::darkblue,
+            fontawesome::FileText
         };
         // Mode when there is no track selected (rename disabled)
         renameSelectionButtonInactiveInfo = MultiButton::Mode {
             "RenameSelection-Inactive",
+            "No track selected.",
             [this] {},
-            Colours::lightgrey,
-            "No track selected",
             MultiButton::DrawingMode::IconOnly,
-            fontawesome::FileText,
+            Colours::lightgrey,
+            fontawesome::FileText
         };
         renameSelectionButton.addMode(renameSelectionButtonActiveInfo);
         renameSelectionButton.addMode(renameSelectionButtonInactiveInfo);
         buttonsComponent.addAndMakeVisible(renameSelectionButton);
         */
 
-        addFileButtonInfo = MultiButton::Mode {
-            "AddFile",
-            [this] { addFileCallback(); },
-            Colours::lightblue,
-            "Click to add a file to the media clipboard.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::Folder,
-        };
+        addFileButtonInfo = MultiButton::Mode { "AddFile",
+                                                "Click to add a file to the media clipboard.",
+                                                [this] { addFileCallback(); },
+                                                MultiButton::DrawingMode::IconOnly,
+                                                Colours::lightblue,
+                                                fontawesome::Folder };
         addFileButton.addMode(addFileButtonInfo);
         buttonsComponent.addAndMakeVisible(addFileButton);
 
         // Mode when a track is selected (remove enabled)
         removeSelectionButtonActiveInfo = MultiButton::Mode {
             "RemoveSelection-Active",
-            [this] { removeSelectionCallback(); },
-            Colours::orangered,
             "Click to remove the currently selected track from the media clipboard.",
+            [this] { removeSelectionCallback(); },
             MultiButton::DrawingMode::IconOnly,
-            fontawesome::Remove,
+            Colours::orangered,
+            fontawesome::Remove
         };
         // Mode when there is no track selected (rename disabled)
         removeSelectionButtonInactiveInfo = MultiButton::Mode {
-            "RemoveSelection-Inactive",
-            [this] {},
-            Colours::lightgrey,
-            "No track selected.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::Remove,
+            "RemoveSelection-Inactive",         "No track selected.", [this] {},
+            MultiButton::DrawingMode::IconOnly, Colours::lightgrey,   fontawesome::Remove
         };
         removeSelectionButton.addMode(removeSelectionButtonActiveInfo);
         removeSelectionButton.addMode(removeSelectionButtonInactiveInfo);
         buttonsComponent.addAndMakeVisible(removeSelectionButton);
 
         // Mode when a playable track is selected (play enabled)
-        playButtonActiveInfo = MultiButton::Mode {
-            "Play-Active",
-            [this] { playCallback(); },
-            Colours::limegreen,
-            "Click to start playback.",
-            MultiButton::DrawingMode::IconOnly,
-            fontaudio::Play,
-        };
+        playButtonActiveInfo = MultiButton::Mode { "Play-Active",
+                                                   "Click to start playback.",
+                                                   [this] { playCallback(); },
+                                                   MultiButton::DrawingMode::IconOnly,
+                                                   Colours::limegreen,
+                                                   fontaudio::Play };
         // Mode when there is no track selected (play disabled)
-        playButtonInactiveInfo = MultiButton::Mode {
-            "Play-Inactive",
-            [this] {},
-            Colours::lightgrey,
-            "Nothing to play.",
-            MultiButton::DrawingMode::IconOnly,
-            fontaudio::Play,
-        };
+        playButtonInactiveInfo =
+            MultiButton::Mode { "Play-Inactive",    "Nothing to play.",
+                                [this] {},          MultiButton::DrawingMode::IconOnly,
+                                Colours::lightgrey, fontaudio::Play };
         // Mode during playback (stop enabled)
-        stopButtonInfo = MultiButton::Mode {
-            "Stop",
-            [this] { stopCallback(); },
-            Colours::orangered,
-            "Click to stop playback.",
-            MultiButton::DrawingMode::IconOnly,
-            fontaudio::Stop,
-        };
+        stopButtonInfo = MultiButton::Mode { "Stop",
+                                             "Click to stop playback.",
+                                             [this] { stopCallback(); },
+                                             MultiButton::DrawingMode::IconOnly,
+                                             Colours::orangered,
+                                             fontaudio::Stop };
         playStopButton.addMode(playButtonActiveInfo);
         playStopButton.addMode(playButtonInactiveInfo);
         playStopButton.addMode(stopButtonInfo);
         buttonsComponent.addAndMakeVisible(playStopButton);
 
         // Mode when a track is selected (save file enabled)
-        saveFileButtonActiveInfo = MultiButton::Mode {
-            "Save-Active",
-            [this] { saveFileCallback(); },
-            Colours::lightblue,
-            "Click to save the currently selected media file.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::Save,
-        };
+        saveFileButtonActiveInfo =
+            MultiButton::Mode { "Save-Active",
+                                "Click to save the currently selected media file.",
+                                [this] { saveFileCallback(); },
+                                MultiButton::DrawingMode::IconOnly,
+                                Colours::lightblue,
+                                fontawesome::Save };
         // Mode when there is no track selected (save file disabled)
-        saveFileButtonInactiveInfo = MultiButton::Mode {
-            "Save-Inactive",
-            [this] {},
-            Colours::lightgrey,
-            "Nothing to save.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::Save,
-        };
+        saveFileButtonInactiveInfo =
+            MultiButton::Mode { "Save-Inactive",    "Nothing to save.",
+                                [this] {},          MultiButton::DrawingMode::IconOnly,
+                                Colours::lightgrey, fontawesome::Save };
         saveFileButton.addMode(saveFileButtonActiveInfo);
         saveFileButton.addMode(saveFileButtonInactiveInfo);
         buttonsComponent.addAndMakeVisible(saveFileButton);
@@ -405,39 +386,35 @@ private:
         // Mode when DAW-linked tracks are available
         sendToDAWButtonActiveInfo = MultiButton::Mode {
             "SendToDAW-Active",
-            [this] { sendToDAWCallback(); },
-            Colours::orange,
             "Click to overwrite an existing DAW-linked file with the selected media file.",
+            [this] { sendToDAWCallback(); },
             MultiButton::DrawingMode::IconOnly,
-            fontawesome::ArrowCircleORight,
+            Colours::orange,
+            fontawesome::ArrowCircleORight
         };
         // Mode when the only DAW-linked track is selected
-        sendToDAWButtonSelectedInfo = MultiButton::Mode {
-            "SendToDAW-Selected",
-            [this] {},
-            Colours::lightgrey,
-            "This track is already DAW-linked. Select another one.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::ArrowCircleORight,
-        };
+        sendToDAWButtonSelectedInfo =
+            MultiButton::Mode { "SendToDAW-Selected",
+                                "This track is already DAW-linked. Select another one.",
+                                [this] {},
+                                MultiButton::DrawingMode::IconOnly,
+                                Colours::lightgrey,
+                                fontawesome::ArrowCircleORight };
         // Mode no track is selected
-        sendToDAWButtonInactiveInfo1 = MultiButton::Mode {
-            "SendToDAW-Inactive1",
-            [this] {},
-            Colours::lightgrey,
-            "No track selected.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::ArrowCircleORight,
-        };
+        sendToDAWButtonInactiveInfo1 = MultiButton::Mode { "SendToDAW-Inactive1",
+                                                           "No track selected.",
+                                                           [this] {},
+                                                           MultiButton::DrawingMode::IconOnly,
+                                                           Colours::lightgrey,
+                                                           fontawesome::ArrowCircleORight };
         // Mode when DAW-linked tracks are unavailable
-        sendToDAWButtonInactiveInfo2 = MultiButton::Mode {
-            "SendToDAW-Inactive2",
-            [this] {},
-            Colours::lightgrey,
-            "No DAW-linked files in media clipboard.",
-            MultiButton::DrawingMode::IconOnly,
-            fontawesome::ArrowCircleORight,
-        };
+        sendToDAWButtonInactiveInfo2 =
+            MultiButton::Mode { "SendToDAW-Inactive2",
+                                "No DAW-linked files in media clipboard.",
+                                [this] {},
+                                MultiButton::DrawingMode::IconOnly,
+                                Colours::lightgrey,
+                                fontawesome::ArrowCircleORight };
         sendToDAWButton.addMode(sendToDAWButtonActiveInfo);
         sendToDAWButton.addMode(sendToDAWButtonSelectedInfo);
         sendToDAWButton.addMode(sendToDAWButtonInactiveInfo1);
@@ -459,7 +436,7 @@ private:
             else
             {
                 // Reset play/stop button state for select and stop events (avoid infinite messages)
-                playStopButton.setMode(playButtonActiveInfo.label);
+                playStopButton.setMode(playButtonActiveInfo.displayLabel);
             }
         }
 
@@ -514,7 +491,7 @@ private:
         {
             mediaDisplay->start();
 
-            playStopButton.setMode(stopButtonInfo.label);
+            playStopButton.setMode(stopButtonInfo.displayLabel);
         }
     }
 
@@ -529,7 +506,7 @@ private:
         {
             mediaDisplay->stop();
 
-            playStopButton.setMode(playButtonActiveInfo.label);
+            playStopButton.setMode(playButtonActiveInfo.displayLabel);
         }
     }
 
@@ -539,11 +516,11 @@ private:
         selectionTextBox.setEnabled(false);
 
         //renameSelectionButton.setMode(renameSelectionButtonInactiveInfo.label);
-        addFileButton.setMode(addFileButtonInfo.label);
-        removeSelectionButton.setMode(removeSelectionButtonInactiveInfo.label);
-        playStopButton.setMode(playButtonInactiveInfo.label);
-        saveFileButton.setMode(saveFileButtonInactiveInfo.label);
-        sendToDAWButton.setMode(sendToDAWButtonInactiveInfo1.label);
+        addFileButton.setMode(addFileButtonInfo.displayLabel);
+        removeSelectionButton.setMode(removeSelectionButtonInactiveInfo.displayLabel);
+        playStopButton.setMode(playButtonInactiveInfo.displayLabel);
+        saveFileButton.setMode(saveFileButtonInactiveInfo.displayLabel);
+        sendToDAWButton.setMode(sendToDAWButtonInactiveInfo1.displayLabel);
 
         currentlySelectedDisplay = nullptr;
     }
@@ -554,24 +531,24 @@ private:
         selectionTextBox.setEnabled(true);
 
         //renameSelectionButton.setMode(renameSelectionButtonActiveInfo.label);
-        removeSelectionButton.setMode(removeSelectionButtonActiveInfo.label);
-        playStopButton.setMode(playButtonActiveInfo.label);
-        saveFileButton.setMode(saveFileButtonActiveInfo.label);
+        removeSelectionButton.setMode(removeSelectionButtonActiveInfo.displayLabel);
+        playStopButton.setMode(playButtonActiveInfo.displayLabel);
+        saveFileButton.setMode(saveFileButtonActiveInfo.displayLabel);
 
         int nOtherDAWLinkedTracks =
             trackAreaWidget.getDAWLinkedDisplays().size() - mediaDisplay->isLinkedToDAW();
 
         if (nOtherDAWLinkedTracks > 0)
         {
-            sendToDAWButton.setMode(sendToDAWButtonActiveInfo.label);
+            sendToDAWButton.setMode(sendToDAWButtonActiveInfo.displayLabel);
         }
         else if (mediaDisplay->isLinkedToDAW())
         {
-            sendToDAWButton.setMode(sendToDAWButtonSelectedInfo.label);
+            sendToDAWButton.setMode(sendToDAWButtonSelectedInfo.displayLabel);
         }
         else
         {
-            sendToDAWButton.setMode(sendToDAWButtonInactiveInfo2.label);
+            sendToDAWButton.setMode(sendToDAWButtonInactiveInfo2.displayLabel);
         }
 
         currentlySelectedDisplay = mediaDisplay;

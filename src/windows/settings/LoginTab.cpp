@@ -1,267 +1,247 @@
 #include "LoginTab.h"
 
-//LoginTab::LoginTab(const juce::String& providerName, WebModel* m)
-LoginTab::LoginTab(const juce::String& providerName)
+ProviderPage::ProviderPage(Provider p, String n) : provider(p), displayName(n)
 {
-    // Setup toggle button
-    provider = getProvider(providerName);
+    // Load appropriate client
+    client = multiplexClients(provider);
 
-    //currentlyLoadedModel = m;
+    String titleText = "Update or remove your API key for " + displayName + ".";
 
-    if (provider == LoginTab::Provider::UNKNOWN)
-    {
-        DBG_AND_LOG("Invalid provider name passed to loginToProvider()");
-        return;
-    }
+    titleLabel.setText(titleText, dontSendNotification);
+    titleLabel.setJustificationType(Justification::centred);
 
-    bool isHuggingFace = (provider == LoginTab::Provider::HUGGINGFACE);
-    // Set provider-specific values
-    juce::String title =
-        "Login to " + juce::String(isHuggingFace ? "Hugging Face" : "Stability AI");
-    juce::String message =
-        "Paste your "
-        + juce::String(isHuggingFace ? "Hugging Face access token" : "Stability AI API key")
-        + " below.";
-
-    // TODO - use this term on the rest of the tab as well
-    juce::String tokenLabel = isHuggingFace ? "Access Token" : "API Key";
-
-    // Create token prompt window
-    titleLabel.setText(title, juce::dontSendNotification);
-    infoLabel.setText(message, juce::dontSendNotification);
-    registerLabel.setText("New User?", juce::dontSendNotification);
-    linkLabel.setButtonText("Get token");
-    linkLabel.setURL(getTokenURL());
-    linkLabel.setFont(
-        juce::Font(registerLabel.getFont().getHeight(), juce::Font::FontStyleFlags::underlined),
-        false,
-        juce::Justification::centredLeft);
+    getTokenLink.setButtonText("Click here to register a new API key.");
+    getTokenLink.setURL(client->tokenRegistrationURL);
+    getTokenLink.setColour(HyperlinkButton::textColourId, Colours::blue);
 
     addAndMakeVisible(titleLabel);
-    addAndMakeVisible(infoLabel);
-    addAndMakeVisible(registerLabel);
-    addAndMakeVisible(linkLabel);
+    addAndMakeVisible(getTokenLink);
 
-    addAndMakeVisible(statusLabel);
+    String emptyText = "Enter API key here";
 
-    userToken.setTextToShowWhenEmpty(tokenLabel, juce::Colours::grey);
-    userToken.setReturnKeyStartsNewLine(false);
-    userToken.setSelectAllWhenFocused(true);
-    userToken.onTextChange = [this]()
+    tokenEditor.setTextToShowWhenEmpty(emptyText, Colours::grey);
+    tokenEditor.setReturnKeyStartsNewLine(false);
+    tokenEditor.setSelectAllWhenFocused(true);
+    tokenEditor.onTextChange = [this]()
     {
-        bool hasText = userToken.getText().trim().isNotEmpty();
-        submitButton.setEnabled(hasText);
-    };
-    userToken.onReturnKey = [this] { submitButton.triggerClick(); };
-    addAndMakeVisible(userToken);
+        String currentText = tokenEditor.getText().trim();
 
-    // rememberTokenToggle.setButtonText("Remember this token");
-    // rememberTokenToggle.setSize(200, 24);
-    // addAndMakeVisible(rememberTokenToggle);
-
-    juce::String savedToken = Settings::getString(getStorageKey());
-    if (savedToken.isNotEmpty())
-    {
-        OpResult result = validateToken(savedToken);
-        if (result.failed())
+        if (currentText.isNotEmpty())
         {
-            setStatus("Saved token invalid. Please apply for another token.");
-            forgetButton.setEnabled(true);
-        }
-        else
-        {
-            userToken.setText(savedToken);
-            setStatus("Token verified.");
-            forgetButton.setEnabled(true);
-        }
-    }
-    else
-    {
-        submitButton.setEnabled(false);
-        forgetButton.setEnabled(false);
-    }
-
-    submitButton.addShortcut(juce::KeyPress(juce::KeyPress::returnKey));
-    submitButton.onClick = [this] { handleSubmit(); };
-    // tokenButton.onClick = [this] { handleToken(); };
-    forgetButton.onClick = [this] { handleForget(); };
-
-    addAndMakeVisible(forgetButton);
-    addAndMakeVisible(submitButton);
-    // addAndMakeVisible(tokenButton);
-}
-
-LoginTab::Provider LoginTab::getProvider(const juce::String& providerName)
-{
-    static const juce::StringArray names { "huggingface", "stability" };
-    auto i = names.indexOf(providerName.trim().toLowerCase());
-    return (i >= 0) ? static_cast<LoginTab::Provider>(i) : LoginTab::Provider::UNKNOWN;
-}
-
-juce::String LoginTab::getStorageKey()
-{
-    switch (provider)
-    {
-        case LoginTab::Provider::HUGGINGFACE:
-            return "huggingFaceToken";
-            break;
-        case LoginTab::Provider::STABILITY:
-            return "stabilityToken";
-            break;
-        default:
-            return "";
-    }
-}
-
-OpResult LoginTab::validateToken(const juce::String& token)
-{
-    switch (provider)
-    {
-        case LoginTab::Provider::HUGGINGFACE:
-            return GradioClient().validateToken(token);
-            break;
-        case LoginTab::Provider::STABILITY:
-            return StabilityClient().validateToken(token);
-            break;
-        default:
-            Error error;
-            error.type = ErrorType::InvalidURL;
-            error.devMessage = "Unknown Provider";
-            return OpResult::fail(error);
-    }
-}
-
-void LoginTab::handleSubmit()
-{
-    auto token = userToken.getText().trim();
-    if (token.isNotEmpty())
-    {
-        // Validate token
-        OpResult result = validateToken(token);
-
-        if (result.failed())
-        {
-            Error err = result.getError();
-            Error::fillUserMessage(err);
-            DBG_AND_LOG("Invalid token:\n" + err.devMessage.toStdString());
-            AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                             "Invalid Token",
-                                             "The provided token is invalid:\n" + err.userMessage);
-            juce::String savedToken = Settings::getString(getStorageKey());
-            if (savedToken.isNotEmpty())
+            if (sharedTokens->savedTokens.contains(provider))
             {
-                userToken.setText(savedToken);
-                setStatus("Invalid token. Saved token restored.");
+                String savedToken = sharedTokens->savedTokens[provider];
+
+                if (currentText == savedToken)
+                {
+                    updateButton.setEnabled(false);
+                    removeButton.setEnabled(true);
+                }
+                else
+                {
+                    updateButton.setEnabled(true);
+                    removeButton.setEnabled(false);
+                }
             }
             else
             {
-                userToken.clear();
-                submitButton.setEnabled(false);
-                setStatus("Invalid token.");
+                updateButton.setEnabled(true);
+                removeButton.setEnabled(false);
             }
         }
         else
         {
-            /*if (currentlyLoadedModel->ready())
-            {
-                auto& client = currentlyLoadedModel->getClient();
-
-                if (dynamic_cast<GradioClient*>(&client))
-                {
-                    if (provider == LoginTab::Provider::HUGGINGFACE)
-                    {
-                        client.setToken(token);
-                    }
-                }
-                else if (dynamic_cast<StabilityClient*>(&client))
-                {
-                    if (provider == LoginTab::Provider::STABILITY)
-                    {
-                        client.setToken(token);
-                    }
-                }
-            }*/
-
-            Settings::setValue(getStorageKey(), token, true);
-            setStatus("Token verified and saved.");
-            forgetButton.setEnabled(true);
+            updateButton.setEnabled(false);
+            removeButton.setEnabled(false);
         }
+    };
+    tokenEditor.onReturnKey = [this] { updateButton.triggerClick(); };
+
+    addAndMakeVisible(tokenEditor);
+
+    updateButton.addShortcut(KeyPress(KeyPress::returnKey));
+    updateButton.onClick = [this] { updateTokenCallback(); };
+    removeButton.onClick = [this] { removeTokenCallback(); };
+
+    resetState();
+
+    addAndMakeVisible(updateButton);
+    addAndMakeVisible(removeButton);
+
+    statusLabel.setJustificationType(Justification::centred);
+
+    addAndMakeVisible(statusLabel);
+}
+
+void ProviderPage::resized()
+{
+    FlexBox pageArea;
+    pageArea.flexDirection = FlexBox::Direction::column;
+
+    pageArea.items.add(FlexItem(titleLabel).withHeight(rowHeight).withMargin(marginSize));
+    pageArea.items.add(FlexItem().withHeight(gapSize)); // Filler space
+    pageArea.items.add(FlexItem(tokenEditor).withHeight(rowHeight).withMargin(marginSize));
+
+    FlexBox buttonsArea;
+    buttonsArea.flexDirection = FlexBox::Direction::row;
+
+    buttonsArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+    buttonsArea.items.add(FlexItem(updateButton).withWidth(buttonWidth));
+    buttonsArea.items.add(FlexItem().withWidth(gapSize)); // Filler space
+    buttonsArea.items.add(FlexItem(removeButton).withWidth(buttonWidth));
+    buttonsArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+    pageArea.items.add(FlexItem().withHeight(gapSize)); // Filler space
+    pageArea.items.add(FlexItem(buttonsArea).withHeight(rowHeight));
+    pageArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+    pageArea.items.add(FlexItem(statusLabel).withHeight(rowHeight));
+    pageArea.items.add(FlexItem().withFlex(1.0)); // Filler space
+
+    pageArea.items.add(FlexItem(getTokenLink).withHeight(rowHeight).withMargin(marginSize));
+
+    pageArea.performLayout(getLocalBounds());
+}
+
+void ProviderPage::resetState()
+{
+    if (sharedTokens->savedTokens.contains(provider))
+    {
+        String savedToken = sharedTokens->savedTokens[provider];
+
+        OpResult result = client->validateToken(savedToken);
+
+        if (result.failed())
+        {
+            statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
+        }
+        else
+        {
+            statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
+        }
+
+        tokenEditor.setText(savedToken);
+        removeButton.setEnabled(true);
     }
     else
     {
-        setStatus("No token entered.");
+        statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+        updateButton.setEnabled(false);
+        removeButton.setEnabled(false);
     }
 }
 
-juce::URL LoginTab::getTokenURL()
+void ProviderPage::updateTokenCallback()
 {
-    juce::String tokenURL;
-    switch (provider)
+    String enteredToken = tokenEditor.getText().trim();
+
+    if (enteredToken.isNotEmpty())
     {
-        case LoginTab::Provider::HUGGINGFACE:
-            tokenURL = "https://huggingface.co/settings/tokens";
-            break;
-        case LoginTab::Provider::STABILITY:
-            tokenURL = "https://platform.stability.ai/account/keys";
-            break;
-        default:
-            break;
+        OpResult result = client->validateToken(enteredToken);
+
+        if (result.failed())
+        {
+            statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
+        }
+        else
+        {
+            sharedTokens->updateKey(provider, enteredToken);
+
+            statusLabel.setText(std::move(tokenLoadedMessage), dontSendNotification);
+            removeButton.setEnabled(true);
+        }
+
+        updateButton.setEnabled(false);
     }
-    // juce::URL(tokenURL).launchInDefaultBrowser();
-    return juce::URL(tokenURL);
+    else
+    {
+        statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+    }
+}
+
+void ProviderPage::removeTokenCallback()
+{
+    if (sharedTokens->savedTokens.contains(provider))
+    {
+        sharedTokens->removeKey(provider);
+
+        tokenEditor.clear();
+
+        statusLabel.setText(std::move(tokenMissingMessage), dontSendNotification);
+
+        updateButton.setEnabled(false);
+        removeButton.setEnabled(false);
+    }
+}
+
+void PageSwitcher::resized()
+{
+    for (auto& e : entries)
+    {
+        e.page->setBounds(getLocalBounds());
+    }
+}
+
+void PageSwitcher::showPage(int idx)
+{
+    for (int i = 0; i < (int) entries.size(); ++i)
+    {
+        if (i == idx)
+        {
+            entries[i].page->setVisible(true);
+            entries[i].page->resetState();
+        }
+        else
+        {
+            entries[i].page->setVisible(false);
+        }
+    }
+}
+
+void PageSwitcher::addPage(std::unique_ptr<ProviderPage> page)
+{
+    addAndMakeVisible(page.get());
+    page->setVisible(entries.empty());
+
+    entries.push_back({ std::move(page->getDisplayName()), std::move(page) });
+}
+
+LoginTab::LoginTab()
+{
+    sidebar.setModel(this);
+    sidebar.setRowHeight(36);
+    sidebar.setOutlineThickness(0);
+    addAndMakeVisible(sidebar);
+
+    loginPages.addPage(std::make_unique<ProviderPage>(Provider::HuggingFace, "Hugging Face"));
+    loginPages.addPage(std::make_unique<ProviderPage>(Provider::Stability, "Stability AI"));
+    addAndMakeVisible(loginPages);
+
+    sidebar.updateContent();
+    sidebar.selectRow(0);
 }
 
 void LoginTab::resized()
 {
-    //DBG_AND_LOG("LoginTab::resized()");
-    auto area = getLocalBounds().reduced(10);
-    const int rowH = 26;
-    const int gap = 10;
-    const int btnW = 120;
-    // Messages
-    titleLabel.setBounds(area.removeFromTop(rowH));
-    area.removeFromTop(gap);
-    infoLabel.setBounds(area.removeFromTop(rowH));
-    area.removeFromTop(gap);
-    auto registerRow = area.removeFromTop(rowH);
-    registerLabel.setBounds(registerRow.removeFromLeft(100));
-    linkLabel.setBounds(registerRow.removeFromLeft(btnW));
+    Rectangle<int> area = getLocalBounds();
 
-    // Token and Toggle
-    userToken.setBounds(area.removeFromTop(rowH));
-    // rememberTokenToggle.setBounds(area.removeFromTop(rowH));
-    area.removeFromTop(gap);
-    // Buttons
-    auto buttonsRow = area.removeFromTop(rowH);
-    const int totalBtnW = btnW * 2 + gap;
-    auto right = buttonsRow.removeFromRight(totalBtnW);
-    submitButton.setBounds(right.removeFromLeft(btnW));
-    right.removeFromLeft(gap);
-    forgetButton.setBounds(right.removeFromLeft(btnW));
-    // right.removeFromLeft(gap);
-    // tokenButton.setBounds(right); // remaining btnW
-    // Status
-    statusLabel.setBounds(area.removeFromBottom(rowH));
+    sidebar.setBounds(area.removeFromLeft(100));
+
+    loginPages.setBounds(area);
 }
 
-void LoginTab::paint(juce::Graphics& g)
+void LoginTab::paintListBoxItem(int rowNumber,
+                                Graphics& g,
+                                int width,
+                                int height,
+                                bool rowIsSelected)
 {
-    //DBG_AND_LOG("LoginTab::paint()");
-    // g.fillAll(juce::Colours::lightgrey);
-}
+    if (rowIsSelected)
+    {
+        g.fillAll(Colours::darkgrey.withAlpha(0.4f));
+    }
 
-void LoginTab::setStatus(juce::String text)
-{
-    statusLabel.setText(std::move(text), juce::dontSendNotification);
-}
-
-void LoginTab::handleForget()
-{
-    Settings::removeValue(getStorageKey(), true);
-    forgetButton.setEnabled(false);
-    userToken.clear();
-    submitButton.setEnabled(false);
-    setStatus("Token removed");
-
-    // TODO - remove token from client
+    g.setColour(Colours::white);
+    g.setFont(14.0f);
+    g.drawText(loginPages.getNameForIndex(rowNumber), 0, 0, width, height, Justification::centred);
 }

@@ -2,7 +2,9 @@
 
 #include <JuceHeader.h>
 
-class AudioSettingsTab : public juce::Component
+using namespace juce;
+
+class AudioSettingsTab : public Component
 {
 public:
     AudioSettingsTab();
@@ -11,10 +13,10 @@ public:
     void resized() override;
 
 private:
-    juce::Label deviceInfoLabel;
-    juce::TextButton openAudioSettingsButton;
-
     void handleOpenAudioSettings();
+
+    Label deviceInfoLabel;
+    TextButton openAudioSettingsButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioSettingsTab)
 };

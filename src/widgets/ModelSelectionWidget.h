@@ -16,26 +16,45 @@
 #include "../gui/HoverHandler.h"
 #include "../gui/MultiButton.h"
 
+#include "../utils/Errors.h"
 #include "../utils/Interface.h"
 #include "../utils/Logging.h"
 
 using namespace juce;
 
-struct SharedChoices //: public ChangeBroadcaster
+struct SharedChoices : public ChangeBroadcaster
 {
-    /* TODO - functions for updating savedModelPaths
-    void setMessage(const String& m)
+    int getIndexForPath(const std::string& p)
     {
-        message = m;
-        sendChangeMessage();
+        int idx = -1;
+
+        for (unsigned int i = 0; i < savedModelPaths.size(); ++i)
+        {
+            if (savedModelPaths[i] == p)
+            {
+                idx = (int) i;
+
+                break;
+            }
+        }
+
+        return idx;
     }
 
-    void clearMessage()
+    // TODO - should check endpoint path - otherwise could be duplicates
+    bool containsPath(const std::string& p) { return getIndexForPath(p) != -1; }
+
+    void addNewPath(const std::string& p)
     {
-        message.clear();
-        sendChangeMessage();
+        savedModelPaths.push_back(p);
+        sendSynchronousChangeMessage();
     }
-    */
+
+    void updatePath(unsigned int idx, const std::string& p)
+    {
+        savedModelPaths[idx] = p;
+        sendSynchronousChangeMessage();
+    }
 
     std::vector<std::string> savedModelPaths = {
         "click here to enter a custom path...",
@@ -44,6 +63,7 @@ struct SharedChoices //: public ChangeBroadcaster
         "teamup-tech/text2midi-symbolic-music-generation",
         "teamup-tech/demucs-source-separation",
         "teamup-tech/solo-piano-audio-to-midi-transcription",
+        "teamup-tech/transkun", // TODO - more intuitive name
         "teamup-tech/TRIA", // TODO - more intuitive name: (The Rhythm In Anything) conditional drum generation
         "teamup-tech/anticipatory-music-transformer",
         "teamup-tech/vampnet-conditional-music-generation",
@@ -51,28 +71,10 @@ struct SharedChoices //: public ChangeBroadcaster
         "teamup-tech/Kokoro-TTS",
         "teamup-tech/MegaTTS3-Voice-Cloning",
         "teamup-tech/midi-synthesizer",
+        "teamup-tech/audioseal", // TODO - more intuitive name
         // "xribene/HARP-UI-TEST-v3"
     };
 };
-
-/* TODO
-// this is the callback for the add new path popup alert
-class CustomPathAlertCallback : public ModalComponentManager::Callback
-{
-public:
-    CustomPathAlertCallback(std::function<void(int)> const& callback) : userCallback(callback) {}
-
-    void modalStateFinished(int result) override
-    {
-        if (userCallback != nullptr)
-        {
-            userCallback(result);
-        }
-    }
-
-private:
-    std::function<void(int)> userCallback;
-};*/
 
 class CustomPathComponent : public Component
 {
@@ -180,7 +182,7 @@ private:
     std::function<void()> onCancelCallback;
 };
 
-class ModelSelectionWidget : public Component, public ChangeBroadcaster
+class ModelSelectionWidget : public Component, public ChangeBroadcaster, public ChangeListener
 {
 public:
     ModelSelectionWidget()
@@ -189,12 +191,11 @@ public:
         initializeModelPathComboBox();
 
         resetState();
+
+        sharedChoices->addChangeListener(this);
     }
 
-    ~ModelSelectionWidget()
-    {
-        // TODO
-    }
+    ~ModelSelectionWidget() { sharedChoices->removeChangeListener(this); }
 
     //void paint(Graphics& g) {}
 
@@ -216,8 +217,8 @@ public:
         lastLoadedPathIndex = -1;
         lastSelectedPathIndex = -1;
         modelPathComboBox.setSelectedId(lastSelectedPathIndex);
+        modelPathComboBox.setEnabled(true);
 
-        //loadModelButton.setMode(loadButtonInactiveInfo.label);
         loadModelButton.setEnabled(false);
     }
 
@@ -228,44 +229,175 @@ public:
         loadModelButton.setEnabled(false);
     }
 
-    /*void setFinishedState()
+    void setFinishedState()
     {
         modelPathComboBox.setEnabled(true);
+        modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
 
         loadModelButton.setEnabled(true);
     }
 
-    // TODO - set to successfully loaded custom path
-
     void setSuccessfulState()
     {
-        lastLoadedPathIndex = lastSelectedPathIndex;
+        std::string loadedPath = selectedPath.toStdString();
+
+        if (! sharedChoices->containsPath(loadedPath))
+        {
+            if (sharedChoices->containsPath(loadedPath + validPathBrokenTag))
+            {
+                unsigned int currentIdx =
+                    (unsigned int) sharedChoices->getIndexForPath(loadedPath + validPathBrokenTag);
+
+                // Remove broken tag from existing entry for path
+                sharedChoices->updatePath(currentIdx, loadedPath);
+            }
+            else if (sharedChoices->containsPath(loadedPath + validPathTryAgainTag))
+            {
+                unsigned int currentIdx = (unsigned int) sharedChoices->getIndexForPath(
+                    loadedPath + validPathTryAgainTag);
+
+                // Remove try again tag from existing entry for path
+                sharedChoices->updatePath(currentIdx, loadedPath);
+            }
+            else if (sharedChoices->containsPath(loadedPath + validPathErrorTag))
+            {
+                unsigned int currentIdx =
+                    (unsigned int) sharedChoices->getIndexForPath(loadedPath + validPathErrorTag);
+
+                // Remove error tag from existing entry for path
+                sharedChoices->updatePath(currentIdx, loadedPath);
+            }
+            else
+            {
+                // Add a new entry for custom path
+                sharedChoices->addNewPath(loadedPath);
+
+                lastSelectedPathIndex = sharedChoices->getIndexForPath(loadedPath);
+            }
+        }
+
+        lastLoadedPathIndex = sharedChoices->getIndexForPath(loadedPath);
 
         setFinishedState();
-    }*/
+    }
+
+    void setUnsuccessfulState(const Error& error)
+    {
+        bool wasValidPath = true;
+
+        if (const auto* e = std::get_if<ClientError>(&error))
+        {
+            wasValidPath = false;
+        }
+
+        if (const auto* e = std::get_if<HttpError>(&error))
+        {
+            if (e->type == HttpError::Type::BadStatusCode && e->statusCode == 404)
+            {
+                wasValidPath = false;
+            }
+        }
+
+        if (! wasValidPath)
+        {
+            if (modelPathComboBox.getSelectedItemIndex() == 0)
+            {
+                openCustomPathPopup(selectedPath);
+
+                return;
+            }
+        }
+
+        std::string originalEntry = selectedPath.toStdString();
+        std::string updatedEntry = selectedPath.toStdString();
+
+        if (const auto* e = std::get_if<HttpError>(&error))
+        {
+            if (e->type == HttpError::Type::ConnectionFailed
+                && e->request == HttpError::Request::POST)
+            {
+                updatedEntry += validPathTryAgainTag;
+            }
+            if (e->type == HttpError::Type::BadStatusCode && e->statusCode == 503)
+            {
+                updatedEntry += validPathBrokenTag;
+            }
+        }
+        else
+        {
+            updatedEntry += validPathErrorTag;
+        }
+
+        // Check for previously added unsuccessful tags before querying
+        if (sharedChoices->containsPath(originalEntry + validPathErrorTag))
+        {
+            originalEntry += validPathErrorTag;
+        }
+        if (sharedChoices->containsPath(originalEntry + validPathBrokenTag))
+        {
+            originalEntry += validPathBrokenTag;
+        }
+        if (sharedChoices->containsPath(originalEntry + validPathTryAgainTag))
+        {
+            originalEntry += validPathTryAgainTag;
+        }
+
+        if (sharedChoices->containsPath(updatedEntry))
+        {
+            // Path has already been updated
+        }
+        else if (sharedChoices->containsPath(originalEntry))
+        {
+            unsigned int currentIdx = (unsigned int) sharedChoices->getIndexForPath(originalEntry);
+
+            // Update entry with tag for existing path
+            sharedChoices->updatePath(currentIdx, updatedEntry);
+        }
+        else
+        {
+            // Add a new entry with tag for custom path
+            sharedChoices->addNewPath(updatedEntry);
+        }
+
+        lastSelectedPathIndex = lastLoadedPathIndex;
+
+        selectedPath.clear();
+
+        setFinishedState();
+    }
+
+    void changeListenerCallback(ChangeBroadcaster* /*source*/) { resetModelPathComboBox(); }
 
 private:
-    void initializeModelPathComboBox()
+    void resetModelPathComboBox()
     {
-        modelPathComboBox.setTextWhenNothingSelected("click here to select a model...");
+        modelPathComboBox.clear();
 
         for (unsigned int i = 0; i < sharedChoices->savedModelPaths.size(); ++i)
         {
             // Add saved path to combo box (skipping 0 for custom path)
             modelPathComboBox.addItem(sharedChoices->savedModelPaths[i], static_cast<int>(i) + 1);
         }
+    }
+
+    void initializeModelPathComboBox()
+    {
+        modelPathComboBox.setTextWhenNothingSelected("click here to select a model...");
+
+        resetModelPathComboBox();
 
         modelPathComboBox.onChange = [this]
         {
             if (modelPathComboBox.getSelectedItemIndex() == -1)
             {
-                DBG_AND_LOG("modelPathComboBox::onChange: Combo box reset.");
+                DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Combo box reset.");
             }
             else
             {
                 if (modelPathComboBox.getSelectedItemIndex() == 0)
                 {
-                    DBG_AND_LOG("modelPathComboBox::onChange: Custom path selected.");
+                    DBG_AND_LOG(
+                        "ModelSelectionWidget::modelPathComboBox::onChange: Custom path selected.");
 
                     openCustomPathPopup();
                 }
@@ -273,11 +405,10 @@ private:
                 {
                     lastSelectedPathIndex = modelPathComboBox.getSelectedItemIndex();
 
-                    DBG_AND_LOG("modelPathComboBox::onChange: Entry " << lastSelectedPathIndex
-                                                                      << " selected.");
+                    DBG_AND_LOG("ModelSelectionWidget::modelPathComboBox::onChange: Entry "
+                                << lastSelectedPathIndex << " selected.");
                 }
 
-                //loadModelButton.setMode(loadButtonActiveInfo.label);
                 loadModelButton.setEnabled(true);
             }
         };
@@ -310,57 +441,35 @@ private:
             if (modelPathComboBox.getSelectedItemIndex() != 0)
             {
                 selectedPath = modelPathComboBox.getText();
+
+                if (selectedPath.contains(validPathBrokenTag))
+                {
+                    selectedPath = selectedPath.replace(validPathBrokenTag, "");
+                }
+
+                if (selectedPath.contains(validPathTryAgainTag))
+                {
+                    selectedPath = selectedPath.replace(validPathTryAgainTag, "");
+                }
+
+                if (selectedPath.contains(validPathErrorTag))
+                {
+                    selectedPath = selectedPath.replace(validPathErrorTag, "");
+                }
+
                 sendChangeMessage();
             }
         };
 
         // Mode when a model is selected and not currently being loaded (load enabled)
         loadButtonActiveInfo = MultiButton::Mode { "Load",
-                                                   loadCallback,
-                                                   Colours::lightgrey,
                                                    "Click to load currently selected model path.",
+                                                   loadCallback,
                                                    MultiButton::DrawingMode::TextOnly };
-        // Mode when a model has not been selected or is currently being loaded (load disabled)
-        /*loadButtonInactiveInfo = MultiButton::Mode { "Load",
-                                                     [this] {},
-                                                     Colours::darkgrey,
-                                                     "No model is currently selected.",
-                                                     MultiButton::DrawingMode::TextOnly };*/
         loadModelButton.addMode(loadButtonActiveInfo);
-        //loadModelButton.addMode(loadButtonInactiveInfo);
-        loadModelButton.setMode(loadButtonActiveInfo.label);
+        loadModelButton.setMode(loadButtonActiveInfo.displayLabel);
         addAndMakeVisible(loadModelButton);
-
-        //loadBroadcaster.addChangeListener(this); // TODO - necessary?
     }
-
-    /* TODO
-    // Adds a path to the model dropdown if it's not already present
-    void addCustomPathToDropdown(const std::string& path, bool wasSleeping = false)
-    {
-        String displayStr(path);
-        if (wasSleeping)
-            displayStr += " (sleeping)";
-
-        bool alreadyExists = false;
-        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-        {
-            if (modelPathComboBox.getItemText(i).startsWithIgnoreCase(path))
-            {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (! alreadyExists)
-        {
-            int newID = modelPathComboBox.getNumItems() + 1;
-            modelPathComboBox.addItem(displayStr, newID);
-        }
-
-        modelPathComboBox.setText(displayStr, dontSendNotification);
-    }
-    */
 
     /**
      * Create callbacks for and launch the custom path popup.
@@ -385,11 +494,7 @@ private:
             {
                 // Set combo box selection to last successfully loaded model
                 modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
-            }
-            else if (lastSelectedPathIndex >= 0)
-            {
-                // Set combo box selection to previous valid selection
-                modelPathComboBox.setSelectedId(lastSelectedPathIndex + 1);
+                modelPathComboBox.setEnabled(true);
             }
             else
             {
@@ -428,11 +533,14 @@ private:
     int lastLoadedPathIndex; // Keep track of last loaded index for load failure cases
     int lastSelectedPathIndex;
 
+    const std::string validPathErrorTag = " [ERROR]";
+    const std::string validPathBrokenTag = " [DOWN]";
+    const std::string validPathTryAgainTag = " [TRY AGAIN]";
+
     String selectedPath;
 
     MultiButton loadModelButton;
     MultiButton::Mode loadButtonActiveInfo;
-    MultiButton::Mode loadButtonInactiveInfo;
 
     SharedResourcePointer<InstructionsMessage> instructionsMessage;
 };
