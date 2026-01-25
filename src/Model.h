@@ -396,9 +396,10 @@ private:
                 {
                     std::shared_ptr<ModelComponentInfo> audioTrack =
                         std::make_shared<AudioTrackComponentInfo>(controlsDict);
-                    orderedInputComponentIDs.push_back(audioTrack->id);
 
                     newInputs.push_back(audioTrack);
+
+                    orderedInputComponentIDs.push_back(audioTrack->id);
 
                     DBG_AND_LOG("Model::extractInputs: Audio track input \"" + audioTrack->label
                                 + "\" extracted.");
@@ -410,6 +411,8 @@ private:
 
                     newInputs.push_back(midiTrack);
 
+                    orderedInputComponentIDs.push_back(midiTrack->id);
+
                     DBG_AND_LOG("Model::extractInputs: MIDI track input \"" + midiTrack->label
                                 + "\" extracted.");
                 }
@@ -419,6 +422,8 @@ private:
                         std::make_shared<TextBoxComponentInfo>(controlsDict);
 
                     newControls.push_back(textControl);
+
+                    orderedInputComponentIDs.push_back(textControl->id);
 
                     DBG_AND_LOG("Model::extractInputs: Text control \"" + textControl->label
                                 + "\" extracted.");
@@ -430,6 +435,8 @@ private:
 
                     newControls.push_back(numberControl);
 
+                    orderedInputComponentIDs.push_back(numberControl->id);
+
                     DBG_AND_LOG("Model::extractInputs: Number box control \"" + numberControl->label
                                 + "\" extracted.");
                 }
@@ -439,6 +446,8 @@ private:
                         std::make_shared<ToggleComponentInfo>(controlsDict);
 
                     newControls.push_back(toggleControl);
+
+                    orderedInputComponentIDs.push_back(toggleControl->id);
 
                     DBG_AND_LOG("Model::extractInputs: Toggle control \"" + toggleControl->label
                                 + "\" extracted.");
@@ -450,6 +459,8 @@ private:
 
                     newControls.push_back(sliderControl);
 
+                    orderedInputComponentIDs.push_back(sliderControl->id);
+
                     DBG_AND_LOG("Model::extractInputs: Slider control \"" + sliderControl->label
                                 + "\" extracted.");
                 }
@@ -459,6 +470,8 @@ private:
                         std::make_shared<ComboBoxComponentInfo>(controlsDict);
 
                     newControls.push_back(dropdownControl);
+
+                    orderedInputComponentIDs.push_back(dropdownControl->id);
 
                     DBG_AND_LOG("Model::extractInputs: Dropdown control \"" + dropdownControl->label
                                 + "\" extracted.");
