@@ -194,6 +194,7 @@ private:
         textComponent->setText(info->value);
 
         addHandler(&textBox, info);
+        textBox.addListener(info);
 
         addAndMakeVisible(*textComponent);
 
@@ -211,6 +212,7 @@ private:
         toggleComponent->setToggleState(info->value, dontSendNotification);
 
         addHandler(toggleComponent.get(), info);
+        toggleComponent->addListener(info);
 
         addAndMakeVisible(*toggleComponent);
 
@@ -229,6 +231,7 @@ private:
         slider.setTextBoxStyle(Slider::TextBoxBelow, false, 80, 20);
 
         addHandler(&slider, info);
+        slider.addListener(info);
 
         addAndMakeVisible(*sliderComponent);
 
@@ -263,6 +266,7 @@ private:
         dropdown.setTextWhenNoChoicesAvailable("Empty");
 
         addHandler(&dropdown, info);
+        dropdown.addListener(info);
 
         addAndMakeVisible(*dropdownComponent);
 

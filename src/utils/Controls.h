@@ -77,7 +77,7 @@ struct MidiTrackComponentInfo : public TrackComponentInfo
     using TrackComponentInfo::TrackComponentInfo;
 };
 
-struct TextBoxComponentInfo : public ModelComponentInfo
+struct TextBoxComponentInfo : public ModelComponentInfo, public TextEditor::Listener
 {
     std::string value { "" };
 
@@ -90,9 +90,14 @@ struct TextBoxComponentInfo : public ModelComponentInfo
             value = input->getProperty("value").toString().toStdString();
         }
     }
+
+    void textEditorTextChanged(TextEditor& textEditor) override
+    {
+        value = textEditor.getText().toStdString();
+    }
 };
 
-struct NumberBoxComponentInfo : public ModelComponentInfo
+struct NumberBoxComponentInfo : public ModelComponentInfo // TODO - Listener
 {
     // TODO - consistency with SliderComponent
     double min;
@@ -118,7 +123,7 @@ struct NumberBoxComponentInfo : public ModelComponentInfo
     }
 };
 
-struct ToggleComponentInfo : public ModelComponentInfo
+struct ToggleComponentInfo : public ModelComponentInfo, public Button::Listener
 {
     bool value = false;
 
@@ -131,9 +136,11 @@ struct ToggleComponentInfo : public ModelComponentInfo
             value = stringToBool(input->getProperty("value").toString());
         }
     }
+
+    void buttonClicked(Button* button) override { value = button->getToggleState(); }
 };
 
-struct SliderComponentInfo : public ModelComponentInfo
+struct SliderComponentInfo : public ModelComponentInfo, public Slider::Listener
 {
     double minimum;
     double maximum;
@@ -161,9 +168,12 @@ struct SliderComponentInfo : public ModelComponentInfo
             value = input->getProperty("value").toString().getFloatValue();
         }
     }
+
+    void sliderValueChanged(Slider* slider) override {}
+    void sliderDragEnded(Slider* slider) override { value = slider->getValue(); }
 };
 
-struct ComboBoxComponentInfo : public ModelComponentInfo
+struct ComboBoxComponentInfo : public ModelComponentInfo, public ComboBox::Listener
 {
     std::vector<std::string> options;
 
@@ -213,6 +223,8 @@ struct ComboBoxComponentInfo : public ModelComponentInfo
             // TODO - handle error case: no choises provided
         }
     }
+
+    void comboBoxChanged(ComboBox* comboBox) override { value = comboBox->getText().toStdString(); }
 };
 
 using ModelComponentInfoList = std::vector<std::shared_ptr<ModelComponentInfo>>;

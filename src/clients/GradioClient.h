@@ -365,7 +365,7 @@ public:
 
     var wrapPayloadElement(var payloadElement, bool isFile = false) override
     {
-        if (isFile)
+        if (isFile and ! payloadElement.isVoid())
         {
             DynamicObject::Ptr wrappedPayloadElement = payloadElement.getDynamicObject();
 
