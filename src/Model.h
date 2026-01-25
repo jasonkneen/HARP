@@ -12,6 +12,7 @@
 #include "utils/Clients.h"
 #include "utils/Controls.h"
 #include "utils/Errors.h"
+#include "utils/Labels.h"
 #include "utils/Logging.h"
 
 using namespace juce;
@@ -224,6 +225,8 @@ public:
     {
         /* Upload files to server if necessary and obtain remote paths */
 
+        OpResult result = OpResult::ok();
+
         for (auto& fileEntry : inputFiles)
         {
             String remoteFilePath;
@@ -231,7 +234,7 @@ public:
             Uuid trackID = fileEntry.first;
             File fileToUpload = fileEntry.second;
 
-            OpResult result = client->uploadFile(loadedPath, fileToUpload, remoteFilePath);
+            result = client->uploadFile(loadedPath, fileToUpload, remoteFilePath);
 
             if (result.failed())
             {
@@ -327,9 +330,19 @@ public:
 
         setStatus(ModelStatus::PROCESSING);
 
+        LabelList labels;
+        std::vector<juce::String> outputFilePaths;
+
+        result = client->process(loadedPath, payloadJSON, outputFilePaths, labels);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
         setStatus(ModelStatus::READY);
 
-        return OpResult::ok();
+        return result;
     }
 
     OpResult cancel()

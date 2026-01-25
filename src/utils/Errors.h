@@ -407,7 +407,7 @@ inline std::optional<String> getOpenablePath(const Error& error)
         {
             return e->endpointPath;
         }
-        else if (e->type == HttpError::Type::BadStatusCode & e->endpointPath.isNotEmpty())
+        else if (e->type == HttpError::Type::BadStatusCode && e->endpointPath.isNotEmpty())
         {
             return e->endpointPath;
         }

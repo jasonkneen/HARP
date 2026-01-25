@@ -4,8 +4,6 @@
 
 #include "../../Client.h"
 
-#include "../../../utils/Errors.h"
-
 using namespace juce;
 
 class StabilityClient : public Client
@@ -154,7 +152,10 @@ public:
         return var(wrappedPayloadElement);
     }
 
-    OpResult process(String modelPath)
+    OpResult process(String modelPath,
+                     String& payloadJSON,
+                     std::vector<String>& outputFilePaths,
+                     LabelList& labels)
     {
         // TODO
 

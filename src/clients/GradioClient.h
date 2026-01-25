@@ -3,7 +3,6 @@
 #include "Client.h"
 
 #include "../utils/Enums.h"
-#include "../utils/Errors.h"
 
 using namespace juce;
 
@@ -223,7 +222,10 @@ public:
         return OpResult::ok();
     }
 
-    OpResult makeRequest(String modelPath, String requestType, Array<var>& output)
+    OpResult makeRequest(const String modelPath,
+                         const String requestType,
+                         const String body,
+                         Array<var>& output)
     {
         URL endpoint = URL(inferEndpointPath(modelPath))
                            .getChildURL("gradio_api")
@@ -232,11 +234,8 @@ public:
 
         String responseJSON;
 
-        OpResult result = makePOSTRequest(endpoint,
-                                          getJSONHeaders(),
-                                          emptyJSONBody,
-                                          responseJSON,
-                                          inferDocumentationPath(modelPath));
+        OpResult result = makePOSTRequest(
+            endpoint, getJSONHeaders(), body, responseJSON, inferDocumentationPath(modelPath));
 
         if (result.failed())
         {
@@ -299,7 +298,7 @@ public:
     {
         Array<var> dataList;
 
-        OpResult result = makeRequest(modelPath, "controls", dataList);
+        OpResult result = makeRequest(modelPath, "controls", emptyJSONBody, dataList);
 
         if (result.failed())
         {
@@ -382,16 +381,22 @@ public:
         }
     }
 
-    OpResult process(String modelPath)
+    OpResult process(String modelPath,
+                     String& payloadJSON,
+                     std::vector<String>& outputFilePaths,
+                     LabelList& labels)
     {
         Array<var> dataList;
 
-        OpResult result = makeRequest(modelPath, "process", dataList);
+        OpResult result = makeRequest(modelPath, "process", payloadJSON, dataList);
 
         if (result.failed())
         {
             return result;
         }
+
+        ignoreUnused(outputFilePaths);
+        ignoreUnused(labels);
 
         return OpResult::ok();
     }

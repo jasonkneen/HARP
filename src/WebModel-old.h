@@ -31,14 +31,6 @@ public:
         //outputFilePaths.clear();
         //labels.clear();
 
-        status2 = ModelStatus::PROCESSING;
-        result = loadedClient->processRequest(error, processingPayload, outputFilePaths, labels);
-        if (result.failed())
-        {
-            status2 = ModelStatus::ERROR;
-        }
-        // Finished status will be set by the MainComponent.h
-        // status2 = ModelStatus::FINISHED;
         return result;
     }
 
@@ -57,24 +49,7 @@ public:
         return result;
     }
 
-    LabelList& getLabels() { return labels; }
-
-    std::vector<juce::String>& getOutputFilePaths() { return outputFilePaths; }
-
-    void clearOutputFilePaths() { outputFilePaths.clear(); }
-
 private:
-    bool isStabilityModel =
-        false; // A flag to indicate if the current model is a Stability AI model
-
-    // A vector that stores the Uuid of the input and control components
-    // in the order they are received from the server
-    // We need to keep track the order to be able to send the data
-    // for processing in the same order.
-    // We wouldn't have to do that if
-    //    1. c++ had an ordered map (like python)
-    //    2. the gradio server would accept key:value pairs instead of list
-    std::vector<juce::Uuid> uuidsInOrder;
 
     // A variable to store the latest labelList received during processing
     LabelList labels;

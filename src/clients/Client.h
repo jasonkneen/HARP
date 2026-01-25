@@ -7,6 +7,7 @@
 #include "../external/magic_enum.hpp"
 
 #include "../utils/Errors.h"
+#include "../utils/Labels.h"
 #include "../utils/Logging.h"
 #include "../utils/Settings.h"
 
@@ -248,12 +249,16 @@ public:
         {
             return result;
         }
+
+        return OpResult::ok();
     }
 
     virtual OpResult queryControls(String modelPath, DynamicObject::Ptr& controls) = 0;
 
     virtual OpResult uploadFile(String modelPath, const File& fileToUpload, String& remoteFilePath)
     {
+        ignoreUnused(modelPath);
+
         // By default, simply pass through original file
         remoteFilePath = fileToUpload.getFullPathName();
 
@@ -262,7 +267,10 @@ public:
 
     virtual var wrapPayloadElement(var payloadElement, bool isFile = false) = 0;
 
-    virtual OpResult process(String modelPath) = 0;
+    virtual OpResult process(String modelPath,
+                             String& payloadJSON,
+                             std::vector<String>& outputFilePaths,
+                             LabelList& labels) = 0;
 
     const String emptyJSONBody = R"({"data": []})";
 

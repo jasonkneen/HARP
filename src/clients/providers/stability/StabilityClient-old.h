@@ -27,9 +27,6 @@ public:
     ~StabilityClient() = default;
 
     // Requests
-    OpResult uploadFileRequest(const File& fileToUpload,
-                               String& uploadedFilePath,
-                               const int timeoutMs = 10000) const override;
     OpResult processRequest(Error&, String&, std::vector<String>&, LabelList&) override;
     OpResult cancel() override;
 

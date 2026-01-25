@@ -169,7 +169,7 @@ struct SliderComponentInfo : public ModelComponentInfo, public Slider::Listener
         }
     }
 
-    void sliderValueChanged(Slider* slider) override {}
+    void sliderValueChanged(Slider* slider) override { ignoreUnused(slider); }
     void sliderDragEnded(Slider* slider) override { value = slider->getValue(); }
 };
 
