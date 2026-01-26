@@ -17,8 +17,6 @@ public:
         tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
     }
 
-    //~StabilityClient() override {} // TODO
-
     static bool matchesPathSpec(String modelPath)
     {
         return isValidTextToAudioPath(modelPath) || isValidAudioToAudioPath(modelPath);
@@ -139,6 +137,13 @@ public:
         return OpResult::ok();
     }
 
+    OpResult downloadFile(String downloadPath, File& fileToDownload)
+    {
+        // TODO
+
+        return OpResult::ok();
+    }
+
     var wrapPayloadElement(var payloadElement, bool isFile = false) override
     {
         DynamicObject::Ptr wrappedPayloadElement = new DynamicObject();
@@ -154,7 +159,7 @@ public:
 
     OpResult process(String modelPath,
                      String& payloadJSON,
-                     std::vector<String>& outputFilePaths,
+                     std::vector<File>& outputFiles,
                      LabelList& labels)
     {
         // TODO

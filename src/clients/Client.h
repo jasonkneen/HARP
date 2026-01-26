@@ -265,12 +265,15 @@ public:
         return OpResult::ok();
     }
 
+    virtual OpResult downloadFile(String downloadPath, File& fileToDownload) = 0;
+
     virtual var wrapPayloadElement(var payloadElement, bool isFile = false) = 0;
 
     virtual OpResult process(String modelPath,
                              String& payloadJSON,
-                             std::vector<String>& outputFilePaths,
+                             std::vector<File>& outputFiles,
                              LabelList& labels) = 0;
+    //virtual OpResult cancel() = 0;
 
     const String emptyJSONBody = R"({"data": []})";
 

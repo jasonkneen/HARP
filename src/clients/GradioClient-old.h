@@ -19,14 +19,6 @@ using namespace juce;
 class GradioClient : public Client
 {
 public:
-    GradioClient();
-    ~GradioClient() = default;
-
     OpResult processRequest(Error&, String&, std::vector<String>&, LabelList&) override;
     OpResult cancel() override;
-
-private:
-    OpResult downloadFileFromURL(const URL& fileURL,
-                                 String& downloadedFilePath,
-                                 const int timeoutMs = 10000) const;
 };

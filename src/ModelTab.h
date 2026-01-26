@@ -370,7 +370,9 @@ private:
                     // copy the audio file, with the same filename except for an added _harp to the stem
         */
 
-        OpResult processingResult = model->process(loadedInputFiles);
+        std::vector<File> outputFiles;
+
+        OpResult processingResult = model->process(loadedInputFiles, outputFiles);
 
         /*
                     processMutex.lock();

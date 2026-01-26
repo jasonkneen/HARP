@@ -22,18 +22,6 @@
 class WebModel : public Model
 {
 public:
-    // The input is a vector of String:File objects corresponding to
-    // the files currently loaded in each inputMediaDisplay
-    OpResult process(std::vector<std::tuple<Uuid, String, File>> localInputTrackFiles)
-    {
-        // Clear the outputFilePaths and the labels
-        // They will be populated with the new processing results
-        //outputFilePaths.clear();
-        //labels.clear();
-
-        return result;
-    }
-
     OpResult cancel()
     {
         // Create a successful result.

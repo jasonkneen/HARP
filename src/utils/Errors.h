@@ -378,21 +378,56 @@ inline String toUserMessage(const ControlError& e)
     return userMessage;
 }
 
-/*
 struct FileError
 {
     enum class Type
     {
         UploadFailed,
-        DownloadFailed,
-        PermissionDenied
+        DownloadFailed
     };
 
     Type type;
-};
-*/
 
-using Error = std::variant<ClientError, HttpError, GradioError, JsonError, ControlError>;
+    String path;
+};
+
+inline String toUserMessage(const FileError& e)
+{
+    String userMessage = "A file error occurred.";
+
+    switch (e.type)
+    {
+        case FileError::Type::UploadFailed:
+
+            userMessage = "Failed to upload file";
+
+            if (e.path.isNotEmpty())
+            {
+                userMessage += " at path \"" + e.path + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+
+        case FileError::Type::DownloadFailed:
+
+            userMessage = "Failed to download file";
+
+            if (e.path.isNotEmpty())
+            {
+                userMessage += " at path \"" + e.path + "\"";
+            }
+
+            userMessage += ".";
+
+            return userMessage;
+    }
+
+    return userMessage;
+}
+
+using Error = std::variant<ClientError, HttpError, GradioError, JsonError, ControlError, FileError>;
 
 inline String toUserMessage(const Error& error)
 {

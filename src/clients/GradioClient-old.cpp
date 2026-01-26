@@ -13,65 +13,7 @@ OpResult GradioClient::processRequest(Error& error,
     // Iterate through the array elements
     for (int i = 0; i < dataArray->size(); i++)
     {
-        var procObj = dataArray->getReference(i);
-        if (! procObj.isObject())
-        {
-            error.devMessage =
-                "The " + String(i)
-                + "th returned element of the process_fn function in the gradio-app is not an object.";
-            return OpResult::fail(error);
-        }
-        // Make sure the object has a "meta" key
-        // Gradio output components like File and Audio store metadata in the "meta" key
-        // so we can use that to identify what kind of output it is
-        if (! procObj.getDynamicObject())
-        {
-            error.devMessage =
-                "The " + String(i)
-                + "th returned element of the process_fn function in the gradio-app is not a valid object. "
-                + "Make sure you are using LabelList() and not just a python list, in process_fn, to return the output labels.";
-            return OpResult::fail(error);
-        }
-        if (! procObj.getDynamicObject()->hasProperty("meta"))
-        {
-            error.type = ErrorType::MissingJsonKey;
-            error.devMessage =
-                "The " + String(i)
-                + "th element of the array of processed outputs does not have a meta object. "
-                + "Make sure you are using LabelList() in process_fn to return the output labels.";
-            return OpResult::fail(error);
-        }
-        var meta = procObj.getDynamicObject()->getProperty("meta");
-        // meta should be an object
-        if (! meta.isObject())
-        {
-            error.type = ErrorType::MissingJsonKey;
-            error.devMessage =
-                "The " + String(i)
-                + "th element of the array of processed outputs does not have a valid meta object.";
-            return OpResult::fail(error);
-        }
-        String procObjType = meta.getDynamicObject()->getProperty("_type").toString();
 
-        // procObjType could be "gradio.FileData" for file/midi/audio
-        // and "pyharp.LabelList" for labels
-        if (procObjType == "gradio.FileData")
-        {
-            String outputFilePath;
-            String url = procObj.getDynamicObject()->getProperty("url").toString();
-
-            result = downloadFileFromURL(url, outputFilePath);
-            if (result.failed())
-            {
-                return result;
-            }
-            // Make a File from the path
-            File downloadedFile(outputFilePath);
-            // auto aa = downloadedFile.getFileName();
-            // auto bb = downloadedFile.getFullPathName();
-            // auto cc = URL(downloadedFile).toString(true);
-            outputFilePaths.push_back(URL(downloadedFile).toString(true));
-        }
         else if (procObjType == "pyharp.LabelList")
         {
             Array<var>* labelsPyharp = procObj.getDynamicObject()->getProperty("labels").getArray();

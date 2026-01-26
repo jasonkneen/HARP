@@ -25,8 +25,6 @@ public:
         tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
     }
 
-    //~GradioClient() override {} // TODO
-
     static bool matchesPathSpec(String modelPath)
     {
         return isValidLocalPath(modelPath) || isValidGradioPath(modelPath)
@@ -356,7 +354,33 @@ public:
 
         if (remoteFilePath.isEmpty())
         {
-            // TODO - handle mode of error (empty file path returned)
+            return OpResult::fail(
+                FileError { FileError::Type::UploadFailed, fileToUpload.getFullPathName() });
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult downloadFile(String downloadPath, File& fileToDownload) override
+    {
+        // Obtain local temporary directory for downloaded file
+        File tempDir = File::getSpecialLocation(File::tempDirectory);
+
+        URL endpoint = URL(downloadPath);
+        String fileName = endpoint.getFileName();
+        String baseName =
+            File::createFileWithoutCheckingPath(fileName).getFileNameWithoutExtension();
+
+        String extension = File::createFileWithoutCheckingPath(fileName).getFileExtension();
+
+        // Create file at a unique path
+        fileToDownload = tempDir.getChildFile(baseName + "_" + Uuid().toString() + extension);
+
+        OpResult result = makeGETRequest(endpoint, fileToDownload, downloadPath);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         return OpResult::ok();
@@ -383,7 +407,7 @@ public:
 
     OpResult process(String modelPath,
                      String& payloadJSON,
-                     std::vector<String>& outputFilePaths,
+                     std::vector<File>& outputFiles,
                      LabelList& labels)
     {
         Array<var> dataList;
@@ -395,7 +419,66 @@ public:
             return result;
         }
 
-        ignoreUnused(outputFilePaths);
+        for (int i = 0; i < dataList.size(); i++)
+        {
+            var outputVar = dataList.getReference(i);
+
+            if (! outputVar.isObject())
+            {
+                return OpResult::fail(
+                    JsonError { JsonError::Type::NotADictionary, outputVar.toString() });
+            }
+
+            DynamicObject* outputDict = outputVar.getDynamicObject();
+
+            static const Identifier metadataKey { "meta" };
+
+            if (outputDict->hasProperty(metadataKey))
+            {
+                var metadata = outputDict->getProperty(metadataKey);
+
+                if (! metadata.isObject())
+                {
+                    return OpResult::fail(
+                        JsonError { JsonError::Type::NotADictionary, metadata.toString() });
+                }
+
+                static const Identifier typeKey { "_type" };
+
+                String outputType = metadata.getDynamicObject()->getProperty(typeKey).toString();
+
+                if (outputType == "gradio.FileData")
+                {
+                    File outputFile;
+
+                    String remotePath = outputDict->getProperty("url").toString();
+
+                    result = downloadFile(remotePath, outputFile);
+
+                    if (result.failed())
+                    {
+                        return result;
+                    }
+
+                    outputFiles.push_back(outputFile);
+                }
+                else if (outputType == "pyharp.LabelList")
+                {
+                    // TODO
+                }
+                else
+                {
+                    // TODO - handle error (unknown output type)
+                }
+            }
+            else
+            {
+                return OpResult::fail(JsonError { JsonError::Type::MissingKey,
+                                                  JSON::toString(var(outputDict), true),
+                                                  metadataKey.toString() });
+            }
+        }
+
         ignoreUnused(labels);
 
         return OpResult::ok();
@@ -553,16 +636,17 @@ private:
         return OpResult::ok();
     }
 
-    OpResult makeGETRequest(const URL endpoint,
-                            String& response,
-                            const String errorPath = "",
-                            const int timeoutMs = 10000)
+    OpResult makeGETRequestStream(const URL endpoint,
+                                  std::unique_ptr<InputStream>& stream,
+                                  const String errorPath = "",
+                                  const int timeoutMs = 10000)
     {
         String requestHeaders = getCommonHeaders();
 
-        DBG_AND_LOG("GradioClient::makeGETRequest: Attempting to make GET request for endpoint \""
-                    << endpoint.toString(true) << "\" with headers \""
-                    << toPrintableHeaders(requestHeaders) << "\".");
+        DBG_AND_LOG(
+            "GradioClient::makeGETRequestStream: Attempting to make GET request for endpoint \""
+            << endpoint.toString(true) << "\" with headers \"" << toPrintableHeaders(requestHeaders)
+            << "\".");
 
         if (! endpoint.isWellFormed())
         {
@@ -580,7 +664,7 @@ private:
                            .withStatusCode(&statusCode)
                            .withNumRedirectsToFollow(5);
 
-        std::unique_ptr<InputStream> stream(endpoint.createInputStream(options));
+        stream = endpoint.createInputStream(options);
 
         if (stream == nullptr)
         {
@@ -588,7 +672,7 @@ private:
                 HttpError::Type::ConnectionFailed, HttpError::Request::GET, errorPath });
         }
 
-        DBG_AND_LOG("GradioClient::makeGETRequest: Received status code \""
+        DBG_AND_LOG("GradioClient::makeGETRequestStream: Received status code \""
                     << String(statusCode) << "\" and response \""
                     << toPrintableHeaders(responseHeaders.getDescription()) << "\".");
 
@@ -596,6 +680,35 @@ private:
         {
             return OpResult::fail(HttpError {
                 HttpError::Type::BadStatusCode, HttpError::Request::GET, errorPath, statusCode });
+        }
+
+        return OpResult::ok();
+    }
+
+    String extractPayLoad(String response)
+    {
+        String payload = response.trim();
+
+        if (payload.startsWith("data:"))
+        {
+            payload = payload.fromFirstOccurrenceOf("data:", false, false).trim();
+        }
+
+        return payload;
+    }
+
+    OpResult makeGETRequest(const URL endpoint,
+                            String& response,
+                            const String errorPath = "",
+                            const int timeoutMs = 10000)
+    {
+        std::unique_ptr<InputStream> stream;
+
+        OpResult result = makeGETRequestStream(endpoint, stream, errorPath, timeoutMs);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         while (! stream->isExhausted())
@@ -635,15 +748,30 @@ private:
         return OpResult::ok();
     }
 
-    String extractPayLoad(String response)
+    OpResult makeGETRequest(const URL endpoint,
+                            File& fileToDownload,
+                            const String errorPath = "",
+                            const int timeoutMs = 10000)
     {
-        String payload = response.trim();
+        std::unique_ptr<InputStream> stream;
 
-        if (payload.startsWith("data:"))
+        OpResult result = makeGETRequestStream(endpoint, stream, errorPath, timeoutMs);
+
+        // Remove file at target path if one already exists
+        fileToDownload.deleteFile();
+
+        // Create output stream to save file locally
+        std::unique_ptr<FileOutputStream> outputFileStream(fileToDownload.createOutputStream());
+
+        if (outputFileStream == nullptr || ! outputFileStream->openedOk())
         {
-            payload = payload.fromFirstOccurrenceOf("data:", false, false).trim();
+            return OpResult::fail(
+                FileError { FileError::Type::DownloadFailed, endpoint.toString(true) });
         }
 
-        return payload;
+        // Copy data from GET request stream to stream for output file
+        outputFileStream->writeFromInputStream(*stream, stream->getTotalLength());
+
+        return OpResult::ok();
     }
 };

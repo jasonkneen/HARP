@@ -221,7 +221,7 @@ public:
         return OpResult::ok();
     }
 
-    OpResult process(std::map<Uuid, File> inputFiles /*, &outputFiles, &labels*/)
+    OpResult process(std::map<Uuid, File> inputFiles, std::vector<File>& outputFiles /*, &labels*/)
     {
         /* Upload files to server if necessary and obtain remote paths */
 
@@ -331,9 +331,8 @@ public:
         setStatus(ModelStatus::PROCESSING);
 
         LabelList labels;
-        std::vector<juce::String> outputFilePaths;
 
-        result = client->process(loadedPath, payloadJSON, outputFilePaths, labels);
+        result = client->process(loadedPath, payloadJSON, outputFiles, labels);
 
         if (result.failed())
         {

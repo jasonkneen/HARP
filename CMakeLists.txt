@@ -117,7 +117,7 @@ target_sources(${PROJECT_NAME}
         src/utils/Labels.h
         src/utils/Clients.h
         #src/utils/Threading.h #
-        src/utils/Errors.h #
+        src/utils/Errors.h
         src/utils/Enums.h #
 
         # TODO - add as a submodule
