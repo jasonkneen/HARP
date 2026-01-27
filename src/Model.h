@@ -67,7 +67,7 @@ struct ModelMetadata
 
             if (newTags == nullptr)
             {
-                // TODO - handle error case: failed to parse tags
+                DBG_AND_LOG("ModelMetadata::ModelMetadata: Failed to parse tags.");
             }
             else
             {
@@ -83,13 +83,7 @@ struct ModelMetadata
 class Model
 {
 public:
-    Model()
-    {
-        // TODO
-
-        resetState();
-    }
-
+    Model() { resetState(); }
     ~Model() { resetState(); }
 
     bool isEmpty() { return client == nullptr; }
@@ -221,7 +215,8 @@ public:
         return OpResult::ok();
     }
 
-    OpResult process(std::map<Uuid, File> inputFiles, std::vector<File>& outputFiles /*, &labels*/)
+    OpResult
+        process(std::map<Uuid, File> inputFiles, std::vector<File>& outputFiles, LabelList& labels)
     {
         /* Upload files to server if necessary and obtain remote paths */
 
@@ -245,9 +240,9 @@ public:
 
             if (componentInfo == nullptr)
             {
-                // TODO - handle mode of error (none of components match ID)
+                // No components match track ID
+                jassertfalse;
             }
-
             else if (auto trackComponentInfo =
                          dynamic_cast<TrackComponentInfo*>(componentInfo.get()))
             {
@@ -255,7 +250,8 @@ public:
             }
             else
             {
-                // TODO - handle mode of error (component is not a valid input track)
+                // Component is not a valid input track
+                jassertfalse;
             }
         }
 
@@ -314,7 +310,8 @@ public:
             }
             else
             {
-                // TODO - handle error mode (unsupported control has somehow been added)
+                // Unsupported control was added
+                jassertfalse;
             }
 
             controlValue = client->wrapPayloadElement(controlValue, wasFile);
@@ -329,8 +326,6 @@ public:
         DBG_AND_LOG("Model::process: Payload \"" + payloadJSON + "\" prepared for processing.");
 
         setStatus(ModelStatus::PROCESSING);
-
-        LabelList labels;
 
         result = client->process(loadedPath, payloadJSON, outputFiles, labels);
 
@@ -348,7 +343,14 @@ public:
     {
         setStatus(ModelStatus::CANCELING);
 
-        // TODO
+        /*
+        OpResult result = client->cancel();
+
+        if (result.failed())
+        {
+            return result;
+        }
+        */
 
         setStatus(ModelStatus::READY);
 

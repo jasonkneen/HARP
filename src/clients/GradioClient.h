@@ -13,7 +13,7 @@ public:
     {
         Complete,
         Heartbeat,
-        Error,
+        Error
         //Generating
     };
 
@@ -220,78 +220,6 @@ public:
         return OpResult::ok();
     }
 
-    OpResult makeRequest(const String modelPath,
-                         const String requestType,
-                         const String body,
-                         Array<var>& output)
-    {
-        URL endpoint = URL(inferEndpointPath(modelPath))
-                           .getChildURL("gradio_api")
-                           .getChildURL("call")
-                           .getChildURL(requestType);
-
-        String responseJSON;
-
-        OpResult result = makePOSTRequest(
-            endpoint, getJSONHeaders(), body, responseJSON, inferDocumentationPath(modelPath));
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        DynamicObject::Ptr responseDict;
-
-        result = stringJSONToDict(responseJSON, responseDict);
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        static const Identifier eventKey { "event_id" };
-
-        if (! responseDict->hasProperty(eventKey))
-        {
-            return OpResult::fail(JsonError { JsonError::Type::MissingKey,
-                                              JSON::toString(var(responseDict.get()), true),
-                                              eventKey.toString() });
-        }
-
-        String eventID = responseDict->getProperty(eventKey);
-
-        DBG_AND_LOG("GradioClient::queryControls: Process created with ID \"" << eventID << "\".");
-
-        endpoint = URL(inferEndpointPath(modelPath))
-                       .getChildURL("gradio_api")
-                       .getChildURL("call")
-                       .getChildURL(requestType)
-                       .getChildURL(eventID);
-
-        responseJSON.clear();
-
-        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath));
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        result = stringJSONToList(responseJSON, output);
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        if (output.isEmpty())
-        {
-            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
-        }
-
-        return OpResult::ok();
-    }
-
     OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
     {
         Array<var> dataList;
@@ -429,7 +357,7 @@ public:
                     JsonError { JsonError::Type::NotADictionary, outputVar.toString() });
             }
 
-            DynamicObject* outputDict = outputVar.getDynamicObject();
+            DynamicObject::Ptr outputDict = outputVar.getDynamicObject();
 
             static const Identifier metadataKey { "meta" };
 
@@ -464,11 +392,17 @@ public:
                 }
                 else if (outputType == "pyharp.LabelList")
                 {
-                    // TODO
+                    result = extractLabels(outputDict, labels);
+
+                    if (result.failed())
+                    {
+                        return result;
+                    }
                 }
                 else
                 {
-                    // TODO - handle error (unknown output type)
+                    // Unknown output type
+                    jassertfalse;
                 }
             }
             else
@@ -478,8 +412,6 @@ public:
                                                   metadataKey.toString() });
             }
         }
-
-        ignoreUnused(labels);
 
         return OpResult::ok();
     }
@@ -697,6 +629,7 @@ private:
         return payload;
     }
 
+    // String response version
     OpResult makeGETRequest(const URL endpoint,
                             String& response,
                             const String errorPath = "",
@@ -748,6 +681,7 @@ private:
         return OpResult::ok();
     }
 
+    // File download version
     OpResult makeGETRequest(const URL endpoint,
                             File& fileToDownload,
                             const String errorPath = "",
@@ -771,6 +705,257 @@ private:
 
         // Copy data from GET request stream to stream for output file
         outputFileStream->writeFromInputStream(*stream, stream->getTotalLength());
+
+        return OpResult::ok();
+    }
+
+    OpResult makeRequest(const String modelPath,
+                         const String requestType,
+                         const String body,
+                         Array<var>& output)
+    {
+        URL endpoint = URL(inferEndpointPath(modelPath))
+                           .getChildURL("gradio_api")
+                           .getChildURL("call")
+                           .getChildURL(requestType);
+
+        String responseJSON;
+
+        OpResult result = makePOSTRequest(
+            endpoint, getJSONHeaders(), body, responseJSON, inferDocumentationPath(modelPath));
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        DynamicObject::Ptr responseDict;
+
+        result = stringJSONToDict(responseJSON, responseDict);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        static const Identifier eventKey { "event_id" };
+
+        if (! responseDict->hasProperty(eventKey))
+        {
+            return OpResult::fail(JsonError { JsonError::Type::MissingKey,
+                                              JSON::toString(var(responseDict.get()), true),
+                                              eventKey.toString() });
+        }
+
+        String eventID = responseDict->getProperty(eventKey);
+
+        DBG_AND_LOG("GradioClient::queryControls: Process created with ID \"" << eventID << "\".");
+
+        endpoint = URL(inferEndpointPath(modelPath))
+                       .getChildURL("gradio_api")
+                       .getChildURL("call")
+                       .getChildURL(requestType)
+                       .getChildURL(eventID);
+
+        responseJSON.clear();
+
+        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath));
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        result = stringJSONToList(responseJSON, output);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        if (output.isEmpty())
+        {
+            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult extractLabels(DynamicObject::Ptr& output, LabelList& labels)
+    {
+        static const Identifier labelsKey { "labels" };
+
+        Array<var>* labelObjects;
+
+        OpResult result = getRequiredArrayProperty(output, labelsKey, labelObjects);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        for (int i = 0; i < labelObjects->size(); i++)
+        {
+            DynamicObject* labelObject = labelObjects->getReference(i).getDynamicObject();
+
+            String labelType = labelObject->getProperty("label_type").toString();
+
+            std::unique_ptr<OutputLabel> label;
+
+            String labelLogMessage = "GradioClient::extractLabels: Extracted label of type \"";
+
+            /* Cast to given label type */
+
+            if (labelType == "AudioLabel")
+            {
+                labelLogMessage += "AudioLabel";
+
+                auto audioLabel = std::make_unique<AudioLabel>();
+
+                if (labelObject->hasProperty("amplitude"))
+                {
+                    if (labelObject->getProperty("amplitude").isDouble()
+                        || labelObject->getProperty("amplitude").isInt())
+                    {
+                        audioLabel->amplitude =
+                            static_cast<float>(labelObject->getProperty("amplitude"));
+                    }
+                }
+
+                label = std::move(audioLabel);
+            }
+            else if (labelType == "SpectrogramLabel")
+            {
+                labelLogMessage += "SpectrogramLabel";
+
+                auto spectrogramLabel = std::make_unique<SpectrogramLabel>();
+
+                if (labelObject->hasProperty("frequency"))
+                {
+                    if (labelObject->getProperty("frequency").isDouble()
+                        || labelObject->getProperty("frequency").isInt())
+                    {
+                        spectrogramLabel->frequency =
+                            static_cast<float>(labelObject->getProperty("frequency"));
+                    }
+                }
+
+                label = std::move(spectrogramLabel);
+            }
+            else if (labelType == "MidiLabel")
+            {
+                labelLogMessage += "MidiLabel";
+
+                auto midiLabel = std::make_unique<MidiLabel>();
+
+                if (labelObject->hasProperty("pitch"))
+                {
+                    if (labelObject->getProperty("pitch").isDouble()
+                        || labelObject->getProperty("pitch").isInt())
+                    {
+                        midiLabel->pitch = static_cast<float>(labelObject->getProperty("pitch"));
+                    }
+                }
+
+                label = std::move(midiLabel);
+            }
+            else if (labelType == "OutputLabel")
+            {
+                labelLogMessage += "OutputLabel";
+
+                auto outputLabel = std::make_unique<OutputLabel>();
+
+                label = std::move(outputLabel);
+            }
+            else
+            {
+                // Unsupported label type received
+                jassertfalse;
+            }
+
+            labelLogMessage += "\" with time \"";
+
+            /* Fill all provided struct properties */
+
+            if (labelObject->hasProperty("t"))
+            {
+                // Make sure time was provided as a float
+                if (labelObject->getProperty("t").isDouble()
+                    || labelObject->getProperty("t").isInt())
+                {
+                    label->t = static_cast<float>(labelObject->getProperty("t"));
+
+                    labelLogMessage += String(label->t);
+                }
+            }
+
+            labelLogMessage += "\" and label \"";
+
+            if (labelObject->hasProperty("label"))
+            {
+                // Make sure label was provided as a string
+                if (labelObject->getProperty("label").isString())
+                {
+                    label->label = labelObject->getProperty("label").toString();
+
+                    labelLogMessage += label->label;
+                }
+            }
+
+            labelLogMessage += "\".";
+
+            if (labelType == "SpectrogramLabel")
+            {
+                labelLogMessage += " WARNING: HARP does not yet support spectrogram visualization.";
+            }
+
+            DBG_AND_LOG(labelLogMessage);
+
+            if (labelObject->hasProperty("duration"))
+            {
+                // Make sure duration was provided as a float
+                if (labelObject->getProperty("duration").isDouble()
+                    || labelObject->getProperty("duration").isInt())
+                {
+                    label->duration = static_cast<float>(labelObject->getProperty("duration"));
+                }
+            }
+
+            if (labelObject->hasProperty("description"))
+            {
+                // Make sure description was provided as a string
+                if (labelObject->getProperty("description").isString())
+                {
+                    label->description = labelObject->getProperty("description").toString();
+                }
+            }
+
+            if (labelObject->hasProperty("color"))
+            {
+                // Make sure color was provided as a int
+                if ((labelObject->getProperty("color").isInt64()
+                     || labelObject->getProperty("color").isInt()))
+                {
+                    int color_val = static_cast<int>(labelObject->getProperty("color"));
+
+                    if (color_val != 0)
+                    {
+                        label->color = color_val;
+                    }
+                }
+            }
+
+            if (labelObject->hasProperty("link"))
+            {
+                // Make sure link was provided as a string
+                if (labelObject->getProperty("link").isString())
+                {
+                    label->link = labelObject->getProperty("link").toString();
+                }
+            }
+
+            labels.push_back(std::move(label));
+        }
 
         return OpResult::ok();
     }

@@ -371,8 +371,9 @@ private:
         */
 
         std::vector<File> outputFiles;
+        LabelList labels;
 
-        OpResult processingResult = model->process(loadedInputFiles, outputFiles);
+        OpResult processingResult = model->process(loadedInputFiles, outputFiles, labels);
 
         /*
                     processMutex.lock();

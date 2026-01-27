@@ -219,7 +219,8 @@ public:
             }
             else
             {
-                // TODO - error handling / logging
+                // Invalid input track
+                jassertfalse;
             }
         }
 

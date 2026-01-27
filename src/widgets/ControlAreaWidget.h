@@ -176,7 +176,8 @@ public:
             }
             else
             {
-                // TODO - error handling / logging
+                // Unsupported control detected
+                jassertfalse;
             }
         }
 
