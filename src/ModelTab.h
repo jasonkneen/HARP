@@ -375,6 +375,14 @@ private:
 
         OpResult processingResult = model->process(loadedInputFiles, outputFiles, labels);
 
+        auto& outputMediaDisplays = outputTrackAreaWidget.getMediaDisplays();
+
+        for (size_t i = 0; i < outputMediaDisplays.size(); ++i)
+        {
+            outputMediaDisplays[i]->initializeDisplay(URL(outputFiles[i]));
+            outputMediaDisplays[i]->addLabels(labels);
+        }
+
         /*
                     processMutex.lock();
                     if (jobProcessID != currentProcessID)

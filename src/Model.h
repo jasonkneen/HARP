@@ -266,6 +266,8 @@ public:
             var controlValue;
             bool wasFile = false;
 
+            String label = componentInfo->label;
+
             if (auto trackComponentInfo = dynamic_cast<TrackComponentInfo*>(componentInfo.get()))
             {
                 if (trackComponentInfo->path.empty())
@@ -314,7 +316,7 @@ public:
                 jassertfalse;
             }
 
-            controlValue = client->wrapPayloadElement(controlValue, wasFile);
+            controlValue = client->wrapPayloadElement(controlValue, wasFile, label);
             controlValues.add(controlValue);
         }
 

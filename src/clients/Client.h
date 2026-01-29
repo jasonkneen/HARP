@@ -13,6 +13,8 @@
 
 using namespace juce;
 
+// TODO - hard-coded client strings for error-reporting
+//        can be deterministic based off of these enums
 enum class Provider
 {
     HuggingFace,
@@ -260,9 +262,9 @@ public:
         return OpResult::ok();
     }
 
-    virtual OpResult downloadFile(String downloadPath, File& fileToDownload) = 0;
+    //virtual OpResult downloadFile(std::unique_ptr<InputStream>& stream, File& fileToDownload) = 0;
 
-    virtual var wrapPayloadElement(var payloadElement, bool isFile = false) = 0;
+    virtual var wrapPayloadElement(var payloadElement, bool isFile = false, String label = "") = 0;
 
     virtual OpResult process(String modelPath,
                              String& payloadJSON,
@@ -272,8 +274,8 @@ public:
 
     const String emptyJSONBody = R"({"data": []})";
 
-    const String acceptHeader = "Accept: */*\r\n";
-    const String contentTypeJSONHeader = "Content-Type: application/json\r\n";
+    String acceptHeader;
+    String contentTypeJSONHeader;
 
     String toPrintableHeaders(String headers)
     {

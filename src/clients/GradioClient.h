@@ -21,6 +21,9 @@ public:
     {
         provider = Provider::HuggingFace;
 
+        acceptHeader = "Accept: */*\r\n";
+        contentTypeJSONHeader = "Content-Type: application/json\r\n";
+
         tokenValidationURL = URL("https://huggingface.co/api/whoami-v2");
         tokenRegistrationURL = URL("https://huggingface.co/settings/tokens");
     }
@@ -289,33 +292,10 @@ public:
         return OpResult::ok();
     }
 
-    OpResult downloadFile(String downloadPath, File& fileToDownload) override
+    var wrapPayloadElement(var payloadElement, bool isFile = false, String label = "") override
     {
-        // Obtain local temporary directory for downloaded file
-        File tempDir = File::getSpecialLocation(File::tempDirectory);
+        ignoreUnused(label);
 
-        URL endpoint = URL(downloadPath);
-        String fileName = endpoint.getFileName();
-        String baseName =
-            File::createFileWithoutCheckingPath(fileName).getFileNameWithoutExtension();
-
-        String extension = File::createFileWithoutCheckingPath(fileName).getFileExtension();
-
-        // Create file at a unique path
-        fileToDownload = tempDir.getChildFile(baseName + "_" + Uuid().toString() + extension);
-
-        OpResult result = makeGETRequest(endpoint, fileToDownload, downloadPath);
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        return OpResult::ok();
-    }
-
-    var wrapPayloadElement(var payloadElement, bool isFile = false) override
-    {
         if (isFile and ! payloadElement.isVoid())
         {
             DynamicObject::Ptr wrappedPayloadElement = payloadElement.getDynamicObject();
@@ -557,13 +537,13 @@ private:
                     << String(statusCode) << "\" and response \""
                     << toPrintableHeaders(responseHeaders.getDescription()) << "\".");
 
+        response = stream->readEntireStreamAsString();
+
         if (statusCode != 200)
         {
             return OpResult::fail(HttpError {
                 HttpError::Type::BadStatusCode, HttpError::Request::POST, errorPath, statusCode });
         }
-
-        response = stream->readEntireStreamAsString();
 
         return OpResult::ok();
     }
@@ -681,6 +661,31 @@ private:
         return OpResult::ok();
     }
 
+    OpResult downloadFile(String downloadPath, File& fileToDownload) //override
+    {
+        // Obtain local temporary directory for downloaded file
+        File tempDir = File::getSpecialLocation(File::tempDirectory);
+
+        URL endpoint = URL(downloadPath);
+        String fileName = endpoint.getFileName();
+        String baseName =
+            File::createFileWithoutCheckingPath(fileName).getFileNameWithoutExtension();
+
+        String extension = File::createFileWithoutCheckingPath(fileName).getFileExtension();
+
+        // Create file at a unique path
+        fileToDownload = tempDir.getChildFile(baseName + "_" + Uuid().toString() + extension);
+
+        OpResult result = makeGETRequest(endpoint, fileToDownload, downloadPath);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        return OpResult::ok();
+    }
+
     // File download version
     OpResult makeGETRequest(const URL endpoint,
                             File& fileToDownload,
@@ -697,7 +702,7 @@ private:
         // Create output stream to save file locally
         std::unique_ptr<FileOutputStream> outputFileStream(fileToDownload.createOutputStream());
 
-        if (outputFileStream == nullptr || ! outputFileStream->openedOk())
+        if (! outputFileStream || ! outputFileStream->openedOk())
         {
             return OpResult::fail(
                 FileError { FileError::Type::DownloadFailed, endpoint.toString(true) });

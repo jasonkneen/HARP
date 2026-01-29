@@ -67,21 +67,29 @@ inline String toUserMessage(const ClientError& e)
 
         case ClientError::Type::InsufficientPermissions:
 
-            userMessage = "Token ";
-
-            if (e.token.isNotEmpty())
+            if (e.token.isEmpty())
             {
-                userMessage += "\"" + e.token + "\" ";
+                userMessage = "Authorization for client";
+
+                if (e.client.isNotEmpty())
+                {
+                    userMessage += " \"" + e.client + "\"";
+                }
+
+                userMessage +=
+                    " failed. Please make sure you have added a valid API key in settings.";
             }
-
-            userMessage += "for client";
-
-            if (e.client.isNotEmpty())
+            else
             {
-                userMessage += " \"" + e.client + "\"";
-            }
+                userMessage = "Token \"" + e.token + "\" for client";
 
-            userMessage += " does not have sufficient permissions.";
+                if (e.client.isNotEmpty())
+                {
+                    userMessage += " \"" + e.client + "\"";
+                }
+
+                userMessage += " does not have sufficient permissions.";
+            }
 
             return userMessage;
     }
@@ -382,8 +390,10 @@ struct FileError
 {
     enum class Type
     {
+        DoesNotExist,
         UploadFailed,
-        DownloadFailed
+        DownloadFailed,
+        UnsupportedFormat
     };
 
     Type type;
@@ -397,6 +407,19 @@ inline String toUserMessage(const FileError& e)
 
     switch (e.type)
     {
+        case FileError::Type::DoesNotExist:
+
+            userMessage = "File";
+
+            if (e.path.isNotEmpty())
+            {
+                userMessage += " at path \"" + e.path + "\"";
+            }
+
+            userMessage += "does not exist.";
+
+            return userMessage;
+
         case FileError::Type::UploadFailed:
 
             userMessage = "Failed to upload file";
@@ -420,6 +443,21 @@ inline String toUserMessage(const FileError& e)
             }
 
             userMessage += ".";
+
+            return userMessage;
+
+        case FileError::Type::UnsupportedFormat:
+
+            userMessage = "File format";
+
+            if (e.path.isNotEmpty())
+            {
+                String extension = File::createFileWithoutCheckingPath(e.path).getFileExtension();
+
+                userMessage += " \"" + extension + "\"";
+            }
+
+            userMessage += " is not supported.";
 
             return userMessage;
     }

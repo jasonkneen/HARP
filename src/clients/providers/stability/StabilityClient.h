@@ -6,12 +6,62 @@
 
 using namespace juce;
 
+struct MultipartRequest
+{
+    String boundary;
+    MemoryOutputStream body;
+
+    MultipartRequest() : boundary("----" + Uuid().toString().removeCharacters("-")) {}
+
+    void addField(const String& name, const String& value)
+    {
+        if (value.isEmpty())
+        {
+            return;
+        }
+
+        body << "--" << boundary << "\r\n";
+        body << "Content-Disposition: form-data; name=\"" << name << "\"\r\n\r\n";
+        body << value << "\r\n";
+    }
+
+    OpResult addFile(const String& name, const File& file, const String& mimeType)
+    {
+        std::unique_ptr<FileInputStream> in(file.createInputStream());
+
+        if (! in || ! in->openedOk())
+        {
+            return OpResult::fail(
+                FileError { FileError::Type::UploadFailed, file.getFullPathName() });
+        }
+
+        body << "--" << boundary << "\r\n";
+        body << "Content-Disposition: form-data; name=\"" << name << "\"; filename=\""
+             << file.getFileName() << "\"\r\n";
+        body << "Content-Type: " << mimeType << "\r\n\r\n";
+
+        body.writeFromInputStream(*in, -1);
+        body << "\r\n";
+
+        return OpResult::ok();
+    }
+
+    void finish() { body << "--" << boundary << "--\r\n"; }
+
+    String contentTypeHeader() const
+    {
+        return "Content-Type: multipart/form-data; boundary=" + boundary + "\r\n";
+    }
+};
+
 class StabilityClient : public Client
 {
 public:
     StabilityClient()
     {
         provider = Provider::Stability;
+
+        acceptHeader = "Accept: audio/*,application/json\r\n";
 
         tokenValidationURL = URL("https://api.stability.ai/v1/user/account");
         tokenRegistrationURL = URL("https://platform.stability.ai/account/keys");
@@ -137,21 +187,16 @@ public:
         return OpResult::ok();
     }
 
-    OpResult downloadFile(String downloadPath, File& fileToDownload)
-    {
-        // TODO
-
-        return OpResult::ok();
-    }
-
-    var wrapPayloadElement(var payloadElement, bool isFile = false) override
+    var wrapPayloadElement(var payloadElement, bool isFile = false, String label = "") override
     {
         DynamicObject::Ptr wrappedPayloadElement = new DynamicObject();
 
-        // Use "input" label for audio file — required for Stability AI
-        const String label = isFile ? String("input") : String("control");
+        String controlLabel = label.isNotEmpty() ? label : "control";
 
-        wrappedPayloadElement->setProperty("label", label);
+        // Use "input" label for audio file — required for Stability AI
+        const String payloadLabel = isFile ? "input" : controlLabel;
+
+        wrappedPayloadElement->setProperty("label", payloadLabel);
         wrappedPayloadElement->setProperty("value", payloadElement);
 
         return var(wrappedPayloadElement);
@@ -162,7 +207,91 @@ public:
                      std::vector<File>& outputFiles,
                      LabelList& labels)
     {
-        // TODO
+        DynamicObject::Ptr dataDict;
+
+        OpResult result = stringJSONToDict(payloadJSON, dataDict);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        static const Identifier outputsKey { "data" };
+
+        Array<var>* modelInputs;
+
+        result = getRequiredArrayProperty(dataDict, outputsKey, modelInputs);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        auto getLabel = [&](int i) { return modelInputs->getReference(i)["label"].toString(); };
+        auto getValue = [&](int i) { return modelInputs->getReference(i)["value"].toString(); };
+
+        MultipartRequest request;
+
+        int offsetIdx = 0;
+
+        if (getLabel(0) == "input")
+        {
+            const File inputFile(modelInputs->getReference(0)["value"]["path"].toString());
+
+            if (! inputFile.existsAsFile())
+            {
+                return OpResult::fail(
+                    FileError { FileError::Type::DoesNotExist, inputFile.getFullPathName() });
+            }
+
+            const String mime = getMimeForAudioFile(inputFile);
+
+            if (mime.isEmpty())
+            {
+                return OpResult::fail(
+                    FileError { FileError::Type::UnsupportedFormat, inputFile.getFullPathName() });
+            }
+
+            result = request.addFile("audio", inputFile, mime);
+
+            if (result.failed())
+            {
+                return result;
+            }
+
+            offsetIdx += 1;
+        }
+
+        request.addField("duration", getValue(offsetIdx + 0));
+        request.addField("steps", getValue(offsetIdx + 1));
+        request.addField("cfg_scale", getValue(offsetIdx + 2));
+        request.addField("output_format", getValue(offsetIdx + 3));
+        request.addField("prompt", getValue(offsetIdx + 4));
+
+        request.finish();
+
+        const String extension =
+            getValue(offsetIdx + 3).isNotEmpty() ? "." + getValue(offsetIdx + 3) : ".wav";
+
+        // Obtain local temporary directory for downloaded file
+        File tempDir = File::getSpecialLocation(File::tempDirectory);
+
+        // Create file at a unique path
+        File outputFile = tempDir.getChildFile("stable-audio_" + Uuid().toString() + extension);
+
+        result = makePOSTRequest(URL(inferEndpointPath(modelPath)),
+                                 request,
+                                 outputFile,
+                                 inferDocumentationPath(modelPath));
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        outputFiles.push_back(outputFile);
+
+        ignoreUnused(labels);
 
         return OpResult::ok();
     }
@@ -224,5 +353,107 @@ private:
             .fromFirstOccurrenceOf(
                 "https://api.stability.ai/v2beta/audio/stable-audio-2/", false, false)
             .equalsIgnoreCase("audio-to-audio");
+    }
+
+    OpResult makePOSTRequest(URL endpoint,
+                             const MultipartRequest& request,
+                             File& fileToDownload,
+                             const String errorPath = "",
+                             const int timeoutMs = 10000)
+    {
+        String headers = request.contentTypeHeader() + getCommonHeaders();
+        MemoryBlock body = request.body.getMemoryBlock();
+
+        DBG_AND_LOG(
+            "StabilityClient::makePOSTRequest: Attempting to make POST request for endpoint \""
+            + endpoint.toString(true) + "\" with headers \""
+            + toPrintableHeaders(headers)
+            //+ "\" and body \"" + body.toString()
+            + "\".");
+
+        endpoint = endpoint.withPOSTData(body);
+
+        if (! endpoint.isWellFormed())
+        {
+            return OpResult::fail(
+                HttpError { HttpError::Type::InvalidURL, HttpError::Request::POST, errorPath });
+        }
+
+        int statusCode = 0;
+        StringPairArray responseHeaders;
+
+        auto options = URL::InputStreamOptions(URL::ParameterHandling::inPostData)
+                           .withExtraHeaders(headers)
+                           .withConnectionTimeoutMs(timeoutMs)
+                           .withResponseHeaders(&responseHeaders)
+                           .withStatusCode(&statusCode)
+                           .withNumRedirectsToFollow(5)
+                           .withHttpRequestCmd("POST");
+
+        std::unique_ptr<InputStream> stream(endpoint.createInputStream(options));
+
+        if (stream == nullptr)
+        {
+            return OpResult::fail(HttpError {
+                HttpError::Type::ConnectionFailed, HttpError::Request::POST, errorPath });
+        }
+
+        DBG_AND_LOG("StabilityClient::makePOSTRequest: Received status code \""
+                    << String(statusCode) << "\" and response \""
+                    << toPrintableHeaders(responseHeaders.getDescription()) << "\".");
+
+        if (statusCode != 200)
+        {
+            String response = stream->readEntireStreamAsString();
+
+            if (response.contains("authorization"))
+            {
+                ClientError error { ClientError::Type::InsufficientPermissions,
+                                    "",
+                                    "Stability AI" };
+            }
+            else
+            {
+                return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,
+                                                  HttpError::Request::POST,
+                                                  errorPath,
+                                                  statusCode });
+            }
+        }
+
+        // Remove file at target path if one already exists
+        fileToDownload.deleteFile();
+
+        // Create output stream to save file locally
+        std::unique_ptr<FileOutputStream> outputFileStream(fileToDownload.createOutputStream());
+
+        if (! outputFileStream || ! outputFileStream->openedOk())
+        {
+            return OpResult::fail(
+                FileError { FileError::Type::DownloadFailed, endpoint.toString(true) });
+        }
+
+        // Copy data from POST request stream to stream for output file
+        outputFileStream->writeFromInputStream(*stream, stream->getTotalLength());
+
+        return OpResult::ok();
+    }
+
+    String getMimeForAudioFile(const File& f)
+    {
+        static const std::unordered_map<String, String> mimeLookup { { ".wav", "audio/wav" },
+                                                                     { ".wave", "audio/wav" },
+                                                                     { ".mp3", "audio/mpeg" } };
+
+        String mime;
+
+        auto it = mimeLookup.find(f.getFileExtension().toLowerCase());
+
+        if (it != mimeLookup.end())
+        {
+            mime = it->second;
+        }
+
+        return mime;
     }
 };
