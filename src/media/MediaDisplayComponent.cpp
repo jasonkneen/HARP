@@ -1163,7 +1163,7 @@ void MediaDisplayComponent::removeLabelOverlay(LabelOverlayComponent* l)
     labelOverlays.removeObject(l);
 }
 
-void MediaDisplayComponent::addLabels(LabelList& labels)
+void MediaDisplayComponent::addLabels(const LabelList& labels)
 {
     for (const auto& l : labels)
     {

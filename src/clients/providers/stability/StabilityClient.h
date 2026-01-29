@@ -412,6 +412,7 @@ private:
                                     "",
                                     "Stability AI" };
             }
+            // TODO - could potentially identify other errors related to Copyright and more
             else
             {
                 return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,

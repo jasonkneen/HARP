@@ -311,28 +311,16 @@ private:
     void processCallback()
     {
         /*
-        if (model == nullptr)
-        {
-            AlertWindow("Error",
-                        "Model is not loaded. Please load a model first.",
-                        AlertWindow::WarningIcon);
-            return;
-        }
-
         // Get new processID
         String processID = juce::Uuid().toString();
         processMutex.lock();
         currentProcessID = processID;
         DBG_AND_LOG("Set Process ID: " + processID);
         processMutex.unlock();
-
-        processCancelButton.setEnabled(true);
-        processCancelButton.setMode(cancelButtonInfo.label);
-        loadModelButton.setEnabled(false);
-        modelPathComboBox.setEnabled(false);
-        //saveEnabled = false;
-        //isProcessing = true;
         */
+
+        modelSelectionWidget.setLoadingState();
+        processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
         std::map<Uuid, File> loadedInputFiles;
 
@@ -370,18 +358,42 @@ private:
                     // copy the audio file, with the same filename except for an added _harp to the stem
         */
 
-        std::vector<File> outputFiles;
-        LabelList labels;
+        processingThreadPool.addJob(
+            [this, loadedInputFiles]
+            {
+                std::vector<File> outputFiles;
+                LabelList labels;
 
-        OpResult processingResult = model->process(loadedInputFiles, outputFiles, labels);
+                OpResult result = model->process(loadedInputFiles, outputFiles, labels);
 
-        auto& outputMediaDisplays = outputTrackAreaWidget.getMediaDisplays();
+                auto outputFilesPtr = std::make_shared<std::vector<File>>(std::move(outputFiles));
+                auto labelsPtr = std::make_shared<LabelList>(std::move(labels));
 
-        for (size_t i = 0; i < outputMediaDisplays.size(); ++i)
-        {
-            outputMediaDisplays[i]->initializeDisplay(URL(outputFiles[i]));
-            outputMediaDisplays[i]->addLabels(labels);
-        }
+                // Perform updates on message (GUI) thread
+                MessageManager::callAsync(
+                    [this, result, outputFilesPtr, labelsPtr]
+                    {
+                        if (result.wasOk())
+                        {
+                            auto& outputMediaDisplays = outputTrackAreaWidget.getMediaDisplays();
+
+                            for (size_t i = 0; i < outputMediaDisplays.size(); ++i)
+                            {
+                                outputMediaDisplays[i]->initializeDisplay(
+                                    URL((*outputFilesPtr)[i]));
+                                outputMediaDisplays[i]->addLabels(*labelsPtr);
+                            }
+                        }
+                        else
+                        {
+                            // TODO - same error handling as above
+                        }
+
+                        // Re-enable processing immediately
+                        modelSelectionWidget.setFinishedState(); // TODO - should be last selected
+                        processCancelButton.setMode(processButtonInfo.displayLabel);
+                    });
+            });
 
         /*
                     processMutex.lock();
@@ -480,6 +492,7 @@ private:
     TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
 
     ThreadPool loadingThreadPool { 1 };
+    ThreadPool processingThreadPool { 1 };
 
     // TODO - cleanup below
 

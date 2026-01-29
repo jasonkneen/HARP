@@ -129,7 +129,7 @@ public:
     void addLabelOverlay(LabelOverlayComponent* l);
     void removeLabelOverlay(LabelOverlayComponent* l);
 
-    void addLabels(LabelList& labels);
+    void addLabels(const LabelList& labels);
     void clearLabels(int processingIdxCutoff = 0);
 
 protected:
