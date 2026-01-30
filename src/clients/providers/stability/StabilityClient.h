@@ -408,9 +408,8 @@ private:
 
             if (response.contains("authorization"))
             {
-                ClientError error { ClientError::Type::InsufficientPermissions,
-                                    "",
-                                    "Stability AI" };
+                return OpResult::fail(
+                    ClientError { ClientError::Type::InsufficientPermissions, "", "Stability AI" });
             }
             // TODO - could potentially identify other errors related to Copyright and more
             else

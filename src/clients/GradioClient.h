@@ -645,7 +645,7 @@ private:
                 DBG_AND_LOG("GradioClient::makeGETRequest: Error response \"" << response << "\".");
 
                 return OpResult::fail(
-                    GradioError { GradioError::Type::RuntimeError, endpoint.toString(true) });
+                    GradioError { GradioError::Type::RuntimeError, errorPath });
             }
             else
             {
@@ -705,7 +705,7 @@ private:
         if (! outputFileStream || ! outputFileStream->openedOk())
         {
             return OpResult::fail(
-                FileError { FileError::Type::DownloadFailed, endpoint.toString(true) });
+                FileError { FileError::Type::DownloadFailed, fileToDownload.getFullPathName() });
         }
 
         // Copy data from GET request stream to stream for output file

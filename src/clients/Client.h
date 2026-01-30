@@ -177,7 +177,8 @@ inline OpResult getRequiredArrayProperty(DynamicObject::Ptr& parentDict,
 class Client
 {
 public:
-    Client() {}
+    Client() = default;
+    virtual ~Client() {};
 
     virtual String inferHostSlashModel(String modelPath) = 0;
     virtual String inferEndpointPath(String modelPath) = 0;
