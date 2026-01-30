@@ -186,11 +186,88 @@ private:
         */
     }
 
+    void openErrorPopup(const Error error, std::function<void()> onExit)
+    {
+        MessageBoxOptions errorPopup =
+            MessageBoxOptions()
+                .withIconType(AlertWindow::WarningIcon)
+                .withTitle("Error") // TODO - Name of error family would be nice here
+                // error ? toUserMessage(*error) : "An unknown error occurred."
+                .withMessage(toUserMessage(error));
+
+        std::optional<String> openablePath = getOpenablePath(error);
+
+        if (openablePath.has_value())
+        {
+            errorPopup = errorPopup.withButton("Open URL");
+        }
+
+        errorPopup = errorPopup.withButton("Open Logs").withButton("Ok");
+
+        auto alertCallback = [this, error, openablePath, onExit, errorPopup](int choice)
+        {
+            DBG_AND_LOG("ModelTab::loadModelCallback::alertCallback: Chose button index: " << choice
+                                                                                           << ".");
+
+            enum Choice
+            {
+                OpenURL,
+                OpenLogs,
+                OK
+            };
+
+            /*
+            TODO - The button indices assigned by MessageBoxOptions do not follow the order in which
+            they were added. This should be fixed in JUCE v8. The following is a temporary workaround.
+
+            See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
+
+            When this is fixed, remove errorPopup from the argument list.
+            */
+            {
+                std::map<int, int> observedButtonIndicesMap = {};
+
+                if (errorPopup.getNumButtons() == 3)
+                {
+                    observedButtonIndicesMap.insert({ 1, Choice::OpenURL });
+                }
+
+                observedButtonIndicesMap.insert(
+                    { errorPopup.getNumButtons() - 1, Choice::OpenLogs });
+
+                observedButtonIndicesMap.insert({ 0, Choice::OK });
+
+                choice = observedButtonIndicesMap[choice];
+            }
+
+            if (choice == Choice::OpenURL)
+            {
+                URL(*openablePath).launchInDefaultBrowser();
+            }
+            else if (choice == Choice::OpenLogs)
+            {
+                HARPLogger::getInstance()->getLogFile().revealToUser();
+            }
+            else
+            {
+                // Nothing to do
+            }
+
+            if (onExit)
+            {
+                // Perform optional state cleanup
+                onExit();
+            }
+        };
+
+        AlertWindow::showAsync(errorPopup, alertCallback);
+    }
+
     void loadModelCallback()
     {
-        modelSelectionWidget.setLoadingState();
+        modelSelectionWidget.setDisabled();
 
-        // Disable processing until next model is loaded
+        // Disable processing until model is loaded
         processCancelButton.setEnabled(false);
 
         // Obtain currently selected path
@@ -229,80 +306,15 @@ private:
                         {
                             const Error error = result.getError();
 
-                            MessageBoxOptions errorPopup =
-                                MessageBoxOptions()
-                                    .withIconType(AlertWindow::WarningIcon)
-                                    .withTitle(
-                                        "Error") // TODO - Name of error family would be nice here
-                                    // error ? toUserMessage(*error) : "An unknown error occurred."
-                                    .withMessage(toUserMessage(error));
-
-                            std::optional<String> openablePath = getOpenablePath(error);
-
-                            if (openablePath.has_value())
+                            std::function<void()> onExit = [this, error]
                             {
-                                errorPopup = errorPopup.withButton("Open URL");
-                            }
-
-                            errorPopup = errorPopup.withButton("Open Logs").withButton("Ok");
-
-                            auto alertCallback = [this, error, openablePath, errorPopup](int choice)
-                            {
-                                DBG_AND_LOG(
-                                    "ModelTab::loadModelCallback::alertCallback: Chose button index: "
-                                    << choice << ".");
-
-                                enum Choice
-                                {
-                                    OpenURL,
-                                    OpenLogs,
-                                    OK
-                                };
-
-                                /*
-                                  TODO - The button indices assigned by MessageBoxOptions do not follow the order in which
-                                  they were added. This should be fixed in JUCE v8. The following is a temporary workaround.
-
-                                  See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
-
-                                  When this is fixed, remove errorPopup from the argument list.
-                                */
-                                {
-                                    std::map<int, int> observedButtonIndicesMap = {};
-
-                                    if (errorPopup.getNumButtons() == 3)
-                                    {
-                                        observedButtonIndicesMap.insert({ 1, Choice::OpenURL });
-                                    }
-
-                                    observedButtonIndicesMap.insert(
-                                        { errorPopup.getNumButtons() - 1, Choice::OpenLogs });
-
-                                    observedButtonIndicesMap.insert({ 0, Choice::OK });
-
-                                    choice = observedButtonIndicesMap[choice];
-                                }
-
-                                if (choice == Choice::OpenURL)
-                                {
-                                    URL(*openablePath).launchInDefaultBrowser();
-                                }
-                                else if (choice == Choice::OpenLogs)
-                                {
-                                    HARPLogger::getInstance()->getLogFile().revealToUser();
-                                }
-                                else
-                                {
-                                    // Nothing to do
-                                }
-
                                 modelSelectionWidget.setUnsuccessfulState(error);
 
                                 // Re-enable processing after closing error window
                                 processCancelButton.setEnabled(true);
                             };
 
-                            AlertWindow::showAsync(errorPopup, alertCallback);
+                            openErrorPopup(error, onExit);
                         }
                     });
             });
@@ -319,7 +331,7 @@ private:
         processMutex.unlock();
         */
 
-        modelSelectionWidget.setLoadingState();
+        modelSelectionWidget.setDisabled();
         processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
         std::map<Uuid, File> loadedInputFiles;
@@ -373,6 +385,14 @@ private:
                 MessageManager::callAsync(
                     [this, result, outputFilesPtr, labelsPtr]
                     {
+                        std::function<void()> onExit = [this]
+                        {
+                            // Re-enable processing immediately
+                            modelSelectionWidget
+                                .setFinishedState(); // TODO - should this be last selected?
+                            processCancelButton.setMode(processButtonInfo.displayLabel);
+                        };
+
                         if (result.wasOk())
                         {
                             auto& outputMediaDisplays = outputTrackAreaWidget.getMediaDisplays();
@@ -383,15 +403,13 @@ private:
                                     URL((*outputFilesPtr)[i]));
                                 outputMediaDisplays[i]->addLabels(*labelsPtr);
                             }
+
+                            onExit();
                         }
                         else
                         {
-                            // TODO - same error handling as above
+                            openErrorPopup(result.getError(), onExit);
                         }
-
-                        // Re-enable processing immediately
-                        modelSelectionWidget.setFinishedState(); // TODO - should be last selected
-                        processCancelButton.setMode(processButtonInfo.displayLabel);
                     });
             });
 
@@ -407,24 +425,6 @@ private:
                     }
                     if (processingResult.failed())
                     {
-                        Error processingError = processingResult.getError();
-                        Error::fillUserMessage(processingError);
-                        DBG_AND_LOG("Error in Processing:\n"
-                                  + processingError.devMessage.toStdString());
-                        AlertWindow::showMessageBoxAsync(
-                            AlertWindow::WarningIcon,
-                            "Processing Error",
-                            "An error occurred while processing the audio file: \n"
-                                + processingError.userMessage);
-                        // cb: I commented this out, and it doesn't seem to change anything
-                        // it was also causing a crash. If we need it, it needs to run on
-                        // the message thread using MessageManager::callAsync
-                        // hy: Now this line works.
-                        // resetProcessingButtons();
-                        // cb: Needs to be in the message thread or else it crashes
-                        // It's used when the processing fails to reset the process/cancel
-                        // button back to the process mode.
-                        MessageManager::callAsync([this] { resetProcessingButtons(); });
                         processMutex.unlock();
                         return;
                     }
@@ -496,17 +496,9 @@ private:
 
     // TODO - cleanup below
 
-    //ChangeBroadcaster loadBroadcaster;
-
-    /* Processing */
-
     //String currentProcessID;
 
     //std::mutex processMutex;
 
-    //ChangeBroadcaster processBroadcaster;
-
     //ThreadPool jobProcessorThread { 10 };
-
-    //bool isProcessing = false;
 };

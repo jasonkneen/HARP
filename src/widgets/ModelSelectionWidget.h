@@ -222,19 +222,24 @@ public:
         loadModelButton.setEnabled(false);
     }
 
-    void setLoadingState()
+    void setDisabled()
     {
         modelPathComboBox.setEnabled(false);
-
         loadModelButton.setEnabled(false);
+    }
+
+
+    void setEnabled()
+    {
+        modelPathComboBox.setEnabled(true);
+        loadModelButton.setEnabled(true);
     }
 
     void setFinishedState()
     {
-        modelPathComboBox.setEnabled(true);
-        modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
+        setEnabled();
 
-        loadModelButton.setEnabled(true);
+        modelPathComboBox.setSelectedId(lastLoadedPathIndex + 1);
     }
 
     void setSuccessfulState()
