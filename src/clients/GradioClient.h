@@ -551,7 +551,7 @@ private:
     OpResult makeGETRequestStream(const URL endpoint,
                                   std::unique_ptr<InputStream>& stream,
                                   const String errorPath = "",
-                                  const int timeoutMs = 10000)
+                                  const int timeoutMs = -1)
     {
         String requestHeaders = getCommonHeaders();
 
@@ -613,7 +613,7 @@ private:
     OpResult makeGETRequest(const URL endpoint,
                             String& response,
                             const String errorPath = "",
-                            const int timeoutMs = 10000)
+                            const int timeoutMs = -1)
     {
         std::unique_ptr<InputStream> stream;
 
@@ -690,7 +690,7 @@ private:
     OpResult makeGETRequest(const URL endpoint,
                             File& fileToDownload,
                             const String errorPath = "",
-                            const int timeoutMs = 10000)
+                            const int timeoutMs = -1)
     {
         std::unique_ptr<InputStream> stream;
 
@@ -764,7 +764,9 @@ private:
 
         responseJSON.clear();
 
-        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath));
+        /* WARNING: it's very important to give Gradio enough time to yield a response
+           (10 seconds was too little for ZeroGPU spaces and led to stream == nullptr) */
+        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath), 120000);
 
         if (result.failed())
         {

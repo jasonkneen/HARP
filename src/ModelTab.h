@@ -331,9 +331,6 @@ private:
         processMutex.unlock();
         */
 
-        modelSelectionWidget.setDisabled();
-        processCancelButton.setMode(cancelButtonInfo.displayLabel);
-
         std::map<Uuid, File> loadedInputFiles;
 
         for (std::unique_ptr<MediaDisplayComponent>& inputTrack :
@@ -369,6 +366,9 @@ private:
                     // Individual job code for each iteration
                     // copy the audio file, with the same filename except for an added _harp to the stem
         */
+
+        modelSelectionWidget.setDisabled();
+        processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
         processingThreadPool.addJob(
             [this, loadedInputFiles]
