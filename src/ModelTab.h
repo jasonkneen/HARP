@@ -147,6 +147,8 @@ public:
 
         processCancelButton.setMode(processButtonInfo.displayLabel);
         processCancelButton.setEnabled(false);
+
+        currentProcessID = 0;
     }
 
 private:
@@ -161,7 +163,7 @@ private:
         // Mode when a model is loaded and currently processing (cancel enabled)
         cancelButtonInfo = MultiButton::Mode { "Cancel",
                                                "Click to cancel processing.",
-                                               [this] {}, //{ cancelCallback(); },
+                                               [this] { cancelCallback(); },
                                                MultiButton::DrawingMode::TextOnly };
 
         processCancelButton.addMode(processButtonInfo);
@@ -177,16 +179,9 @@ private:
         {
             loadModelCallback();
         }
-
-        /*
-        if (source == &processBroadcaster)
-        {
-            // TODO - load output file paths into display components
-        }
-        */
     }
 
-    void openErrorPopup(const Error error, std::function<void()> onExit)
+    void openErrorPopup(const Error error, std::function<void()> onExit = {})
     {
         MessageBoxOptions errorPopup =
             MessageBoxOptions()
@@ -322,15 +317,6 @@ private:
 
     void processCallback()
     {
-        /*
-        // Get new processID
-        String processID = juce::Uuid().toString();
-        processMutex.lock();
-        currentProcessID = processID;
-        DBG_AND_LOG("Set Process ID: " + processID);
-        processMutex.unlock();
-        */
-
         std::map<Uuid, File> loadedInputFiles;
 
         for (std::unique_ptr<MediaDisplayComponent>& inputTrack :
@@ -358,25 +344,29 @@ private:
             }
         }
 
-        /*
-        // Directly add the job to the thread pool
-        jobProcessorThread.addJob(
-            new CustomThreadPoolJob(
-                [this, localInputTrackFiles](String jobProcessID) { // &jobsFinished, totalJobs
-                    // Individual job code for each iteration
-                    // copy the audio file, with the same filename except for an added _harp to the stem
-        */
-
         modelSelectionWidget.setDisabled();
         processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
+        uint64_t processID = currentProcessID;
+
         processingThreadPool.addJob(
-            [this, loadedInputFiles]
+            [this, loadedInputFiles, processID]
             {
                 std::vector<File> outputFiles;
                 LabelList labels;
 
+                DBG_AND_LOG("ModelTab::processCallback: Starting process \"" + String(processID)
+                            + "\".");
+
                 OpResult result = model->process(loadedInputFiles, outputFiles, labels);
+
+                if (processID != currentProcessID.load())
+                {
+                    DBG_AND_LOG("ModelTab::processCallback: Ignoring result of stale process \""
+                                + String(processID) + "\".");
+
+                    return;
+                }
 
                 auto outputFilesPtr = std::make_shared<std::vector<File>>(std::move(outputFiles));
                 auto labelsPtr = std::make_shared<LabelList>(std::move(labels));
@@ -412,66 +402,30 @@ private:
                         }
                     });
             });
-
-        /*
-                    processMutex.lock();
-                    if (jobProcessID != currentProcessID)
-                    {
-                        DBG_AND_LOG("ProcessID " + jobProcessID + " not found");
-                        DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
-                        DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
-                        processMutex.unlock();
-                        return;
-                    }
-                    if (processingResult.failed())
-                    {
-                        processMutex.unlock();
-                        return;
-                    }
-                    // load the audio file again
-                    DBG_AND_LOG("ProcessID " + jobProcessID + " succeed");
-                    currentProcessID = "";
-                    model->setStatus(ModelStatus::FINISHED);
-                    processBroadcaster.sendChangeMessage();
-                    processMutex.unlock();
-                },
-                processID),
-            true);
-        DBG_AND_LOG("NumJobs: " + std::to_string(jobProcessorThread.getNumJobs()));
-        DBG_AND_LOG("NumThrds: " + std::to_string(jobProcessorThread.getNumThreads()));
-        */
     }
 
-    /*
     void cancelCallback()
     {
-        DBG_AND_LOG("HARPProcessorEditor::buttonClicked cancel button listener activated");
+        processCancelButton.setEnabled(false);
 
-        OpResult cancelResult = model->cancel();
+        DBG_AND_LOG("ModelTab::processCallback: Canceling process \"" + String(currentProcessID) + "\".");
 
-        if (cancelResult.failed())
+        // Invalidate all in-flight jobs
+        ++currentProcessID;
+
+        OpResult result = model->cancel();
+
+        if (result.failed())
         {
-            DBG_AND_LOG(cancelResult.getError().devMessage.toStdString());
-            AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
-                                             "Cancel Error",
-                                             "An error occurred while cancelling the processing: \n"
-                                                 + cancelResult.getError().devMessage);
-            return;
+            openErrorPopup(result.getError());
         }
-        // Update current process to empty
-        processMutex.lock();
-        DBG_AND_LOG("Cancel ProcessID: " + currentProcessID);
-        currentProcessID = "";
-        processMutex.unlock();
-        // We already added a temp file, so we need to undo that
-        // TODO: this is functionality that I need to add back // #TODO
-        // mediaDisplay->iteratePreviousTempFile();
-        // mediaDisplay->clearFutureTempFiles();
 
-        // processCancelButton.setEnabled(false); // this is the og v3
-        resetProcessingButtons(); // This is the new way
+        // Re-enable processing immediately
+        modelSelectionWidget.setFinishedState(); // TODO - should this be last selected?
+
+        processCancelButton.setMode(processButtonInfo.displayLabel);
+        processCancelButton.setEnabled(true);
     }
-    */
 
     const float marginSize = 2;
 
@@ -492,13 +446,7 @@ private:
     TrackAreaWidget outputTrackAreaWidget { DisplayMode::Output };
 
     ThreadPool loadingThreadPool { 1 };
-    ThreadPool processingThreadPool { 1 };
+    ThreadPool processingThreadPool { 10 };
 
-    // TODO - cleanup below
-
-    //String currentProcessID;
-
-    //std::mutex processMutex;
-
-    //ThreadPool jobProcessorThread { 10 };
+    std::atomic<uint64_t> currentProcessID { 0 };
 };

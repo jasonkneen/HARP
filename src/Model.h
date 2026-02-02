@@ -19,20 +19,15 @@ using namespace juce;
 
 enum class ModelStatus
 {
-    EMPTY,
+    EMPTY, // No model has been successfully added since initialization
 
-    QUERYING_CONTROLS,
-    PROCESSING,
-    CANCELING,
+    QUERYING_CONTROLS, // Controls information for a model is being requested
+    PREPARING_REQUEST, // Files and metadata is being prepared for processing
+    PROCESSING, // Awaiting result of processing request
+    CANCELING, // Awaiting result of cancellation request
 
-    READY,
-
-    // TODO - are below statuses necessary?
-    STARTING,
-    SENDING,
-
-    LOADING_ERROR, // TODO - synonymous with EMPTY?
-    PROCESSING_ERROR // TODO - synonymous with READY?
+    FAILURE, // Synonymous with EMPTY or READY but indicates error occurred
+    READY // Model is loaded and ready for processing
 };
 
 struct ModelMetadata
@@ -137,7 +132,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+            setStatus(ModelStatus::FAILURE);
 
             return result;
         }
@@ -152,7 +147,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+            setStatus(ModelStatus::FAILURE);
 
             return result;
         }
@@ -164,7 +159,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+            setStatus(ModelStatus::FAILURE);
 
             return result;
         }
@@ -177,7 +172,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+            setStatus(ModelStatus::FAILURE);
 
             return result;
         }
@@ -189,7 +184,7 @@ public:
 
         if (result.failed())
         {
-            setStatus(isLoaded() ? ModelStatus::READY : ModelStatus::EMPTY);
+            setStatus(ModelStatus::FAILURE);
 
             return result;
         }
@@ -222,6 +217,8 @@ public:
 
         OpResult result = OpResult::ok();
 
+        setStatus(ModelStatus::PREPARING_REQUEST);
+
         for (auto& fileEntry : inputFiles)
         {
             String remoteFilePath;
@@ -233,6 +230,8 @@ public:
 
             if (result.failed())
             {
+                setStatus(ModelStatus::FAILURE);
+
                 return result;
             }
 
@@ -333,6 +332,8 @@ public:
 
         if (result.failed())
         {
+            setStatus(ModelStatus::FAILURE);
+
             return result;
         }
 
@@ -345,14 +346,14 @@ public:
     {
         setStatus(ModelStatus::CANCELING);
 
-        /*
-        OpResult result = client->cancel();
+        OpResult result = client->cancel(loadedPath);
 
         if (result.failed())
         {
+            setStatus(ModelStatus::FAILURE);
+
             return result;
         }
-        */
 
         setStatus(ModelStatus::READY);
 

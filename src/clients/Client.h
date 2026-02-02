@@ -271,7 +271,7 @@ public:
                              String& payloadJSON,
                              std::vector<File>& outputFiles,
                              LabelList& labels) = 0;
-    //virtual OpResult cancel() = 0;
+    virtual OpResult cancel(String modelPath) { return OpResult::ok(); }
 
     const String emptyJSONBody = R"({"data": []})";
 

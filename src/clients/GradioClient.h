@@ -225,13 +225,27 @@ public:
 
     OpResult queryControls(String modelPath, DynamicObject::Ptr& controls)
     {
-        Array<var> dataList;
+        String responseJSON;
 
-        OpResult result = makeRequest(modelPath, "controls", emptyJSONBody, dataList);
+        OpResult result = makeRequest(modelPath, "controls", emptyJSONBody, responseJSON);
 
         if (result.failed())
         {
             return result;
+        }
+
+        Array<var> dataList;
+
+        result = stringJSONToList(responseJSON, dataList);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        if (dataList.isEmpty())
+        {
+            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
         }
 
         var first = dataList.getFirst();
@@ -318,13 +332,27 @@ public:
                      std::vector<File>& outputFiles,
                      LabelList& labels)
     {
-        Array<var> dataList;
+        String responseJSON;
 
-        OpResult result = makeRequest(modelPath, "process", payloadJSON, dataList);
+        OpResult result = makeRequest(modelPath, "process", payloadJSON, responseJSON);
 
         if (result.failed())
         {
             return result;
+        }
+
+        Array<var> dataList;
+
+        result = stringJSONToList(responseJSON, dataList);
+
+        if (result.failed())
+        {
+            return result;
+        }
+
+        if (dataList.isEmpty())
+        {
+            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
         }
 
         for (int i = 0; i < dataList.size(); i++)
@@ -391,6 +419,20 @@ public:
                                                   JSON::toString(var(outputDict), true),
                                                   metadataKey.toString() });
             }
+        }
+
+        return OpResult::ok();
+    }
+
+    OpResult cancel(String modelPath)
+    {
+        String response;
+
+        OpResult result = makeRequest(modelPath, "cancel", emptyJSONBody, response);
+
+        if (result.failed())
+        {
+            return result;
         }
 
         return OpResult::ok();
@@ -644,8 +686,7 @@ private:
 
                 DBG_AND_LOG("GradioClient::makeGETRequest: Error response \"" << response << "\".");
 
-                return OpResult::fail(
-                    GradioError { GradioError::Type::RuntimeError, errorPath });
+                return OpResult::fail(GradioError { GradioError::Type::RuntimeError, errorPath });
             }
             else
             {
@@ -717,17 +758,15 @@ private:
     OpResult makeRequest(const String modelPath,
                          const String requestType,
                          const String body,
-                         Array<var>& output)
+                         String& response)
     {
         URL endpoint = URL(inferEndpointPath(modelPath))
                            .getChildURL("gradio_api")
                            .getChildURL("call")
                            .getChildURL(requestType);
 
-        String responseJSON;
-
         OpResult result = makePOSTRequest(
-            endpoint, getJSONHeaders(), body, responseJSON, inferDocumentationPath(modelPath));
+            endpoint, getJSONHeaders(), body, response, inferDocumentationPath(modelPath));
 
         if (result.failed())
         {
@@ -736,7 +775,7 @@ private:
 
         DynamicObject::Ptr responseDict;
 
-        result = stringJSONToDict(responseJSON, responseDict);
+        result = stringJSONToDict(response, responseDict);
 
         if (result.failed())
         {
@@ -762,27 +801,15 @@ private:
                        .getChildURL(requestType)
                        .getChildURL(eventID);
 
-        responseJSON.clear();
+        response.clear();
 
         /* WARNING: it's very important to give Gradio enough time to yield a response
            (10 seconds was too little for ZeroGPU spaces and led to stream == nullptr) */
-        result = makeGETRequest(endpoint, responseJSON, inferDocumentationPath(modelPath), 120000);
+        result = makeGETRequest(endpoint, response, inferDocumentationPath(modelPath), 120000);
 
         if (result.failed())
         {
             return result;
-        }
-
-        result = stringJSONToList(responseJSON, output);
-
-        if (result.failed())
-        {
-            return result;
-        }
-
-        if (output.isEmpty())
-        {
-            return OpResult::fail(JsonError { JsonError::Type::Empty, {} });
         }
 
         return OpResult::ok();
