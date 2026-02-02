@@ -101,7 +101,6 @@ void MainComponent::initializeMenuBar()
     commandManager.registerAllCommandsForTarget(this);
     commandManager.setFirstCommandTarget(this);
 
-    // commandManager.setFirstCommandTarget(this);
     addKeyListener(commandManager.getKeyMappings());
 
 #if JUCE_MAC
@@ -170,7 +169,7 @@ void MainComponent::getCommandInfo(CommandID commandID, ApplicationCommandInfo& 
 
         case CommandIDs::saveAs:
             result.setInfo("Save As", "Saves currently selected track with a new name", "File", 0);
-            // TODO = is logical or (|) correct here?
+            // TODO = is logical (|) correct here?
             result.addDefaultKeypress('s',
                                       ModifierKeys::shiftModifier | ModifierKeys::commandModifier);
 
@@ -190,7 +189,7 @@ void MainComponent::getCommandInfo(CommandID commandID, ApplicationCommandInfo& 
 
         case CommandIDs::redo:
             result.setInfo("Redo", "Repeats next future action", "Edit", 0);
-            // TODO = is logical or (|) correct here?
+            // TODO = is logical (|) correct here?
             result.addDefaultKeypress('z',
                                       ModifierKeys::shiftModifier | ModifierKeys::commandModifier);
 

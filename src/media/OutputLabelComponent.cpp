@@ -80,15 +80,15 @@ void OutputLabelComponent::setMarkerVisibility(bool v)
 
 void OutputLabelComponent::setFillVisibility(bool v) { durationFill.setVisible(v); }
 
-juce::MouseCursor OutputLabelComponent::getMouseCursor()
+MouseCursor OutputLabelComponent::getMouseCursor()
 {
     if (link.isNotEmpty())
-        return juce::MouseCursor::PointingHandCursor;
+        return MouseCursor::PointingHandCursor;
     else
-        return juce::MouseCursor::NormalCursor;
+        return MouseCursor::NormalCursor;
 }
 
-void OutputLabelComponent::mouseUp(const juce::MouseEvent& /*e*/)
+void OutputLabelComponent::mouseUp(const MouseEvent& /*e*/)
 {
     if (isMouseOver(true))
     {
@@ -111,7 +111,7 @@ void OutputLabelComponent::mouseUp(const juce::MouseEvent& /*e*/)
     }
 }
 
-void OutputLabelComponent::mouseEnter(const juce::MouseEvent& /*e*/)
+void OutputLabelComponent::mouseEnter(const MouseEvent& /*e*/)
 {
     setFillVisibility(true);
     setMarkerVisibility(true);
@@ -124,7 +124,7 @@ void OutputLabelComponent::mouseEnter(const juce::MouseEvent& /*e*/)
     }
 }
 
-void OutputLabelComponent::mouseExit(const juce::MouseEvent& /*e*/)
+void OutputLabelComponent::mouseExit(const MouseEvent& /*e*/)
 {
     setFillVisibility(false);
     setMarkerVisibility(false);

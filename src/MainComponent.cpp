@@ -19,24 +19,10 @@ MainComponent::MainComponent()
 
     setSize(800, 2000);
 
-    //setOpaque(true);
-    //setWantsKeyboardFocus(true); // Remove focus from modelPathTextBox after clicking off
-
     statusMessage->setMessage("Welcome to HARP!");
 }
 
-MainComponent::~MainComponent()
-{
-    // jobProcessorThread.signalThreadShouldExit();
-    // This will not actually run any processing task
-    // It'll just make sure that the thread is not waiting
-    // and it'll allow it to check for the threadShouldExit flag
-    // jobProcessorThread.signalTask();
-    // jobProcessorThread.waitForThreadToExit(-1);
-
-    deinitializeMenuBar();
-    // commandManager.setFirstCommandTarget (nullptr);
-}
+MainComponent::~MainComponent() { deinitializeMenuBar(); }
 
 void MainComponent::paint(Graphics& g)
 {
@@ -103,7 +89,6 @@ void MainComponent::openSettingsWindow()
     DialogWindow::LaunchOptions options;
     options.dialogTitle = "Settings";
     options.dialogBackgroundColour = Colours::darkgrey;
-    //options.content.setOwned(new SettingsWindow(model.get()));
     options.content.setOwned(new SettingsWindow());
 
     options.useNativeTitleBar = true;
@@ -112,92 +97,6 @@ void MainComponent::openSettingsWindow()
 
     options.launchAsync();
 }
-
-/* --Edit-- */
-
-// TODO - The following are old callbacks from V2. They may be helpful in the future.
-
-/*
-void MainComponent::undoCallback()
-{
-    // DBG_AND_LOG("Undoing last edit");
-
-    // // check if the audio file is loaded
-    // if (! mediaDisplay->isFileLoaded())
-    // {
-    //     // TODO - gray out undo option in this case?
-    //     // Fail with beep, we should just ignore this if it doesn't make sense
-    //     DBG_AND_LOG("No file loaded to perform operation on");
-    //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //     return;
-    // }
-
-    // if (isProcessing)
-    // {
-    //     DBG_AND_LOG("Can't undo while processing occurring!");
-    //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //     return;
-    // }
-
-    // Iterate over all inputMediaDisplays and call the iteratePreviousTempFile()
-    //auto& inputMediaDisplays = inputTrackAreaWidget.getMediaDisplays();
-
-    // for (auto& inputMediaDisplay : inputMediaDisplays)
-    //     {
-    //         if (! inputMediaDisplay->iteratePreviousTempFile())
-    //         {
-    //             DBG_AND_LOG("Nothing to undo!");
-    //             // juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //         }
-    //         else
-    //         {
-    //             saveEnabled = true;
-    //             DBG_AND_LOG("Undo callback completed successfully");
-    //         }
-    //     }
-}
-*/
-
-/*
-void MainComponent::redoCallback()
-{
-    // DBG_AND_LOG("Redoing last edit");
-
-    // // check if the audio file is loaded
-    // if (! mediaDisplay->isFileLoaded())
-    // {
-    //     // TODO - gray out undo option in this case?
-    //     // Fail with beep, we should just ignore this if it doesn't make sense
-    //     DBG_AND_LOG("No file loaded to perform operation on");
-    //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //     return;
-    // }
-
-    // if (isProcessing)
-    // {
-    //     DBG_AND_LOG("Can't redo while processing occurring!");
-    //     juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //     return;
-    // }
-
-    // Iterate over all inputMediaDisplays and call the iterateNextTempFile()
-    //auto& inputMediaDisplays = inputTrackAreaWidget.getMediaDisplays();
-
-    // for (auto& inputMediaDisplay : inputMediaDisplays)
-    //     {
-    //         if (! inputMediaDisplay->iterateNextTempFile())
-    //         {
-    //             DBG_AND_LOG("Nothing to redo!");
-    //             // juce::LookAndFeel::getDefaultLookAndFeel().playAlertSound();
-    //         }
-    //         else
-    //         {
-    //             saveEnabled = true;
-    //             DBG_AND_LOG("Redo callback completed successfully");
-    //         }
-    //     }
-}
-*/
 
 /* --View-- */
 

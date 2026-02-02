@@ -8,10 +8,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../gui/HoverableLabel.h"
 #include "../widgets/StatusAreaWidget.h"
 
 #include "../gui/HoverHandler.h"
+#include "../gui/HoverableLabel.h"
 
 #include "../utils/Logging.h"
 

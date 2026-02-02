@@ -1,4 +1,4 @@
-/*
+/**
  * @file ModelSelectionWidget.h
  * @brief TODO
  * @author cwitkowitz
@@ -227,7 +227,6 @@ public:
         modelPathComboBox.setEnabled(false);
         loadModelButton.setEnabled(false);
     }
-
 
     void setEnabled()
     {

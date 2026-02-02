@@ -1,3 +1,9 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -17,42 +23,6 @@
 #include "utils/Settings.h"
 
 using namespace juce;
-
-/*// this only calls the callback ONCE
-class TimedCallback : public Timer
-{
-   public:
-    TimedCallback(std::function<void()> callback, int interval)
-        : mCallback(callback), mInterval(interval)
-    {
-        startTimer(mInterval);
-    }
-
-    ~TimedCallback() override { stopTimer(); }
-
-    void timerCallback() override
-    {
-        mCallback();
-        stopTimer();
-    }
-
-   private:
-    std::function<void()> mCallback;
-    int mInterval;
-};*/
-
-/*inline std::unique_ptr<OutputStream> makeOutputStream(const URL& url)
-{
-    if (const auto doc = AndroidDocument::fromDocument(url))
-        return doc.createOutputStream();
-
-#if ! JUCE_IOS
-    if (url.isLocalFile())
-        return url.getLocalFile().createOutputStream();
-#endif
-
-    return url.createOutputStream();
-}*/
 
 class MainComponent : public Component, public MenuBarModel, public ApplicationCommandTarget
 
@@ -86,10 +56,6 @@ public:
     // File
     void importNewFile(File mediaFile, bool fromDAW = false);
     void openSettingsWindow();
-
-    // Edit
-    //void undoCallback();
-    //void redoCallback();
 
     // View
     void viewStatusAreaCallback();

@@ -1,4 +1,11 @@
-// See https://juce.com/tutorials/tutorial_synth_using_midi_input/ for details
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ * 
+ * Note that this file was adapted from:
+ * https://juce.com/tutorials/tutorial_synth_using_midi_input/
+ */
 
 #include <juce_audio_basics/juce_audio_basics.h>
 

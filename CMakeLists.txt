@@ -68,10 +68,9 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         src/Main.cpp
         src/Application.cpp
-        src/MainComponent.cpp #
-        #src/ModelTab.cpp #
-        src/ModelTab.h #
-        src/Model.h #
+        src/MainComponent.cpp
+        src/ModelTab.h
+        src/Model.h
 
         src/windows/AboutWindow.h
         src/windows/WelcomeWindow.h
@@ -103,12 +102,9 @@ target_sources(${PROJECT_NAME}
         src/media/pianoroll/PianoRollComponent.cpp
         src/media/pianoroll/SynthAudioSource.h
 
-        #src/clients/Client.cpp #
-        src/clients/Client.h #
-        #src/clients/GradioClient.cpp #
-        src/clients/GradioClient.h #
-        #src/clients/StabilityClient.cpp #
-        src/clients/GradioClient.h #
+        src/clients/Client.h
+        src/clients/GradioClient.h
+        src/clients/GradioClient.h
 
         src/utils/Logging.h
         src/utils/Settings.h
@@ -117,7 +113,7 @@ target_sources(${PROJECT_NAME}
         src/utils/Labels.h
         src/utils/Clients.h
         src/utils/Errors.h
-        src/utils/Enums.h #
+        src/utils/Enums.h
 
         # TODO - add as a submodule
         src/external/magic_enum.hpp #

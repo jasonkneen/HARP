@@ -1,4 +1,4 @@
-/*
+/**
  * @file StatusAreaWidget.h
  * @brief Defines shared resources and components for instructions and status.
  * @author xribene, cwitkowitz
@@ -64,7 +64,7 @@ public:
 
     void changeListenerCallback(ChangeBroadcaster* /*source*/)
     {
-        messageLabel.setText(sharedMessage->message, juce::dontSendNotification);
+        messageLabel.setText(sharedMessage->message, dontSendNotification);
     }
 
 private:
@@ -74,12 +74,6 @@ private:
 
 using StatusBox = MessageBox<StatusMessage>;
 using InstructionsBox = MessageBox<InstructionsMessage>;
-
-/*void setStatus(const ModelStatus& status)
-{
-    String statusName = std::string(magic_enum::enum_name(status)).c_str();
-    statusBox->setStatusMessage("ModelStatus::" + statusName);
-}*/
 
 class StatusAreaWidget : public Component
 {
@@ -91,8 +85,6 @@ public:
     }
 
     ~StatusAreaWidget() {}
-
-    //void paint(Graphics& g) {}
 
     void resized() override
     {

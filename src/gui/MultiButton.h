@@ -49,6 +49,8 @@
 
 #include "../widgets/StatusAreaWidget.h"
 
+#include "../utils/Logging.h"
+
 class MultiButton : public TextButton
 {
 public:

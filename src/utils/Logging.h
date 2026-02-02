@@ -1,3 +1,9 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include <juce_core/juce_core.h>
@@ -27,7 +33,7 @@ public:
         // MacOS: ~/Library/Logs/HARP/main.log
         // Windows: C:\Users\<username>\AppData\Roaming\HARP\main.log
         // Linux: ~/.config/HARP/main.log
-        logger.reset(juce::FileLogger::createDefaultAppLogger("HARP", "main.log", ""));
+        logger.reset(FileLogger::createDefaultAppLogger("HARP", "main.log", ""));
     }
 
     void debugAndLog(const String& message) const

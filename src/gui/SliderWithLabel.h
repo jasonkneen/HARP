@@ -16,7 +16,7 @@ public:
     SliderWithLabel(const String& labelText, Slider::SliderStyle style)
         : slider(style, Slider::TextBoxBelow)
     {
-        label.setText(labelText, juce::dontSendNotification);
+        label.setText(labelText, dontSendNotification);
         label.setJustificationType(Justification::centred);
 
         slider.setColour(Slider::thumbColourId, Colours::coral);

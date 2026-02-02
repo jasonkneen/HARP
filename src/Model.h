@@ -1,3 +1,9 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include <string>
@@ -11,6 +17,7 @@
 
 #include "utils/Clients.h"
 #include "utils/Controls.h"
+#include "utils/Enums.h"
 #include "utils/Errors.h"
 #include "utils/Labels.h"
 #include "utils/Logging.h"
@@ -81,7 +88,7 @@ public:
     Model() { resetState(); }
     ~Model() { resetState(); }
 
-    bool isEmpty() { return client == nullptr; }
+    bool isEmpty() { return loadedPath.isEmpty() || client == nullptr; }
     bool isLoaded() { return ! isEmpty(); }
 
     void setStatus(ModelStatus newStatus)
@@ -90,9 +97,7 @@ public:
 
         if (statusMessage != nullptr)
         {
-            String statusString = std::string(magic_enum::enum_name(status)).c_str();
-
-            statusMessage->setMessage("Model Status: " + statusString);
+            statusMessage->setMessage("Model Status: " + enumToString(status));
         }
     }
 
@@ -562,7 +567,7 @@ private:
                 {
                     // Labels are handled separately
 
-                    DBG_AND_LOG("Model::extractOutputs: JSON (labels) output extracted.");
+                    DBG_AND_LOG("Model::extractOutputs: JSON (labels) output detected.");
                 }
                 else
                 {

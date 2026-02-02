@@ -13,10 +13,10 @@ using namespace juce;
 class ComboBoxWithLabel : public Component
 {
 public:
-    ComboBoxWithLabel(const juce::String& labelText = {})
+    ComboBoxWithLabel(const String& labelText = {})
     {
-        label.setText(labelText, juce::dontSendNotification);
-        label.setJustificationType(juce::Justification::centred);
+        label.setText(labelText, dontSendNotification);
+        label.setJustificationType(Justification::centred);
 
         addAndMakeVisible(label);
         addAndMakeVisible(comboBox);

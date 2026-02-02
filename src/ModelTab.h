@@ -1,4 +1,4 @@
-/*
+/**
  * @file ModelTab.h
  * @brief TODO
  * @author cwitkowitz
@@ -47,8 +47,6 @@ public:
     }
 
     ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
-
-    //void paint(Graphics& g) {}
 
     void resized() override
     {
@@ -408,9 +406,10 @@ private:
     {
         processCancelButton.setEnabled(false);
 
-        DBG_AND_LOG("ModelTab::processCallback: Canceling process \"" + String(currentProcessID) + "\".");
+        DBG_AND_LOG("ModelTab::processCallback: Canceling process \"" + String(currentProcessID)
+                    + "\".");
 
-        // Invalidate all in-flight jobs
+        // Invalidate any in-flight jobs
         ++currentProcessID;
 
         OpResult result = model->cancel();

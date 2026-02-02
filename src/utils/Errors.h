@@ -212,12 +212,6 @@ inline String toUserMessage(const HttpError& e)
                 userMessage += " If this is a valid Hugging Face space, this could indicate "
                                "the space is paused or down due to a build or runtime error.";
             }
-
-            /*
-        case HttpError::Type::InvalidResponse:
-
-            return userMessage;
-        */
     }
 
     return userMessage;

@@ -1,11 +1,16 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include <unordered_map>
 
 #include <juce_core/juce_core.h>
 
-#include "../external/magic_enum.hpp"
-
+#include "../utils/Enums.h"
 #include "../utils/Errors.h"
 #include "../utils/Labels.h"
 #include "../utils/Logging.h"
@@ -36,10 +41,7 @@ struct SharedAPIKeys // : public ChangeBroadcaster
         }
     }
 
-    String providerToSettingsKey(Provider p)
-    {
-        return settingsPrefix + "." + std::string(magic_enum::enum_name(p)).c_str();
-    }
+    String providerToSettingsKey(Provider p) { return settingsPrefix + "." + enumToString(p); }
 
     void updateKey(Provider provider, String newAPIKey)
     {
@@ -184,7 +186,7 @@ public:
     virtual String inferEndpointPath(String modelPath) = 0;
     virtual String inferDocumentationPath(String modelPath) = 0;
 
-    OpResult queryToken(const String& tokenToQuery, String& response, const int timeoutMs = 5000)
+    OpResult queryToken(const String& tokenToQuery, String& response, const int timeoutMs = 10000)
     {
         String tokenValidationPath = tokenValidationURL.toString(true);
 

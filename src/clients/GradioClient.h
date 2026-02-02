@@ -1,8 +1,12 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include "Client.h"
-
-#include "../utils/Enums.h"
 
 using namespace juce;
 
@@ -685,6 +689,8 @@ private:
                 response = stream->readNextLine();
 
                 DBG_AND_LOG("GradioClient::makeGETRequest: Error response \"" << response << "\".");
+
+                // TODO - could potentially identify other errors (e.g., too many requests)
 
                 return OpResult::fail(GradioError { GradioError::Type::RuntimeError, errorPath });
             }

@@ -27,8 +27,6 @@ public:
     ControlAreaWidget() { resetState(); }
     ~ControlAreaWidget() { resetState(); }
 
-    //void paint(Graphics& g) {}
-
     void resized() override
     {
         FlexBox controlsArea;

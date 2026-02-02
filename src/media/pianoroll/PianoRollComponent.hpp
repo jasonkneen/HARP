@@ -1,3 +1,9 @@
+/**
+ * @file TODO.hpp
+ * @brief TODO
+ * @author TODO
+ */
+
 #include "KeyboardComponent.hpp"
 #include "NoteGridComponent.hpp"
 

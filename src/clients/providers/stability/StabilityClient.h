@@ -1,3 +1,9 @@
+/**
+ * @file TODO.h
+ * @brief TODO
+ * @author TODO
+ */
+
 #pragma once
 
 #include <BinaryData.h>
@@ -411,7 +417,7 @@ private:
                 return OpResult::fail(
                     ClientError { ClientError::Type::InsufficientPermissions, "", "Stability AI" });
             }
-            // TODO - could potentially identify other errors related to Copyright and more
+            // TODO - could potentially identify other errors (e.g., copyrighted material)
             else
             {
                 return OpResult::fail(HttpError { HttpError::Type::BadStatusCode,

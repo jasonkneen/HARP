@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+
 #include "windows/WelcomeWindow.h"
 
 #include "utils/Settings.h"

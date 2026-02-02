@@ -15,7 +15,7 @@ class TextBoxWithLabel : public Component
 public:
     TextBoxWithLabel(const String& labelText)
     {
-        label.setText(labelText, juce::dontSendNotification);
+        label.setText(labelText, dontSendNotification);
 
         textBox.setMultiLine(true, true);
         textBox.setReadOnly(false);

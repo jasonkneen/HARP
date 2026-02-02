@@ -25,7 +25,6 @@ void AudioSettingsTab::resized()
 void AudioSettingsTab::handleOpenAudioSettings()
 {
     // Open JUCE's built-in audio device selector (placeholder)
-    AlertWindow::showMessageBoxAsync(AlertWindow::InfoIcon,
-                                           "Audio Settings",
-                                           "Audio settings configuration will go here.");
+    AlertWindow::showMessageBoxAsync(
+        AlertWindow::InfoIcon, "Audio Settings", "Audio settings configuration will go here.");
 }

@@ -113,6 +113,7 @@ void ProviderPage::resetState()
 
         if (result.failed())
         {
+            // TODO - could be due to connection failure or invalid response as well
             statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
         }
         else
@@ -141,6 +142,7 @@ void ProviderPage::updateTokenCallback()
 
         if (result.failed())
         {
+            // TODO - could be due to connection failure or invalid response as well
             statusLabel.setText(std::move(tokenInvalidMessage), dontSendNotification);
         }
         else

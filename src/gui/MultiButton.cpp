@@ -1,7 +1,5 @@
 #include "MultiButton.h"
 
-#include "../utils/Logging.h"
-
 MultiButton::MultiButton(const String& buttonName) : TextButton(buttonName)
 {
     // Set default properties
