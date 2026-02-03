@@ -1,6 +1,6 @@
 /**
  * @file SliderWithLabel.h
- * @brief Custom Slider component with label.
+ * @brief Custom slider component with label.
  * @author xribene
  */
 

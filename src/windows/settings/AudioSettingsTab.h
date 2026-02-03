@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file AudioSettingsTab.h
+ * @brief Placeholder tab for audio settings.
+ * @author lindseydeng
  */
 
 #pragma once

@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file MainComponent.h
+ * @brief Top-level component containing all HARP GUI elements and state.
+ * @author hugofloresgarcia, xribene, cwitkowitz
  */
 
 #pragma once

@@ -56,8 +56,6 @@ public:
             // Change text color to hover color
             setColour(Label::textColourId, hoverColor);
 
-            //repaint();
-
             if (onHover && hoverable)
             {
                 // Call hover callback if set
@@ -78,8 +76,6 @@ public:
             // Call exit callback if set
             onExit();
         }
-
-        //repaint();
 
         Label::mouseExit(event);
     }

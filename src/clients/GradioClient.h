@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file GradioClient.h
+ * @brief Client specifics for Gradio and Hugging Face (simple JSON requests).
+ * @author xribene, huiranyu, cwitkowitz
  */
 
 #pragma once

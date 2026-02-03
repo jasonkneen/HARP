@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file WelcomeWindow.h
+ * @brief Window containing instructions and walkthrough.
+ * @author saumya-pailwan
  */
 
 #pragma once

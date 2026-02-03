@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file MediaDisplayComponent.h
+ * @brief Parent class for shared functionality of media displays.
+ * @author cwitkowitz, xribene, nathanpruyne
  */
 
 #pragma once

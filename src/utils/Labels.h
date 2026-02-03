@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Labels.h
+ * @brief Defines data structures for various types of labels.
+ * @author xribene
  */
 
 #pragma once

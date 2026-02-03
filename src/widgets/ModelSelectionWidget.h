@@ -1,7 +1,7 @@
 /**
  * @file ModelSelectionWidget.h
- * @brief TODO
- * @author cwitkowitz
+ * @brief Component allowing for selection and loading of model.
+ * @author hugofloresgarcia, rc2000123, xribene, lindseydeng, cwitkowitz
  */
 
 #pragma once
@@ -196,8 +196,6 @@ public:
     }
 
     ~ModelSelectionWidget() { sharedChoices->removeChangeListener(this); }
-
-    //void paint(Graphics& g) {}
 
     void resized() override
     {

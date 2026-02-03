@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Enums.h
+ * @brief Simple helper functions for enums.
+ * @author huiranyu
  */
 
 #pragma once

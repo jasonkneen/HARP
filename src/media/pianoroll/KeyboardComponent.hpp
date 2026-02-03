@@ -1,7 +1,7 @@
 /**
- * @file TODO.hpp
- * @brief TODO
- * @author TODO
+ * @file KeyboardComponent.hpp
+ * @brief Reusable component with rows of piano keys.
+ * @author xribene, cwitkowitz
  */
 
 #pragma once

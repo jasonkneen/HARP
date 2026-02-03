@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Clients.h
+ * @brief Helper functions for creating an appropriate client.
+ * @author cwitkowitz
  */
 
 #pragma once

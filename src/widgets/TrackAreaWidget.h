@@ -1,6 +1,6 @@
 /**
  * @file TrackAreaWidget.h
- * @brief The component that displays a group of tracks in the GUI.
+ * @brief Component that displays a group of tracks in the GUI.
  * @author xribene, cwitkowitz
  */
 

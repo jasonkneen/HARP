@@ -1,6 +1,6 @@
 /**
  * @file MediaClipboardWidget.h
- * @brief The component that manages loaded media files HARP.
+ * @brief Component that manages cached (non-model-specific) media files HARP.
  * @author cwitkowitz
  */
 

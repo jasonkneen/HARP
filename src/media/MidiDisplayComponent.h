@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file MidiDisplayComponent.h
+ * @brief Display specifics for MIDI (pianoroll).
+ * @author xribene, cwitkowitz
  */
 
 #pragma once

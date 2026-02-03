@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file AudioDisplayComponent.h
+ * @brief Display specifics for audio (waveform).
+ * @author cwitkowitz, xribene
  */
 
 #pragma once

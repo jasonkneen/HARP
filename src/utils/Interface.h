@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Interface.h
+ * @brief Simple helper functions for interface.
+ * @author hugofloresgarcia
  */
 
 #pragma once

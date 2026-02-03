@@ -1,7 +1,7 @@
 /**
- * @file TODO.hpp
- * @brief TODO
- * @author TODO
+ * @file NoteGridComponent.hpp
+ * @brief Component with rows of piano keys and MIDI notes.
+ * @author xribene, cwitkowitz
  */
 
 #pragma once

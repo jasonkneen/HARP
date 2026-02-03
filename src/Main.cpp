@@ -1,3 +1,9 @@
+/**
+ * @file Main.cpp
+ * @brief Initial JUCE launch code and window management.
+ * @author hugofloresgarcia, xribene, cwitkowitz
+ */
+
 #include "MainComponent.h"
 
 #include "windows/WelcomeWindow.h"

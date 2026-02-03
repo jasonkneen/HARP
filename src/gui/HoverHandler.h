@@ -1,6 +1,6 @@
 /**
  * @file HoverHandler.h
- * @brief TODO
+ * @brief Attach custom event handling functionality to an arbitrary component.
  * @author xribene
  */
 

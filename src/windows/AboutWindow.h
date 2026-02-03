@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file AboutWindow.h
+ * @brief Window containing basic information and links.
+ * @author hugofloresgarcia
  */
 
 #pragma once

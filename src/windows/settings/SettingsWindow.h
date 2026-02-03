@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file SettingsWindow.h
+ * @brief Window containing tabbed settings for HARP.
+ * @author lindseydeng
  */
 
 #pragma once

@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file StabilityClient.h
+ * @brief Client specifics for Stability AI (multipart requests).
+ * @author xribene, huiranyu, lindseydeng, cwitkowitz
  */
 
 #pragma once

@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file OutputLabelComponent.h
+ * @brief Label components for media display.
+ * @author cwitkowitz, nathanpruyne, xribene
  */
 
 #pragma once

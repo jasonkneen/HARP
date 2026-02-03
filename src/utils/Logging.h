@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Logging.h
+ * @brief Handles logging to terminal and file.
+ * @author xribene
  */
 
 #pragma once

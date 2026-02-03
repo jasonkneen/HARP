@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file LoginTab.h
+ * @brief Tab with login for each API provider.
+ * @author huiranyu, cwitkowitz
  */
 
 #pragma once

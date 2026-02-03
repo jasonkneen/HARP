@@ -1,7 +1,7 @@
 /**
  * @file ModelInfoWidget.h
- * @brief TODO
- * @author xribene, cwitkowitz
+ * @brief Component presenting model metadata and information.
+ * @author hugofloresgarcia, xribene, cwitkowitz
  */
 
 #pragma once

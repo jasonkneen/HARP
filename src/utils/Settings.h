@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Settings.h
+ * @brief Handles storage and reading of persistent settings.
+ * @author xribene, lindseydeng, cwitkowitz
  */
 
 #pragma once

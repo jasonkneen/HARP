@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Model.h
+ * @brief Model state and interface for loading and processing.
+ * @author hugofloresgarcia, aldo-aguilar, xribene, cwitkowitz
  */
 
 #pragma once

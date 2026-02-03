@@ -233,7 +233,7 @@ void MainComponent::openAboutWindow()
     options.launchAsync();
 }
 
-// void MainComponent::openWelcomeWindow() {}
+// void MainComponent::openWelcomeWindow() { TODO }
 
 /* --Miscellaneous-- */
 

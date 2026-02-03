@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file Client.h
+ * @brief Helper functions, shared functionality, and parent class for interacting with APIs.
+ * @author xribene, huiranyu, cwitkowitz
  */
 
 #pragma once
@@ -26,7 +26,7 @@ enum class Provider
     Stability
 };
 
-struct SharedAPIKeys // : public ChangeBroadcaster
+struct SharedAPIKeys
 {
     void initializeAPIKeys()
     {
@@ -264,8 +264,6 @@ public:
 
         return OpResult::ok();
     }
-
-    //virtual OpResult downloadFile(std::unique_ptr<InputStream>& stream, File& fileToDownload) = 0;
 
     virtual var wrapPayloadElement(var payloadElement, bool isFile = false, String label = "") = 0;
 

@@ -1,7 +1,7 @@
 /**
- * @file TODO.h
- * @brief TODO
- * @author TODO
+ * @file GeneralSettingsTab.h
+ * @brief Placeholder tab for general settings.
+ * @author lindseydeng
  */
 
 #pragma once
