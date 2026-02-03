@@ -44,8 +44,8 @@ endif()
 juce_add_gui_app(${PROJECT_NAME}
     # VERSION ...                       # Set this if the app version is different to the project version
     # ICON_* arguments specify a path to an image file to use as an icon
-    ICON_BIG "${CMAKE_SOURCE_DIR}/icons/harp_logo_1.png"  # Specify a big icon for the app
-    ICON_SMALL "${CMAKE_SOURCE_DIR}/icons/harp_logo_1.png"  # Specify a small icon for the app
+    ICON_BIG "${CMAKE_SOURCE_DIR}/resources/icons/harp_logo_1.png"  # Specify a big icon for the app
+    ICON_SMALL "${CMAKE_SOURCE_DIR}/resources/icons/harp_logo_1.png"  # Specify a small icon for the app
     
     DOCUMENT_EXTENSIONS wav mp3 aiff           # Specify file extensions that should be associated with this app
     COMPANY_NAME "TEAMuP"                  # Specify the name of the app's author
