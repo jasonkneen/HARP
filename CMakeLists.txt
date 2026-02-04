@@ -115,22 +115,17 @@ target_sources(${PROJECT_NAME}
         src/utils/Errors.h
         src/utils/Enums.h
 
-        # TODO - add as a submodule
-        src/external/magic_enum.hpp #
-
-        # TODO - add as a submodule
-        src/external/fontaudio/src/FontAudio.h #
-        src/external/fontaudio/src/FontAudio.cpp #
-        src/external/fontaudio/data/FontAudioData.h #
-        src/external/fontaudio/data/FontAudioData.cpp #
-        src/external/fontaudio/data/FontAudioIcons.h #
-
-        # TODO - add as a submodule
-        src/external/fontawesome/src/FontAwesome.h #
-        src/external/fontawesome/src/FontAwesome.cpp #
-        src/external/fontawesome/data/FontAwesomeData.h #
-        src/external/fontawesome/data/FontAwesomeData.cpp #
-        src/external/fontawesome/data/FontAwesomeIcons.h #
+        src/external/magic_enum.hpp
+        src/external/fontawesome/src/FontAwesome.h
+        src/external/fontawesome/src/FontAwesome.cpp
+        src/external/fontawesome/data/FontAwesomeData.h
+        src/external/fontawesome/data/FontAwesomeData.cpp
+        src/external/fontawesome/data/FontAwesomeIcons.h
+        src/external/fontaudio/src/FontAudio.h
+        src/external/fontaudio/src/FontAudio.cpp
+        src/external/fontaudio/data/FontAudioData.h
+        src/external/fontaudio/data/FontAudioData.cpp
+        src/external/fontaudio/data/FontAudioIcons.h
 )
 
 # `target_compile_definitions` adds some preprocessor definitions to our target. In a Projucer
