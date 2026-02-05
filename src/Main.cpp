@@ -1,13 +1,18 @@
-#include "AppSettings.h"
+/**
+ * @file Main.cpp
+ * @brief Initial JUCE launch code and window management.
+ * @author hugofloresgarcia, xribene, cwitkowitz
+ */
+
 #include "MainComponent.h"
+
 #include "windows/WelcomeWindow.h"
+
+#include "utils/Settings.h"
 
 using namespace juce;
 
-// Define the static callback member from MainComponent
-std::function<void()> MainComponent::showTutorialCallback = nullptr;
-
-class GuiAppApplication : public JUCEApplication
+class GuiAppApplication : public JUCEApplication, public FocusChangeListener
 {
 public:
     GuiAppApplication()
@@ -27,8 +32,8 @@ public:
         options.commonToAllUsers = false;
         applicationProperties.setStorageParameters(options);
 
-        // Initialize AppSettings singleton with our application properties
-        AppSettings::initialize(&applicationProperties);
+        // Initialize Settings singleton with our application properties
+        Settings::initialize(&applicationProperties);
     }
 
     /*
@@ -44,16 +49,21 @@ public:
     const String getApplicationName() override { return JUCE_APPLICATION_NAME_STRING; }
     const String getApplicationVersion() override { return JUCE_APPLICATION_VERSION_STRING; }
 
-    /// Called when app is invoked
+    /**
+     * Called when the app is invoked.
+     */
     void initialise(const String& commandLine) override
     {
-        writeDebugLog("GuiAppApplication::initialise: Invoked with command line \"" + commandLine
-                      + "\".");
-        writeDebugLog("GuiAppApplication::getCommandLineParameters(): \""
-                      + getCommandLineParameters() + "\".");
+        debugAndLog("GuiAppApplication::initialise: Invoked with command line \"" + commandLine
+                    + "\".");
+        debugAndLog("GuiAppApplication::getCommandLineParameters(): \"" + getCommandLineParameters()
+                    + "\".");
 
         appJustLaunched = true;
         originalCommandLine = commandLine;
+
+        clearLastFocusedWindow();
+        Desktop::getInstance().addFocusChangeListener(this);
 
         String windowTitle = getApplicationName();
 
@@ -72,17 +82,20 @@ public:
 
         if (! forceShowWelcome)
         {
-            if (AppSettings::containsKey("showWelcomePopup"))
-                showWelcome = AppSettings::getIntValue("showWelcomePopup", 1) == 1;
+            if (Settings::containsKey("view.showWelcomePopup"))
+            {
+                showWelcome = Settings::getIntValue("view.showWelcomePopup", 1) == 1;
+            }
         }
 
         if (showWelcome)
         {
-            showWelcomeWindow();
+            if (auto* mainComp =
+                    dynamic_cast<MainComponent*>(getMainWindowPtr()->getContentComponent()))
+            {
+                mainComp->openWelcomeWindow();
+            }
         }
-
-        // Set up the static callback for MainComponent to trigger Welcome window
-        MainComponent::showTutorialCallback = [this]() { showWelcomeWindow(); };
 
         StringArray args;
 
@@ -114,7 +127,9 @@ public:
         }
     }
 
-    /// Called when app is invoked and other instances are running
+    /**
+     * Called when the app is invoked and other instances are running.
+     */
     void anotherInstanceStarted(const String& commandLine) override
     {
         StringArray args;
@@ -140,7 +155,7 @@ public:
         {
             if (! commandLine.isEmpty() && originalCommandLine.isEmpty())
             {
-                writeDebugLog(
+                debugAndLog(
                     "GuiAppApplication::anotherInstanceStarted: Handling subsequent invocation with command line \""
                     + commandLine + "\".");
 
@@ -149,14 +164,14 @@ public:
                 return;
             }
 
-            writeDebugLog(
+            debugAndLog(
                 "GuiAppApplication::anotherInstanceStarted: Ignoring spurious invocation with command line \""
                 + commandLine + "\".");
 
             return;
         }
 
-        writeDebugLog(
+        debugAndLog(
             "GuiAppApplication::anotherInstanceStarted: Another instance started with command line \""
             + commandLine + "\".");
 
@@ -173,9 +188,10 @@ public:
         }
     }
 
-    /// Application shutdown code
     void shutdown() override
     {
+        Desktop::getInstance().removeFocusChangeListener(this);
+
         // Delete our window
         mainWindow = nullptr;
     }
@@ -185,31 +201,6 @@ public:
      * the app will continue to run, or quit() can be called to close the app.
      */
     void systemRequestedQuit() override { quit(); }
-
-    /**
-     * Public method to show the Welcome/Tutorial window.
-     * Called from MainComponent when user clicks "Show Tutorial" in About.
-     */
-    void showWelcomeWindow()
-    {
-        MessageManager::callAsync(
-            [this]()
-            {
-                auto* mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
-                if (mainComp)
-                {
-                    welcomeWindow.reset(new WelcomeWindow(mainComp));
-
-                    // Handle window closing
-                    welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
-
-                    // Position relative to main window or center
-                    welcomeWindow->centreWithSize(500, 420);
-                    welcomeWindow->setVisible(true);
-                    welcomeWindow->toFront(true);
-                }
-            });
-    }
 
     /**
      * Implements desktop window that contains instance of MainComponent.
@@ -248,6 +239,12 @@ public:
             saveWindowPosition();
 
             auto* app = dynamic_cast<GuiAppApplication*>(JUCEApplication::getInstance());
+
+            if (this == app->getLastFocusedWindowPtr())
+            {
+                // Clear last focused window pointer
+                app->clearLastFocusedWindow();
+            }
 
             if (this == app->getMainWindowPtr())
             {
@@ -297,12 +294,12 @@ public:
                 String prefix = getPrefix();
 
                 // Create property names using window identifier to avoid conflicts
-                AppSettings::setValue(prefix + "x", bounds.getX());
-                AppSettings::setValue(prefix + "y", bounds.getY());
-                AppSettings::setValue(prefix + "width", bounds.getWidth());
-                AppSettings::setValue(prefix + "height", bounds.getHeight());
+                Settings::setValue(prefix + "x", bounds.getX());
+                Settings::setValue(prefix + "y", bounds.getY());
+                Settings::setValue(prefix + "width", bounds.getWidth());
+                Settings::setValue(prefix + "height", bounds.getHeight());
 
-                AppSettings::saveIfNeeded();
+                Settings::saveIfNeeded();
             }
         }
 
@@ -311,15 +308,15 @@ public:
             String prefix = getPrefix();
 
             // Check if we have saved position data
-            if (AppSettings::containsKey(prefix + "x") && AppSettings::containsKey(prefix + "y")
-                && AppSettings::containsKey(prefix + "width")
-                && AppSettings::containsKey(prefix + "height"))
+            if (Settings::containsKey(prefix + "x") && Settings::containsKey(prefix + "y")
+                && Settings::containsKey(prefix + "width")
+                && Settings::containsKey(prefix + "height"))
             {
                 // Get stored position and size
-                int x = AppSettings::getIntValue(prefix + "x");
-                int y = AppSettings::getIntValue(prefix + "y");
-                int width = AppSettings::getIntValue(prefix + "width");
-                int height = AppSettings::getIntValue(prefix + "height");
+                int x = Settings::getIntValue(prefix + "x");
+                int y = Settings::getIntValue(prefix + "y");
+                int width = Settings::getIntValue(prefix + "width");
+                int height = Settings::getIntValue(prefix + "height");
 
                 // Validate size
                 width = jmax(100, width);
@@ -355,6 +352,7 @@ public:
     };
 
     HARPWindow* getMainWindowPtr() const { return mainWindow.get(); }
+    HARPWindow* getLastFocusedWindowPtr() const { return lastFocusedWindow; }
 
     bool hasAdditionalWindows() const { return ! additionalWindows.isEmpty(); }
 
@@ -367,7 +365,7 @@ public:
             // Remove from additional windows
             additionalWindows.remove(0);
 
-            windowCounter--;
+            //windowCounter--; // TODO - leads to duplicate window numbers
         }
     }
 
@@ -380,7 +378,7 @@ public:
                 // Remove referenced window
                 additionalWindows.remove(i);
 
-                windowCounter--;
+                //windowCounter--; // TODO - leads to duplicate window numbers
 
                 break;
             }
@@ -395,7 +393,7 @@ private:
         - Windows: C:\Users\<username>\AppData\Roaming\HARP\launch.log
         - Linux: ~/.config/HARP/launch.log
     */
-    void writeDebugLog(const String& message)
+    void debugAndLog(const String& message)
     {
         // Write message to standard error stream
         DBG(message);
@@ -409,6 +407,33 @@ private:
         // Write message to file
         debugFile.appendText(message + "\n", true, true);
     }
+
+    void globalFocusChanged(Component* focusedComponent) override
+    {
+        if (focusedComponent == nullptr)
+        {
+            // Handle case where pointer was cleared prior to callback
+            return;
+        }
+
+        // Obtain reference to top-level component containing focused child
+        Component* topFocusedComponent = focusedComponent->getTopLevelComponent();
+
+        if (HARPWindow* focusedWindow = dynamic_cast<HARPWindow*>(topFocusedComponent))
+        {
+            if (lastFocusedWindow != focusedWindow)
+            {
+                // Update pointer to most recently focused HARP window
+                lastFocusedWindow = focusedWindow;
+
+                debugAndLog(
+                    "GuiAppApplication::globalFocusChanged: Last focused window updated to \""
+                    + focusedWindow->getName() + "\".");
+            }
+        }
+    }
+
+    void clearLastFocusedWindow() { lastFocusedWindow = nullptr; }
 
     void tryOpenChoiceWindow(File inputMediaFile)
     {
@@ -430,8 +455,8 @@ private:
             [this, inputMediaFile]()
             {
                 // Check if existing user choice in settings
-                bool hasPreference = AppSettings::containsKey("newInstancePreference");
-                int preferenceValue = AppSettings::getIntValue("newInstancePreference", -1);
+                bool hasPreference = Settings::containsKey("newInstancePreference");
+                int preferenceValue = Settings::getIntValue("newInstancePreference", -1);
 
                 if (hasPreference && preferenceValue >= 0 && preferenceValue <= 1)
                 {
@@ -448,7 +473,7 @@ private:
                                                     + inputMediaFile.getFileName() + "\"?")
                                        .withIconType(MessageBoxIconType::QuestionIcon)
                                        .withButton("New Window")
-                                       .withButton("Existing Window")
+                                       .withButton("Current Window")
                                        .withButton("Cancel");
 
                     /*
@@ -491,8 +516,7 @@ private:
                                     // Save preference if requested but d on't save Cancel choice
                                     if (rememberChoice && choice <= 1)
                                     {
-                                        AppSettings::setValue("newInstancePreference", choice);
-                                        AppSettings::saveIfNeeded();
+                                        Settings::setValue("newInstancePreference", choice, true);
                                     }
 
                                     handleFileOpenChoice(choice, inputMediaFile);
@@ -533,20 +557,36 @@ private:
             }
             case 1: // Current window
             {
-                if (auto* mainComp =
-                        dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
+                HARPWindow* windowForFileImport;
+
+                if (lastFocusedWindow != nullptr)
                 {
-                    // Import file into current window
+                    windowForFileImport = lastFocusedWindow;
+                }
+                else
+                {
+                    debugAndLog(
+                        "GuiAppApplication::handleFileOpenChoice: No window currently focused. Importing file to main window.");
+
+                    windowForFileImport = getMainWindowPtr();
+                }
+
+                if (auto* mainComp =
+                        dynamic_cast<MainComponent*>(windowForFileImport->getContentComponent()))
+                {
+                    // Import file into most recently focused window
                     mainComp->importNewFile(inputMediaFile, true);
                 }
+
                 break;
             }
         }
     }
 
     std::unique_ptr<HARPWindow> mainWindow;
-    std::unique_ptr<WelcomeWindow> welcomeWindow;
     Array<std::unique_ptr<HARPWindow>> additionalWindows;
+
+    HARPWindow* lastFocusedWindow;
 
     ApplicationProperties applicationProperties;
 

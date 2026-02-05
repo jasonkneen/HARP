@@ -1,10 +1,17 @@
+/**
+ * @file WelcomeWindow.h
+ * @brief Window containing instructions and walkthrough.
+ * @author saumya-pailwan
+ */
+
 #pragma once
 
-#include "../AppSettings.h"
-#include "../MainComponent.h"
-#include <JuceHeader.h>
 #include <functional>
 #include <vector>
+
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "../utils/Settings.h"
 
 using namespace juce;
 
