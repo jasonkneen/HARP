@@ -16,7 +16,6 @@
 #include "widgets/StatusAreaWidget.h"
 
 #include "windows/AboutWindow.h"
-#include "windows/WelcomeWindow.h"
 #include "windows/settings/SettingsWindow.h"
 
 #include "utils/Interface.h"
@@ -24,6 +23,9 @@
 #include "utils/Settings.h"
 
 using namespace juce;
+
+// Forward declaration (include in .cpp)
+class WelcomeWindow;
 
 class MainComponent : public Component, public MenuBarModel, public ApplicationCommandTarget
 
@@ -70,6 +72,22 @@ public:
     void setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds);
     void openWelcomeWindow();
 
+    // Accessor methods for WelcomeWindow tutorial
+    std::shared_ptr<Model> getModel();
+    ChangeBroadcaster& getLoadBroadcaster();
+
+    // Bounds accessors for tutorial steps (public for WelcomeWindow)
+    Rectangle<int> getModelSelectBounds();
+    Rectangle<int> getLoadButtonBounds();
+    Rectangle<int> getControlsBounds();
+    Rectangle<int> getInputFolderBounds();
+    Rectangle<int> getInputPlayBounds();
+    Rectangle<int> getInputTrackBounds();
+    Rectangle<int> getProcessButtonBounds();
+    Rectangle<int> getTracksBounds();
+    Rectangle<int> getInfoBarBounds();
+    Rectangle<int> getClipboardBounds();
+
     /* Component */
 
     void paint(Graphics& g) override;
@@ -95,18 +113,6 @@ private:
     //void focusCallback();
 
     /* Interface */
-
-    // Bounds accessors for tutorial steps
-    Rectangle<int> getModelSelectBounds();
-    Rectangle<int> getLoadButtonBounds();
-    Rectangle<int> getControlsBounds();
-    Rectangle<int> getInputFolderBounds();
-    Rectangle<int> getInputPlayBounds();
-    Rectangle<int> getInputTrackBounds();
-    Rectangle<int> getProcessButtonBounds();
-    Rectangle<int> getTracksBounds();
-    Rectangle<int> getInfoBarBounds();
-    Rectangle<int> getClipboardBounds();
 
     bool showStatusArea;
     bool showMediaClipboard;

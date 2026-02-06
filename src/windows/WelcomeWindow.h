@@ -15,6 +15,9 @@
 
 using namespace juce;
 
+// Forward declaration for TutorialStep
+class MainComponent;
+
 struct TutorialStep
 {
     String title;
@@ -174,9 +177,9 @@ public:
         if (mainComponent)
         {
             auto model = mainComponent->getModel();
-            if (model && model->ready())
+            if (model && model->isLoaded())
             {
-                modelName = model->card().name;
+                modelName = model->getMetadata().name;
                 modelId = modelName; // Use full name for matching
             }
         }
@@ -219,7 +222,7 @@ public:
         if (mainComponent)
         {
             auto model = mainComponent->getModel();
-            if (model && model->ready())
+            if (model && model->isLoaded())
             {
                 String stepTitle = "Configure Parameters (Optional)";
                 String baseText =
@@ -233,7 +236,7 @@ public:
                 {
                     fullText +=
                         "--------------------------------------------------\nDetailed Control Descriptions:\n\n";
-                    auto& controls = model->getControlsInfo();
+                    auto controls = model->getControls();
                     if (controls.empty())
                     {
                         fullText += "- No adjustable controls for this model.";
@@ -241,30 +244,29 @@ public:
                     else
                     {
                         int index = 1;
+                        String modelNameForCtrl = model->getMetadata().name;
 
                         // First pass: All except Model
-                        for (const auto& pair : controls)
+                        for (const auto& info : controls)
                         {
-                            if (String(pair.second->label).equalsIgnoreCase("Model"))
+                            if (String(info->label).equalsIgnoreCase("Model"))
                                 continue;
 
-                            auto info = pair.second;
                             String friendlyCtrlDesc = getFriendlyControlDescription(
-                                model->card().name, info->label, info->info);
+                                modelNameForCtrl, info->label, info->info);
 
                             fullText += String(index++) + ". " + info->label + ": "
                                         + friendlyCtrlDesc + "\n\n";
                         }
 
                         // Second pass: Only Model
-                        for (const auto& pair : controls)
+                        for (const auto& info : controls)
                         {
-                            if (! String(pair.second->label).equalsIgnoreCase("Model"))
+                            if (! String(info->label).equalsIgnoreCase("Model"))
                                 continue;
 
-                            auto info = pair.second;
                             String friendlyCtrlDesc = getFriendlyControlDescription(
-                                model->card().name, info->label, info->info);
+                                modelNameForCtrl, info->label, info->info);
 
                             fullText += String(index++) + ". " + info->label + ": "
                                         + friendlyCtrlDesc + "\n\n";
@@ -653,8 +655,8 @@ private:
     {
         if (dontShowAgainToggle.getToggleState())
         {
-            AppSettings::setValue("showWelcomePopup", 0);
-            AppSettings::saveIfNeeded();
+            Settings::setValue("showWelcomePopup", 0);
+            Settings::saveIfNeeded();
         }
 
         closeButtonPressed();

@@ -48,6 +48,51 @@ public:
 
     ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
 
+    // Accessor methods for WelcomeWindow tutorial
+    std::shared_ptr<Model> getModel() const { return model; }
+    ChangeBroadcaster& getLoadBroadcaster() { return modelSelectionWidget; }
+
+    // Bounds accessors for tutorial steps
+    Rectangle<int> getModelSelectBounds() const
+    {
+        return modelSelectionWidget.getBounds().expanded(2, 2);
+    }
+
+    Rectangle<int> getControlsBounds() const
+    {
+        if (controlAreaWidget.isVisible())
+            return controlAreaWidget.getBounds().expanded(5, 5);
+        return {};
+    }
+
+    Rectangle<int> getInputFolderBounds()
+    {
+        return inputTrackAreaWidget.getFirstTrackFolderButtonBounds();
+    }
+
+    Rectangle<int> getInputPlayBounds()
+    {
+        return inputTrackAreaWidget.getFirstTrackPlayButtonBounds();
+    }
+
+    Rectangle<int> getInputTrackBounds() const { return inputTrackAreaWidget.getBounds(); }
+
+    Rectangle<int> getProcessButtonBounds() const { return processCancelButton.getBounds(); }
+
+    Rectangle<int> getTracksBounds() const
+    {
+        auto bounds = inputTrackAreaWidget.getBounds();
+        if (outputTrackAreaWidget.isVisible())
+            bounds = bounds.getUnion(outputTrackAreaWidget.getBounds());
+
+        if (inputTracksLabel.isVisible())
+            bounds = bounds.getUnion(inputTracksLabel.getBounds());
+        if (outputTracksLabel.isVisible())
+            bounds = bounds.getUnion(outputTracksLabel.getBounds());
+
+        return bounds.expanded(5, 5);
+    }
+
     void resized() override
     {
         FlexBox tabArea;

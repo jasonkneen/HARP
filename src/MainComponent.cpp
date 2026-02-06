@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+#include "windows/WelcomeWindow.h"
 
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
@@ -300,7 +301,7 @@ void MainComponent::openWelcomeWindow()
     MessageManager::callAsync(
         [this]()
         {
-            welcomeWindow.reset(new WelcomeWindow(mainComp));
+            welcomeWindow.reset(new WelcomeWindow(this));
 
             // Handle window closing
             welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
@@ -312,72 +313,65 @@ void MainComponent::openWelcomeWindow()
         });
 }
 
-// Bounds accessors for tutorial steps
+// Accessor methods for WelcomeWindow tutorial
+std::shared_ptr<Model> MainComponent::getModel() { return mainModelTab.getModel(); }
+
+ChangeBroadcaster& MainComponent::getLoadBroadcaster() { return mainModelTab.getLoadBroadcaster(); }
+
+// Bounds accessors for tutorial steps - delegate to mainModelTab
 Rectangle<int> MainComponent::getModelSelectBounds()
 {
-    // Combine Combobox and Load Button (Row 1)
-    if (modelPathComboBox.isVisible())
-    {
-        auto bounds = modelPathComboBox.getBounds();
-        bounds = bounds.getUnion(loadModelButton.getBounds());
-        return bounds.expanded(2, 2);
-    }
-    return {};
+    auto bounds = mainModelTab.getModelSelectBounds();
+    return getLocalArea(&mainModelTab, bounds);
 }
 
 Rectangle<int> MainComponent::getLoadButtonBounds()
 {
-    if (loadModelButton.isVisible())
-        return loadModelButton.getBounds().expanded(5, 5);
-    return {};
+    // Load button is part of model selection widget
+    return getModelSelectBounds();
 }
 
 Rectangle<int> MainComponent::getControlsBounds()
 {
-    if (controlAreaWidget.isVisible())
-        return controlAreaWidget.getBounds().expanded(5, 5);
-    if (controlAreaWidget.isVisible())
-        return controlAreaWidget.getBounds().expanded(5, 5);
-    return {};
+    auto bounds = mainModelTab.getControlsBounds();
+    return getLocalArea(&mainModelTab, bounds);
 }
 
 Rectangle<int> MainComponent::getInputFolderBounds()
 {
-    auto bounds = inputTrackAreaWidget.getFirstTrackFolderButtonBounds();
-    return getLocalArea(&inputTrackAreaWidget, bounds);
+    auto bounds = mainModelTab.getInputFolderBounds();
+    return getLocalArea(&mainModelTab, bounds);
 }
 
 Rectangle<int> MainComponent::getInputPlayBounds()
 {
-    auto bounds = inputTrackAreaWidget.getFirstTrackPlayButtonBounds();
-    return getLocalArea(&inputTrackAreaWidget, bounds);
+    auto bounds = mainModelTab.getInputPlayBounds();
+    return getLocalArea(&mainModelTab, bounds);
 }
 
-Rectangle<int> MainComponent::getInputTrackBounds() { return inputTrackAreaWidget.getBounds(); }
+Rectangle<int> MainComponent::getInputTrackBounds()
+{
+    auto bounds = mainModelTab.getInputTrackBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
 
-Rectangle<int> MainComponent::getProcessButtonBounds() { return processCancelButton.getBounds(); }
+Rectangle<int> MainComponent::getProcessButtonBounds()
+{
+    auto bounds = mainModelTab.getProcessButtonBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
 
 Rectangle<int> MainComponent::getTracksBounds()
 {
-    auto bounds = inputTrackAreaWidget.getBounds();
-    if (outputTrackAreaWidget.isVisible())
-        bounds = bounds.getUnion(outputTrackAreaWidget.getBounds());
-
-    // Include labels if visible
-    if (inputTracksLabel.isVisible())
-        bounds = bounds.getUnion(inputTracksLabel.getBounds());
-    if (outputTracksLabel.isVisible())
-        bounds = bounds.getUnion(outputTracksLabel.getBounds());
-
-    return bounds.expanded(5, 5);
+    auto bounds = mainModelTab.getTracksBounds();
+    return getLocalArea(&mainModelTab, bounds);
 }
 
 Rectangle<int> MainComponent::getInfoBarBounds()
 {
-    auto bounds = instructionBox->getBounds();
-    if (statusBox->isVisible())
-        bounds = bounds.getUnion(statusBox->getBounds());
-    return bounds.expanded(5, 5);
+    if (showStatusArea && statusAreaWidget.isVisible())
+        return statusAreaWidget.getBounds().expanded(5, 5);
+    return {};
 }
 
 Rectangle<int> MainComponent::getClipboardBounds()
