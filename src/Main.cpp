@@ -230,6 +230,13 @@ public:
             setContentOwned(new MainComponent(), true);
             setResizable(true, true);
 
+            // Minimum size to ensure all controls remain visible and functional:
+            // - WelcomeWindow popup is 480x500, needs padding
+            // - Dropdown labels need adequate width
+            // - Control Area needs space for sliders/toggles/textboxes
+            // Minimum: 550x750 (larger than 480x500 popup + padding)
+            setResizeLimits(550, 750, 20000, 20000);
+
             // Try to restore saved position and size
             restoreWindowPosition();
 

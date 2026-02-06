@@ -15,6 +15,7 @@
 #include "../gui/HoverHandler.h"
 #include "../gui/SliderWithLabel.h"
 #include "../gui/TextBoxWithLabel.h"
+#include "../gui/ToggleWithLabel.h"
 
 #include "../utils/Controls.h"
 #include "../utils/Logging.h"
@@ -42,14 +43,17 @@ public:
             slidersArea.items.add(FlexItem(*slider)
                                       .withFlex(1)
                                       .withMinWidth(slider->getMinimumRequiredWidth())
+                                      .withMinHeight(minSliderHeight)
                                       .withMaxHeight(maxControlHeight)
                                       .withMargin(marginSize));
         }
 
         if (sliderComponents.size() > 0)
         {
-            controlsArea.items.add(
-                FlexItem(slidersArea).withFlex(1).withMinHeight(90).withMargin(marginSize));
+            controlsArea.items.add(FlexItem(slidersArea)
+                                       .withFlex(1)
+                                       .withMinHeight(minSliderHeight)
+                                       .withMargin(marginSize));
         }
 
         /* Toggles */
@@ -61,15 +65,18 @@ public:
         {
             togglesArea.items.add(FlexItem(*toggle)
                                       .withFlex(1)
-                                      .withMinWidth(getMinimumRequiredWidthForToggle(*toggle))
-                                      .withMaxHeight(20)
+                                      .withMinWidth(toggle->getMinimumRequiredWidth())
+                                      .withMinHeight(minToggleHeight)
+                                      .withMaxHeight(minToggleHeight)
                                       .withMargin(marginSize));
         }
 
         if (toggleComponents.size() > 0)
         {
-            controlsArea.items.add(
-                FlexItem(togglesArea).withFlex(1).withMinHeight(30).withMargin(marginSize));
+            controlsArea.items.add(FlexItem(togglesArea)
+                                       .withFlex(1)
+                                       .withMinHeight(minToggleHeight)
+                                       .withMargin(marginSize));
         }
 
         /* Dropdowns */
@@ -82,14 +89,17 @@ public:
             dropdownsArea.items.add(FlexItem(*dropdown)
                                         .withFlex(1)
                                         .withMinWidth(dropdown->getMinimumRequiredWidth())
-                                        .withMaxHeight(50)
+                                        .withMinHeight(minDropdownHeight)
+                                        .withMaxHeight(minDropdownHeight)
                                         .withMargin(marginSize));
         }
 
         if (dropdownComponents.size() > 0)
         {
-            controlsArea.items.add(
-                FlexItem(dropdownsArea).withFlex(1).withMinHeight(30).withMargin(marginSize));
+            controlsArea.items.add(FlexItem(dropdownsArea)
+                                       .withFlex(1)
+                                       .withMinHeight(minDropdownHeight)
+                                       .withMargin(marginSize));
         }
 
         /* Text Boxes */
@@ -102,6 +112,7 @@ public:
             textBoxArea.items.add(FlexItem(*textBox)
                                       .withFlex(1)
                                       .withMinWidth(textBox->getMinimumRequiredWidth())
+                                      .withMinHeight(minTextBoxHeight)
                                       .withMaxWidth(180)
                                       .withMaxHeight(maxControlHeight)
                                       .withMargin(marginSize));
@@ -109,8 +120,10 @@ public:
 
         if (textComponents.size() > 0)
         {
-            controlsArea.items.add(
-                FlexItem(textBoxArea).withFlex(1).withMinHeight(40).withMargin(marginSize));
+            controlsArea.items.add(FlexItem(textBoxArea)
+                                       .withFlex(1)
+                                       .withMinHeight(minTextBoxHeight)
+                                       .withMargin(marginSize));
         }
 
         controlsArea.performLayout(getLocalBounds());
@@ -206,30 +219,17 @@ private:
 
     // TODO - void addNumberBox() {}
 
-    int getMinimumRequiredWidthForToggle(const ToggleButton& toggle) const
-    {
-        Font font(15.0f);
-
-        const int padding = 20;
-        const int minToggleWidth = 60;
-
-        const int labelWidth = font.getStringWidth(toggle.getButtonText());
-
-        int minRequiredWidth = jmax(minToggleWidth, labelWidth + padding);
-
-        return minRequiredWidth;
-    }
-
     void addToggle(ToggleComponentInfo* info)
     {
-        std::unique_ptr<ToggleButton> toggleComponent = std::make_unique<ToggleButton>();
+        std::unique_ptr<ToggleWithLabel> toggleComponent =
+            std::make_unique<ToggleWithLabel>(info->label);
 
-        toggleComponent->setTitle(info->label);
-        toggleComponent->setButtonText(info->label);
+        auto& toggle = toggleComponent->getToggleButton();
+
         toggleComponent->setToggleState(info->value, dontSendNotification);
 
-        addHandler(toggleComponent.get(), info);
-        toggleComponent->addListener(info);
+        addHandler(&toggle, info);
+        toggle.addListener(info);
 
         addAndMakeVisible(*toggleComponent);
 
@@ -317,12 +317,19 @@ private:
         }
     }
 
-    const float marginSize = 4;
-    const float maxControlHeight = 100;
+    // Layout constants
+    static constexpr float marginSize = 4;
+    static constexpr float maxControlHeight = 100;
+
+    // Minimum heights for each control type to prevent overlapping
+    static constexpr float minSliderHeight = 90;
+    static constexpr float minToggleHeight = 40;
+    static constexpr float minDropdownHeight = 50;
+    static constexpr float minTextBoxHeight = 60;
 
     std::vector<std::unique_ptr<TextBoxWithLabel>> textComponents;
     // TODO - numberComponents
-    std::vector<std::unique_ptr<ToggleButton>> toggleComponents;
+    std::vector<std::unique_ptr<ToggleWithLabel>> toggleComponents;
     std::vector<std::unique_ptr<SliderWithLabel>> sliderComponents;
     std::vector<std::unique_ptr<ComboBoxWithLabel>> dropdownComponents;
 

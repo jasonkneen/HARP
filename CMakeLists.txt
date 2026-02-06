@@ -91,6 +91,8 @@ target_sources(${PROJECT_NAME}
         src/gui/SliderWithLabel.h
         src/gui/ComboBoxWithLabel.h
         src/gui/HoverHandler.h
+        src/gui/ControlComponent.h
+        src/gui/ToggleWithLabel.h
 
         src/media/MediaDisplayComponent.cpp
         src/media/AudioDisplayComponent.cpp

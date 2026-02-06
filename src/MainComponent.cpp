@@ -19,11 +19,6 @@ MainComponent::MainComponent()
 
     setSize(800, 2000);
 
-    if (auto* window = findParentComponentOfClass<DocumentWindow>())
-    {
-        window->setResizeLimits(900, 700, 20000, 20000);
-    }
-
     statusMessage->setMessage("Welcome to HARP!");
 }
 

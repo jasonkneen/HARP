@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "ControlComponent.h"
 
 using namespace juce;
 
-class ComboBoxWithLabel : public Component
+class ComboBoxWithLabel : public ControlComponent
 {
 public:
     ComboBoxWithLabel(const String& labelText = {})
@@ -31,22 +31,16 @@ public:
         comboBox.setBounds(comboBoxArea);
     }
 
-    int getMinimumRequiredWidth() const
+    int getMinimumRequiredWidth() const override
     {
-        Font font = label.getFont();
-
-        const int labelWidth = font.getStringWidth(label.getText());
-
-        int minRequiredWidth = jmax(minComboWidth, labelWidth + padding);
-
-        return minRequiredWidth;
+        const int labelWidth = getLabelWidth(label);
+        return jmax(minComboWidth, labelWidth + defaultPadding);
     }
 
     ComboBox& getComboBox() { return comboBox; }
 
 private:
-    const int padding = 20;
-    const int minComboWidth = 80;
+    static constexpr int minComboWidth = 80;
 
     Label label;
     ComboBox comboBox;
