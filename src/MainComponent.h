@@ -78,14 +78,13 @@ public:
 
     // Bounds accessors for tutorial steps (public for WelcomeWindow)
     Rectangle<int> getModelSelectBounds();
-    Rectangle<int> getLoadButtonBounds();
+    Rectangle<int> getInfoBarBounds();
     Rectangle<int> getControlsBounds();
+    Rectangle<int> getInputTrackBounds();
     Rectangle<int> getInputFolderBounds();
     Rectangle<int> getInputPlayBounds();
-    Rectangle<int> getInputTrackBounds();
     Rectangle<int> getProcessButtonBounds();
     Rectangle<int> getTracksBounds();
-    Rectangle<int> getInfoBarBounds();
     Rectangle<int> getClipboardBounds();
 
     /* Component */

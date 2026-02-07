@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+
 #include "windows/WelcomeWindow.h"
 
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
@@ -22,9 +23,10 @@ MainComponent::MainComponent()
 
     statusMessage->setMessage("Welcome to HARP!");
 
-    if (Settings::getIntValue("view.showWelcomePopup", 1) == 1)
+    if (Settings::getIntValue("view.showWelcomePopup", 1))
     {
-        mainModelTab.loadDefaultModel();
+        if (! mainModelTab.isModelLoaded())
+            mainModelTab.loadDefaultModel();
     }
 }
 
@@ -310,7 +312,8 @@ void MainComponent::openWelcomeWindow()
 {
     // When tutorial is manually opened from Help and no model is loaded,
     // load the default Demucs model so Quick Start text/highlights stay accurate.
-    mainModelTab.loadDefaultModel();
+    if (! mainModelTab.isModelLoaded())
+        mainModelTab.loadDefaultModel();
 
     if (welcomeWindow != nullptr)
     {
@@ -345,15 +348,22 @@ Rectangle<int> MainComponent::getModelSelectBounds()
     return getLocalArea(&mainModelTab, bounds);
 }
 
-Rectangle<int> MainComponent::getLoadButtonBounds()
+Rectangle<int> MainComponent::getInfoBarBounds()
 {
-    // Load button is part of model selection widget
-    return getModelSelectBounds();
+    if (showStatusArea && statusAreaWidget.isVisible())
+        return statusAreaWidget.getBounds().expanded(5, 5);
+    return {};
 }
 
 Rectangle<int> MainComponent::getControlsBounds()
 {
     auto bounds = mainModelTab.getControlsBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getInputTrackBounds()
+{
+    auto bounds = mainModelTab.getInputTrackBounds();
     return getLocalArea(&mainModelTab, bounds);
 }
 
@@ -369,12 +379,6 @@ Rectangle<int> MainComponent::getInputPlayBounds()
     return getLocalArea(&mainModelTab, bounds);
 }
 
-Rectangle<int> MainComponent::getInputTrackBounds()
-{
-    auto bounds = mainModelTab.getInputTrackBounds();
-    return getLocalArea(&mainModelTab, bounds);
-}
-
 Rectangle<int> MainComponent::getProcessButtonBounds()
 {
     auto bounds = mainModelTab.getProcessButtonBounds();
@@ -385,13 +389,6 @@ Rectangle<int> MainComponent::getTracksBounds()
 {
     auto bounds = mainModelTab.getTracksBounds();
     return getLocalArea(&mainModelTab, bounds);
-}
-
-Rectangle<int> MainComponent::getInfoBarBounds()
-{
-    if (showStatusArea && statusAreaWidget.isVisible())
-        return statusAreaWidget.getBounds().expanded(5, 5);
-    return {};
 }
 
 Rectangle<int> MainComponent::getClipboardBounds()

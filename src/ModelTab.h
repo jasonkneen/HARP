@@ -54,10 +54,7 @@ public:
 
     void loadDefaultModel()
     {
-        if (model->isLoaded())
-            return;
-
-        modelSelectionWidget.loadModelByPath("teamup-tech/demucs-source-separation");
+        modelSelectionWidget.loadModelBypass("teamup-tech/demucs-source-separation");
     }
 
     // Bounds accessors for tutorial steps
@@ -101,6 +98,11 @@ public:
             bounds = bounds.getUnion(outputTracksLabel.getBounds());
 
         return bounds.expanded(5, 5);
+    }
+
+    bool isModelLoaded()
+    {
+        return model->isLoaded();
     }
 
     void resized() override

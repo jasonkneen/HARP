@@ -210,19 +210,10 @@ public:
 
     String getCurrentlySelectedPath() { return selectedPath; }
 
-    bool loadModelByPath(const String& modelPath)
+    void loadModelBypass(const String& modelPath)
     {
-        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
-        {
-            if (modelPathComboBox.getItemText(i) == modelPath)
-            {
-                modelPathComboBox.setSelectedId(i + 1);
-                loadModelButton.triggerClick();
-                return true;
-            }
-        }
-
-        return false;
+        selectedPath = modelPath;
+        sendChangeMessage();
     }
 
     void resetState()
@@ -498,8 +489,7 @@ private:
             DBG_AND_LOG("ModelSelectionWidget::openCustomPathPopup::loadCallback: "
                         << "Custom path \"" << path << "\" entered.");
 
-            selectedPath = path;
-            sendChangeMessage();
+            loadModelBypass(path);
         };
 
         std::function<void()> cancelCallback = [this]()

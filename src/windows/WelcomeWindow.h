@@ -11,6 +11,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "../utils/Logging.h"
 #include "../utils/Settings.h"
 
 using namespace juce;
@@ -78,7 +79,7 @@ public:
         // endpointLabel removed
 
         addAndMakeVisible(&copyrightLabel);
-        copyrightLabel.setText("Copyright 2025 TEAMuP. All rights reserved.", dontSendNotification);
+        copyrightLabel.setText("Copyright 2026 TEAMuP. All rights reserved.", dontSendNotification);
         copyrightLabel.setJustificationType(Justification::centred);
         copyrightLabel.setFont(Font(12.0f));
         copyrightLabel.setColour(Label::textColourId, Colours::grey);
@@ -87,7 +88,7 @@ public:
         nextButton.setButtonText("Next");
         nextButton.onClick = [this]
         {
-            DBG("Next Button Clicked");
+            DBG_AND_LOG("WelcomeWindow::WelcomeWindow: Next button clicked.");
             nextStep();
         };
 
@@ -221,7 +222,6 @@ public:
               } });
 
         // 4. Configure Parameters (Dynamic)
-        // 4. Configure Parameters (Dynamic)
         if (mainComponent)
         {
             auto model = mainComponent->getModel();
@@ -279,9 +279,9 @@ public:
                     }
                 }
 
-                steps.push_back({ stepTitle, fullText, [](MainComponent* c) {
-                                     return c->getControlsBounds();
-                                 } });
+                steps.push_back({ stepTitle,
+                                  fullText,
+                                  [](MainComponent* c) { return c->getControlsBounds(); } });
             }
         }
 
