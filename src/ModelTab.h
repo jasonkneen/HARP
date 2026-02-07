@@ -50,7 +50,15 @@ public:
 
     // Accessor methods for WelcomeWindow tutorial
     std::shared_ptr<Model> getModel() const { return model; }
-    ChangeBroadcaster& getLoadBroadcaster() { return modelSelectionWidget; }
+    ChangeBroadcaster& getLoadBroadcaster() { return modelLoadedBroadcaster; }
+
+    void loadDefaultModel()
+    {
+        if (model->isLoaded())
+            return;
+
+        modelSelectionWidget.loadModelByPath("teamup-tech/demucs-source-separation");
+    }
 
     // Bounds accessors for tutorial steps
     Rectangle<int> getModelSelectBounds() const
@@ -67,12 +75,14 @@ public:
 
     Rectangle<int> getInputFolderBounds()
     {
-        return inputTrackAreaWidget.getFirstTrackFolderButtonBounds();
+        auto bounds = inputTrackAreaWidget.getFirstTrackFolderButtonBounds();
+        return getLocalArea(&inputTrackAreaWidget, bounds);
     }
 
     Rectangle<int> getInputPlayBounds()
     {
-        return inputTrackAreaWidget.getFirstTrackPlayButtonBounds();
+        auto bounds = inputTrackAreaWidget.getFirstTrackPlayButtonBounds();
+        return getLocalArea(&inputTrackAreaWidget, bounds);
     }
 
     Rectangle<int> getInputTrackBounds() const { return inputTrackAreaWidget.getBounds(); }
@@ -336,6 +346,7 @@ private:
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
                             resized();
+                            modelLoadedBroadcaster.sendChangeMessage();
 
                             // Re-enable processing immediately
                             processCancelButton.setEnabled(true);
@@ -491,6 +502,7 @@ private:
 
     ThreadPool loadingThreadPool { 1 };
     ThreadPool processingThreadPool { 10 };
+    ChangeBroadcaster modelLoadedBroadcaster;
 
     std::atomic<uint64_t> currentProcessID { 0 };
 };

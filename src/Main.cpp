@@ -82,9 +82,20 @@ public:
 
         if (! forceShowWelcome)
         {
-            if (Settings::containsKey("view.showWelcomePopup"))
+            const String canonicalWelcomeKey = "view.showWelcomePopup";
+            const String legacyWelcomeKey = "showWelcomePopup";
+
+            if (! Settings::containsKey(canonicalWelcomeKey)
+                && Settings::containsKey(legacyWelcomeKey))
             {
-                showWelcome = Settings::getIntValue("view.showWelcomePopup", 1) == 1;
+                // One-time migration from legacy key path.
+                int legacyValue = Settings::getIntValue(legacyWelcomeKey, 1);
+                Settings::setValue(canonicalWelcomeKey, legacyValue, true);
+            }
+
+            if (Settings::containsKey(canonicalWelcomeKey))
+            {
+                showWelcome = Settings::getIntValue(canonicalWelcomeKey, 1) == 1;
             }
         }
 

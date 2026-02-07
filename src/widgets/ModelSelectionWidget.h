@@ -210,6 +210,21 @@ public:
 
     String getCurrentlySelectedPath() { return selectedPath; }
 
+    bool loadModelByPath(const String& modelPath)
+    {
+        for (int i = 0; i < modelPathComboBox.getNumItems(); ++i)
+        {
+            if (modelPathComboBox.getItemText(i) == modelPath)
+            {
+                modelPathComboBox.setSelectedId(i + 1);
+                loadModelButton.triggerClick();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void resetState()
     {
         lastLoadedPathIndex = -1;

@@ -146,9 +146,12 @@ public:
             {
                 currentStep = 2;
             }
-            updateStep();
         }
+
+        updateStep();
     }
+
+    void refreshHighlightForCurrentStep() { updateStep(); }
 
     void rebuildSteps()
     {
@@ -655,8 +658,7 @@ private:
     {
         if (dontShowAgainToggle.getToggleState())
         {
-            Settings::setValue("showWelcomePopup", 0);
-            Settings::saveIfNeeded();
+            Settings::setValue("view.showWelcomePopup", 0, true);
         }
 
         closeButtonPressed();

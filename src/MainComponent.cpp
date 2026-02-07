@@ -21,6 +21,11 @@ MainComponent::MainComponent()
     setSize(800, 2000);
 
     statusMessage->setMessage("Welcome to HARP!");
+
+    if (Settings::getIntValue("view.showWelcomePopup", 1) == 1)
+    {
+        mainModelTab.loadDefaultModel();
+    }
 }
 
 MainComponent::~MainComponent() { deinitializeMenuBar(); }
@@ -112,6 +117,11 @@ void MainComponent::resized()
     }
 
     fullWindow.performLayout(fullArea);
+
+    if (welcomeWindow != nullptr)
+    {
+        welcomeWindow->refreshHighlightForCurrentStep();
+    }
 }
 
 /* --File-- */
@@ -298,6 +308,16 @@ void MainComponent::setTutorialExtraHighlights(std::vector<Rectangle<int>> bound
 
 void MainComponent::openWelcomeWindow()
 {
+    // When tutorial is manually opened from Help and no model is loaded,
+    // load the default Demucs model so Quick Start text/highlights stay accurate.
+    mainModelTab.loadDefaultModel();
+
+    if (welcomeWindow != nullptr)
+    {
+        welcomeWindow->toFront(true);
+        return;
+    }
+
     MessageManager::callAsync(
         [this]()
         {
