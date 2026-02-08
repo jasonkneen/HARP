@@ -15,28 +15,16 @@ class ToggleWithLabel : public ControlComponent
 public:
     ToggleWithLabel(const String& labelText = {})
     {
-        label.setText(labelText, dontSendNotification);
-        label.setJustificationType(Justification::centred);
-
         toggleButton.setButtonText(labelText);
-
-        addAndMakeVisible(label);
         addAndMakeVisible(toggleButton);
     }
 
-    void resized() override
-    {
-        auto toggleArea = getLocalBounds();
-        auto labelArea = toggleArea.removeFromTop(20);
-
-        label.setBounds(labelArea);
-        toggleButton.setBounds(toggleArea);
-    }
+    void resized() override { toggleButton.setBounds(getLocalBounds()); }
 
     int getMinimumRequiredWidth() const override
     {
-        const int labelWidth = getLabelWidth(label);
-        return jmax(minToggleWidth, labelWidth + defaultPadding);
+        const int textWidth = Font().getStringWidth(toggleButton.getButtonText());
+        return jmax(minToggleWidth, textWidth + defaultPadding + checkboxWidthPadding);
     }
 
     ToggleButton& getToggleButton() { return toggleButton; }
@@ -50,7 +38,7 @@ public:
 
 private:
     static constexpr int minToggleWidth = 60;
+    static constexpr int checkboxWidthPadding = 30;
 
-    Label label;
     ToggleButton toggleButton;
 };
