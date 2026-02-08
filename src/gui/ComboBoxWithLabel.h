@@ -34,14 +34,18 @@ public:
     int getMinimumRequiredWidth() const override
     {
         const int labelWidth = getLabelWidth(label);
-        return jmax(minComboWidth, labelWidth + defaultPadding);
+        const int contentWidth = minimumContentWidth + comboChromeWidth;
+        return jmax(minComboWidth, jmax(labelWidth + defaultPadding, contentWidth));
     }
 
     ComboBox& getComboBox() { return comboBox; }
+    void setMinimumContentWidth(int width) { minimumContentWidth = jmax(0, width); }
 
 private:
     static constexpr int minComboWidth = 80;
+    static constexpr int comboChromeWidth = 54;
 
     Label label;
     ComboBox comboBox;
+    int minimumContentWidth = 0;
 };

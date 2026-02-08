@@ -7,6 +7,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <cmath>
 
 #include "../widgets/StatusAreaWidget.h"
 
@@ -133,6 +134,17 @@ public:
         description.setBounds(bounds);
     }
 
+    int getPreferredHeightForWidth(int width) const
+    {
+        const int contentWidth = jmax(120, width - 2 * (int) marginSize);
+        const int lineCount = estimateWrappedLineCount(description.getText(), contentWidth);
+        const int visibleLines = jlimit(1, 4, lineCount);
+        const int lineHeight = (int) std::ceil(description.getFont().getHeight() + 2.0f);
+        const int descriptionHeight = visibleLines * lineHeight + 4;
+
+        return (int) (2 * marginSize + headerHeight + descriptionHeight);
+    }
+
     void resetState()
     {
         ModelMetadata emptyMetadata;
@@ -176,6 +188,58 @@ public:
     void addOpenablePath(const String& openablePath) { modelAuthorLabel.setURL(URL(openablePath)); }
 
 private:
+    int estimateWrappedLineCount(const String& text, int availableWidth) const
+    {
+        if (availableWidth <= 0)
+            return 1;
+
+        auto font = description.getFont();
+        const float spaceWidth = jmax(1.0f, font.getStringWidthFloat(" "));
+        int lines = 0;
+
+        StringArray paragraphs;
+        paragraphs.addLines(text.isEmpty() ? String(" ") : text);
+
+        for (const auto& paragraph : paragraphs)
+        {
+            StringArray words;
+            words.addTokens(paragraph, " ", "");
+            words.removeEmptyStrings();
+
+            if (words.isEmpty())
+            {
+                ++lines;
+                continue;
+            }
+
+            float currentLineWidth = 0.0f;
+            for (const auto& word : words)
+            {
+                const float wordWidth = font.getStringWidthFloat(word);
+
+                if (currentLineWidth <= 0.0f)
+                {
+                    currentLineWidth = wordWidth;
+                    continue;
+                }
+
+                if (currentLineWidth + spaceWidth + wordWidth <= (float) availableWidth)
+                {
+                    currentLineWidth += spaceWidth + wordWidth;
+                }
+                else
+                {
+                    ++lines;
+                    currentLineWidth = wordWidth;
+                }
+            }
+
+            ++lines;
+        }
+
+        return jmax(1, lines);
+    }
+
     const float headerHeight = 30;
     const float marginSize = 2;
 
