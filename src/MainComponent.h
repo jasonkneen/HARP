@@ -70,7 +70,9 @@ public:
     void setTutorialActive(bool active);
     void setTutorialHighlight(Rectangle<int> bounds);
     void setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds);
-    void openWelcomeWindow();
+    void ensureTutorialModelLoaded();
+    void resetTutorialAutoLoadedModel();
+    void openWelcomeWindow(bool ensureDefaultModelLoaded = false);
 
     // Accessor methods for WelcomeWindow tutorial
     std::shared_ptr<Model> getModel();
@@ -86,6 +88,14 @@ public:
     Rectangle<int> getProcessButtonBounds();
     Rectangle<int> getTracksBounds();
     Rectangle<int> getClipboardBounds();
+    Rectangle<int> getClipboardTrackAreaBounds();
+    Rectangle<int> getClipboardControlsBounds();
+    Rectangle<int> getClipboardNameBoxBounds();
+    Rectangle<int> getClipboardButtonsBounds();
+    Rectangle<int> getClipboardAddButtonBounds();
+    Rectangle<int> getClipboardRemoveButtonBounds();
+    Rectangle<int> getClipboardPlayButtonBounds();
+    Rectangle<int> getClipboardSendToDAWButtonBounds();
 
     /* Component */
 

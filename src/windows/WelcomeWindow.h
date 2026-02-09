@@ -11,7 +11,6 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../utils/Logging.h"
 #include "../utils/Settings.h"
 
 using namespace juce;
@@ -41,6 +40,7 @@ public:
         setResizable(true, true);
         setSize(500, 420);
         setAlwaysOnTop(true);
+        setContentOwned(new Component(), true);
 
         if (mainComponent)
         {
@@ -52,11 +52,11 @@ public:
         rebuildSteps();
 
         // UI Init
-        addAndMakeVisible(&titleLabel);
+        addToContent(titleLabel);
         titleLabel.setFont(Font(24.0f, Font::bold));
         titleLabel.setJustificationType(Justification::centred);
 
-        addAndMakeVisible(&descriptionEditor);
+        addToContent(descriptionEditor);
         descriptionEditor.setMultiLine(true);
         descriptionEditor.setReadOnly(true);
         descriptionEditor.setScrollbarsShown(true);
@@ -66,10 +66,9 @@ public:
         descriptionEditor.setColour(TextEditor::outlineColourId, Colours::transparentBlack);
         descriptionEditor.setFont(Font(16.0f));
 
-        addAndMakeVisible(&learnMoreLink);
+        addToContent(learnMoreLink);
         learnMoreLink.setButtonText("Learn more");
         learnMoreLink.setURL(URL("https://harp-plugin.netlify.app/content/intro.html"));
-        learnMoreLink.setColour(HyperlinkButton::textColourId, Colours::skyblue);
 
         // pyHarpLink init removed
 
@@ -78,38 +77,34 @@ public:
 
         // endpointLabel removed
 
-        addAndMakeVisible(&copyrightLabel);
+        addToContent(copyrightLabel);
         copyrightLabel.setText("Copyright 2026 TEAMuP. All rights reserved.", dontSendNotification);
         copyrightLabel.setJustificationType(Justification::centred);
         copyrightLabel.setFont(Font(12.0f));
         copyrightLabel.setColour(Label::textColourId, Colours::grey);
 
-        addAndMakeVisible(&nextButton);
+        addToContent(nextButton);
         nextButton.setButtonText("Next");
-        nextButton.onClick = [this]
-        {
-            DBG_AND_LOG("WelcomeWindow::WelcomeWindow: Next button clicked.");
-            nextStep();
-        };
+        nextButton.onClick = [this] { nextStep(); };
 
-        addAndMakeVisible(&prevButton);
+        addToContent(prevButton);
         prevButton.setButtonText("Back");
         prevButton.onClick = [this] { prevStep(); };
 
-        addAndMakeVisible(&skipButton);
+        addToContent(skipButton);
         skipButton.setButtonText("Skip Tutorial");
         skipButton.onClick = [this] { skipTutorial(); };
 
-        addAndMakeVisible(&dontShowAgainToggle);
-        dontShowAgainToggle.setButtonText("Don't show this again");
+        addToContent(dontShowAgainToggle);
+        dontShowAgainToggle.setButtonText("Dont show again");
         dontShowAgainToggle.setToggleState(false, dontSendNotification);
 
-        addAndMakeVisible(&pageIndicator);
-        pageIndicator.setJustificationType(Justification::centred);
+        addToContent(pageIndicator);
+        pageIndicator.setJustificationType(Justification::centredLeft);
         pageIndicator.setFont(Font(12.0f));
         pageIndicator.setInterceptsMouseClicks(false, false);
 
-        addAndMakeVisible(&showDetailsButton);
+        addToContent(showDetailsButton);
         showDetailsButton.setButtonText("Show detailed control descriptions");
         showDetailsButton.onClick = [this]
         {
@@ -137,6 +132,26 @@ public:
     void changeListenerCallback(ChangeBroadcaster*) override
     {
         // Model loaded/changed
+        if (pendingTutorialFallbackLoad)
+        {
+            if (mainComponent != nullptr)
+            {
+                auto model = mainComponent->getModel();
+                auto loadedPath = model ? model->getLoadedPath() : String();
+
+                autoLoadedByTutorialFallback =
+                    (loadedPath == "teamup-tech/demucs-source-separation");
+            }
+            pendingTutorialFallbackLoad = false;
+        }
+        else if (autoLoadedByTutorialFallback && mainComponent != nullptr)
+        {
+            auto model = mainComponent->getModel();
+            auto loadedPath = model ? model->getLoadedPath() : String();
+            if (loadedPath != "teamup-tech/demucs-source-separation")
+                autoLoadedByTutorialFallback = false;
+        }
+
         rebuildSteps();
 
         if (currentStep > 0)
@@ -171,12 +186,10 @@ public:
             { "Select a Model",
               "Select a model from the dropdown menu at the top and click Load.\n\n"
               "Once loaded, the model's details and controls will appear below.\n\n"
-              "If you don't select another model, HARP uses the Demucs Stem Separator by default.",
+              "If you click Next without loading a model, HARP loads Demucs for guidance.",
               [](MainComponent* c) { return c->getModelSelectBounds(); } });
 
-        // 3. Model Overview (Dynamic)
-        String modelName = "Demucs Source Separation"; // Default
-        String modelId = "demucs";
+        String modelName = "current model";
 
         if (mainComponent)
         {
@@ -184,7 +197,6 @@ public:
             if (model && model->isLoaded())
             {
                 modelName = model->getMetadata().name;
-                modelId = modelName; // Use full name for matching
             }
         }
 
@@ -227,7 +239,7 @@ public:
             auto model = mainComponent->getModel();
             if (model && model->isLoaded())
             {
-                String stepTitle = "Configure Parameters (Optional)";
+                String controlsStepTitle = "Configure Parameters (Optional)";
                 String baseText =
                     "Some models will have controls to customize model behavior. Typical controls include ones that balance quality vs speed, allow selection of model variants, or provide advanced options for experienced users.\n\n"
                     "To see descriptions of what controls do for a model Click on the button below. Do this now to see the control descriptions for "
@@ -279,7 +291,7 @@ public:
                     }
                 }
 
-                steps.push_back({ stepTitle,
+                steps.push_back({ controlsStepTitle,
                                   fullText,
                                   [](MainComponent* c) { return c->getControlsBounds(); } });
             }
@@ -290,7 +302,7 @@ public:
             { "Manage Tracks",
               "The highlighted panel contains your input and output tracks.\n\n"
               "You can drag and drop audio/MIDI files here, or click on the folder icon in the input audio section to choose from a local folder.\n\n"
-              "Processed results will appear in the output tracks section, which you can play here or save directly.\n\n"
+              "Processed results appear in the output tracks section.\n\n"
               "Please note that these tracks interact with the model.",
               [](MainComponent* c) { return c->getTracksBounds(); },
               nullptr });
@@ -306,11 +318,16 @@ public:
 
         steps.push_back(
             { "Media Clipboard",
-              "This clipboard is a scratch space. Tracks here do not interact with the models directly.\n\n"
-              "However, you can stash model outputs here to reuse them later.\n\n"
-              "To stash the input or output track in the clipboard, drag the track here to re-use it later.",
+              "This clipboard is a scratch space and does not feed model inputs directly.\n\n"
+              "You can add tracks with the folder icon in the clipboard toolbar, rename a selected track in the text box above the list, remove, play, or save a selected entry, and send selected tracks to your DAW with the send icon.\n\n"
+              "Use it to stash useful outputs and reuse them across model runs.",
               [](MainComponent* c) { return c->getClipboardBounds(); },
-              nullptr });
+              [](MainComponent* c)
+              {
+                  std::vector<Rectangle<int>> v;
+                  v.push_back(c->getClipboardControlsBounds());
+                  return v;
+              } });
 
         // 8. Interface Summary
         steps.push_back(
@@ -318,7 +335,7 @@ public:
               "Top Bar: Select a model from the dropdown and click Load to initialize it.\n\n"
               "Left Panel: This is where your Input and Output tracks live. Models read from and write to these tracks.\n\n"
               "Right Panel: A scratch pad (Clipboard) to stash tracks you want to save or reuse later.",
-              [](MainComponent* c) { return Rectangle<int>(); },
+              [](MainComponent*) { return Rectangle<int>(); },
               [](MainComponent* c)
               {
                   std::vector<Rectangle<int>> v;
@@ -522,53 +539,97 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced(20);
+        DocumentWindow::resized();
+        ensureContentChildrenAttached();
 
-        // Header
-        titleLabel.setBounds(area.removeFromTop(40));
-        area.removeFromTop(10);
-
-        // Footer Buttons
-        auto footer = area.removeFromBottom(30);
-        auto buttonWidth = 100;
-        skipButton.setBounds(footer.removeFromLeft(buttonWidth));
-        nextButton.setBounds(footer.removeFromRight(buttonWidth));
-        footer.removeFromRight(10);
-        prevButton.setBounds(footer.removeFromRight(buttonWidth));
-        pageIndicator.setBounds(footer);
-
-        area.removeFromBottom(10); // Spacer
-
-        if (currentStep == 0)
+        if (auto* content = resolveContentRoot())
         {
-            copyrightLabel.setBounds(area.removeFromBottom(20));
-            descriptionEditor.setBounds(area.removeFromTop(200));
-            auto linkArea = area.removeFromTop(30);
-            learnMoreLink.setBounds(linkArea.reduced(linkArea.getWidth() / 2 - 50, 0));
-        }
-        else
-        {
-            if (currentStep == (int) steps.size() - 1)
-            {
-                auto checkArea = area.removeFromBottom(30);
-                dontShowAgainToggle.setBounds(checkArea.removeFromRight(200));
-            }
+            auto area = content->getLocalBounds().reduced(20);
 
-            // Fix for UI overlap: Reserve space for the "show details" button at the bottom FIRST
-            if (showDetailsButton.isVisible())
-            {
-                auto btnArea = area.removeFromBottom(30);
-                showDetailsButton.setBounds(btnArea.reduced(20, 0));
-                // Add some spacing between button and description
-                area.removeFromBottom(10);
-            }
+            titleLabel.setBounds(area.removeFromTop(40));
+            area.removeFromTop(10);
 
-            // Finally, the description editor takes the remaining space
-            descriptionEditor.setBounds(area);
+            auto footerArea = area.removeFromBottom(72);
+            auto footer = footerArea.removeFromTop(30);
+            auto toggleRow = footerArea.removeFromBottom(30);
+            constexpr int buttonWidth = 100;
+            skipButton.setBounds(footer.removeFromLeft(buttonWidth));
+            nextButton.setBounds(footer.removeFromRight(buttonWidth));
+            footer.removeFromRight(10);
+            prevButton.setBounds(footer.removeFromRight(buttonWidth));
+            const int middleRightX = prevButton.isVisible() ? (prevButton.getX() - 10) : nextButton.getX();
+            const int middleX = skipButton.getRight() + 12;
+            const int middleW = jmax(0, middleRightX - middleX);
+            copyrightLabel.setBounds(middleX, footer.getY(), middleW, footer.getHeight());
+
+            constexpr int toggleWidth = 170;
+            constexpr int toggleHeight = 26;
+            const int toggleY = toggleRow.getY() + 12;
+            const int toggleX = nextButton.getRight() - toggleWidth;
+            dontShowAgainToggle.setBounds(toggleX, toggleY, toggleWidth, toggleHeight);
+            pageIndicator.setBounds(skipButton.getX(), toggleY, skipButton.getWidth(), 26);
+
+            area.removeFromBottom(8);
+
+            if (currentStep == 0)
+            {
+                auto learnMoreArea = area.removeFromBottom(36);
+                learnMoreLink.setBounds(learnMoreArea.withSizeKeepingCentre(180, 30));
+                area.removeFromBottom(4);
+                descriptionEditor.setBounds(area);
+            }
+            else
+            {
+                if (showDetailsButton.isVisible())
+                {
+                    auto btnArea = area.removeFromBottom(30);
+                    showDetailsButton.setBounds(btnArea.reduced(20, 0));
+                    area.removeFromBottom(8);
+                }
+
+                descriptionEditor.setBounds(area);
+                learnMoreLink.setVisible(false);
+            }
         }
     }
 
 private:
+    void ensureContentChildrenAttached()
+    {
+        if (auto* content = resolveContentRoot())
+        {
+            auto attach = [content](Component& component)
+            {
+                if (component.getParentComponent() != content)
+                    content->addAndMakeVisible(component);
+            };
+
+            attach(titleLabel);
+            attach(descriptionEditor);
+            attach(learnMoreLink);
+            attach(copyrightLabel);
+            attach(nextButton);
+            attach(prevButton);
+            attach(skipButton);
+            attach(dontShowAgainToggle);
+            attach(pageIndicator);
+            attach(showDetailsButton);
+        }
+    }
+
+    void addToContent(Component& component)
+    {
+        if (auto* content = resolveContentRoot())
+            content->addAndMakeVisible(component);
+    }
+
+    Component* resolveContentRoot()
+    {
+        if (contentRoot == nullptr)
+            contentRoot = getContentComponent();
+        return contentRoot;
+    }
+
     void updateStep()
     {
         if (steps.empty())
@@ -604,8 +665,8 @@ private:
         // bool isSecond = currentStep == 1; // "Select a Model"
 
         nextButton.setButtonText(isLast ? "Finish" : "Next");
-        skipButton.setVisible(! isLast);
-        dontShowAgainToggle.setVisible(isLast);
+        skipButton.setVisible(true);
+        dontShowAgainToggle.setVisible(true);
 
         // Items specific to first page
         learnMoreLink.setVisible(isFirst);
@@ -628,6 +689,17 @@ private:
 
     void nextStep()
     {
+        if (currentStep == 1 && mainComponent != nullptr)
+        {
+            auto model = mainComponent->getModel();
+            if (! model || ! model->isLoaded())
+            {
+                pendingTutorialFallbackLoad = true;
+                mainComponent->ensureTutorialModelLoaded();
+                return;
+            }
+        }
+
         if (currentStep < (int) steps.size() - 1)
         {
             currentStep++;
@@ -650,8 +722,7 @@ private:
 
     void skipTutorial()
     {
-        currentStep = (int) steps.size() - 1;
-        updateStep();
+        finishTutorial();
     }
 
     void finishTutorial()
@@ -661,12 +732,18 @@ private:
             Settings::setValue("view.showWelcomePopup", 0, true);
         }
 
+        if (autoLoadedByTutorialFallback && mainComponent != nullptr)
+            mainComponent->resetTutorialAutoLoadedModel();
+
         closeButtonPressed();
     }
 
     MainComponent* mainComponent;
+    Component* contentRoot = nullptr;
     std::vector<TutorialStep> steps;
     int currentStep = 0;
+    bool pendingTutorialFallbackLoad = false;
+    bool autoLoadedByTutorialFallback = false;
 
     Label titleLabel;
     TextEditor descriptionEditor; // Changed from Label

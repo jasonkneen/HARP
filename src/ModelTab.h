@@ -51,10 +51,17 @@ public:
     // Accessor methods for WelcomeWindow tutorial
     std::shared_ptr<Model> getModel() const { return model; }
     ChangeBroadcaster& getLoadBroadcaster() { return modelLoadedBroadcaster; }
+    String getLoadedPath() const { return model->getLoadedPath(); }
 
     void loadDefaultModel()
     {
         modelSelectionWidget.loadModelBypass("teamup-tech/demucs-source-separation");
+    }
+
+    void clearLoadedModel()
+    {
+        resetState();
+        resized();
     }
 
     // Bounds accessors for tutorial steps
@@ -192,7 +199,7 @@ public:
 
     void resetState()
     {
-        model.reset();
+        model = std::make_shared<Model>();
 
         modelSelectionWidget.resetState();
         modelInfoWidget.resetState();

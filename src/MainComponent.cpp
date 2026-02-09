@@ -23,11 +23,6 @@ MainComponent::MainComponent()
 
     statusMessage->setMessage("Welcome to HARP!");
 
-    if (Settings::getIntValue("view.showWelcomePopup", 1))
-    {
-        if (! mainModelTab.isModelLoaded())
-            mainModelTab.loadDefaultModel();
-    }
 }
 
 MainComponent::~MainComponent() { deinitializeMenuBar(); }
@@ -308,12 +303,30 @@ void MainComponent::setTutorialExtraHighlights(std::vector<Rectangle<int>> bound
     repaint();
 }
 
-void MainComponent::openWelcomeWindow()
+void MainComponent::ensureTutorialModelLoaded()
 {
-    // When tutorial is manually opened from Help and no model is loaded,
-    // load the default Demucs model so Quick Start text/highlights stay accurate.
     if (! mainModelTab.isModelLoaded())
         mainModelTab.loadDefaultModel();
+}
+
+void MainComponent::resetTutorialAutoLoadedModel()
+{
+    constexpr const char* tutorialFallbackModelPath = "teamup-tech/demucs-source-separation";
+
+    if (! mainModelTab.isModelLoaded())
+        return;
+
+    if (mainModelTab.getLoadedPath() == tutorialFallbackModelPath)
+    {
+        mainModelTab.clearLoadedModel();
+        resized();
+    }
+}
+
+void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
+{
+    if (ensureDefaultModelLoaded)
+        ensureTutorialModelLoaded();
 
     if (welcomeWindow != nullptr)
     {
@@ -395,6 +408,86 @@ Rectangle<int> MainComponent::getClipboardBounds()
 {
     if (showMediaClipboard && mediaClipboardWidget.isVisible())
         return mediaClipboardWidget.getBounds().expanded(5, 5);
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardTrackAreaBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardTrackAreaBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardControlsBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardControlsBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardNameBoxBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardNameBoxBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardButtonsBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardButtonsBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardAddButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getAddFileButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardRemoveButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getRemoveButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardPlayButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getPlayButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardSendToDAWButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getSendToDAWButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
     return {};
 }
 
