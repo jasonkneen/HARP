@@ -17,6 +17,7 @@
 
 #include "utils/Errors.h"
 #include "utils/Logging.h"
+#include "utils/TutorialConstants.h"
 
 using namespace juce;
 
@@ -55,7 +56,7 @@ public:
 
     void loadDefaultModel()
     {
-        modelSelectionWidget.loadModelBypass("teamup-tech/demucs-source-separation");
+        modelSelectionWidget.loadModelBypass(TutorialConstants::fallbackModelPath);
     }
 
     void clearLoadedModel()

@@ -12,6 +12,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../utils/Settings.h"
+#include "../utils/TutorialConstants.h"
 
 using namespace juce;
 
@@ -140,7 +141,7 @@ public:
                 auto loadedPath = model ? model->getLoadedPath() : String();
 
                 autoLoadedByTutorialFallback =
-                    (loadedPath == "teamup-tech/demucs-source-separation");
+                    (loadedPath == TutorialConstants::fallbackModelPath);
             }
             pendingTutorialFallbackLoad = false;
         }
@@ -148,7 +149,7 @@ public:
         {
             auto model = mainComponent->getModel();
             auto loadedPath = model ? model->getLoadedPath() : String();
-            if (loadedPath != "teamup-tech/demucs-source-separation")
+            if (loadedPath != TutorialConstants::fallbackModelPath)
                 autoLoadedByTutorialFallback = false;
         }
 
@@ -552,22 +553,33 @@ public:
             auto footerArea = area.removeFromBottom(72);
             auto footer = footerArea.removeFromTop(30);
             auto toggleRow = footerArea.removeFromBottom(30);
-            constexpr int buttonWidth = 100;
+
+            const int buttonHeight = 30;
+            const int buttonPaddingX = 28;
+            const int buttonWidth = jmax(skipButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX,
+                                         nextButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX);
             skipButton.setBounds(footer.removeFromLeft(buttonWidth));
             nextButton.setBounds(footer.removeFromRight(buttonWidth));
             footer.removeFromRight(10);
             prevButton.setBounds(footer.removeFromRight(buttonWidth));
+
             const int middleRightX = prevButton.isVisible() ? (prevButton.getX() - 10) : nextButton.getX();
             const int middleX = skipButton.getRight() + 12;
             const int middleW = jmax(0, middleRightX - middleX);
             copyrightLabel.setBounds(middleX, footer.getY(), middleW, footer.getHeight());
 
-            constexpr int toggleWidth = 170;
             constexpr int toggleHeight = 26;
+            const int toggleTextWidth =
+                Font(16.0f).getStringWidth(dontShowAgainToggle.getButtonText());
+            const int toggleWidth = 24 + toggleTextWidth + 16;
             const int toggleY = toggleRow.getY() + 12;
-            const int toggleX = nextButton.getRight() - toggleWidth;
+            const int toggleX = toggleRow.getRight() - toggleWidth;
             dontShowAgainToggle.setBounds(toggleX, toggleY, toggleWidth, toggleHeight);
-            pageIndicator.setBounds(skipButton.getX(), toggleY, skipButton.getWidth(), 26);
+
+            const int stepWidth =
+                jmax(skipButton.getWidth(),
+                     pageIndicator.getFont().getStringWidth(pageIndicator.getText()) + 16);
+            pageIndicator.setBounds(toggleRow.getX(), toggleY, stepWidth, 26);
 
             area.removeFromBottom(8);
 

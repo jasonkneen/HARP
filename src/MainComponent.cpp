@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
 #include "windows/WelcomeWindow.h"
+#include "utils/TutorialConstants.h"
 
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
@@ -311,12 +312,10 @@ void MainComponent::ensureTutorialModelLoaded()
 
 void MainComponent::resetTutorialAutoLoadedModel()
 {
-    constexpr const char* tutorialFallbackModelPath = "teamup-tech/demucs-source-separation";
-
     if (! mainModelTab.isModelLoaded())
         return;
 
-    if (mainModelTab.getLoadedPath() == tutorialFallbackModelPath)
+    if (mainModelTab.getLoadedPath() == TutorialConstants::fallbackModelPath)
     {
         mainModelTab.clearLoadedModel();
         resized();
@@ -334,18 +333,23 @@ void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
         return;
     }
 
+    Component::SafePointer<MainComponent> safeThis(this);
     MessageManager::callAsync(
-        [this]()
+        [safeThis]()
         {
-            welcomeWindow.reset(new WelcomeWindow(this));
+            if (safeThis == nullptr)
+                return;
 
-            // Handle window closing
-            welcomeWindow->onClose = [this]() { welcomeWindow.reset(); };
+            safeThis->welcomeWindow.reset(new WelcomeWindow(safeThis.getComponent()));
+            safeThis->welcomeWindow->onClose = [safeThis]()
+            {
+                if (safeThis != nullptr)
+                    safeThis->welcomeWindow.reset();
+            };
 
-            // Position relative to main window or center
-            welcomeWindow->centreWithSize(500, 420);
-            welcomeWindow->setVisible(true);
-            welcomeWindow->toFront(true);
+            safeThis->welcomeWindow->centreWithSize(500, 420);
+            safeThis->welcomeWindow->setVisible(true);
+            safeThis->welcomeWindow->toFront(true);
         });
 }
 
