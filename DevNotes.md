@@ -1,53 +1,39 @@
-# Notes for HARP developers
+# Developer Notes
 
-## Code Formatting
-In file `.clang-format` you can find the code formatting rules for the project. You can use `clang-format` to format your code before committing it. We are following the guidelines used 
-by `JUCE`.
-If you are using `Visual Studio Code`, you need to have the c/c++ extensions by microsoft installed. 
-Also install the `Clang-Format` using brew in Macos 
+<!-- Coding Conventions -->
+
+## Coding Conventions
+
+### Formatting
+
+In file `.clang-format` you can find code formatting rules for the project.
+You can use `clang-format` to format your code before committing it.
+We are following the guidelines used by JUCE.
+If you are using Visual Studio Code (VS Code), you must have the C/C++ extensions from Microsoft installed.
+In MacOS, you should also install `clang-format` with `brew`:
 ```bash
-brew install clang-format  
+brew install clang-format
 ```
-Finally add the following configuration to your `.vscode/settings.json`:
+
+Finally, add the following lines to your `.vscode/settings.json` file:
 ```json
 {
-    // "clang-format.executable": "/opt/homebrew/bin/clang-format",
     "C_Cpp.clang_format_style": "file",
     "editor.formatOnSave": false,
     "editor.tabSize": 4,
 }
 ```
-In vscode, you can format a file by pressing `option+shift+f` or by right clicking on the file and selecting `Format Document`.
-Note: you can set "editor.formatOnSave": true, if you want to format the document on save. However if the file has never been formatted before, the 
-git blame will show the entire file as changed by you, and will not show the original author of the code. 
-If you want to format files that haven't been formatted before, it's better to group all the formatting changes in a single commit, and then add the hash of the commit to the `.git-blame-ignore-revs` file.
 
-## Upgrade to Juce v8
+In VS Code, you can format a file by pressing `CTRL+Shift+I` or by right-clicking within the file and selecting `Format Document`.
+You could also set `"editor.formatOnSave": true` in `.vscode/settings.json` if you want to format files upon saving them.
 
-If and when we decide to upgrade to JUCE v8, we need to be aware of the `alertCallback` lambda function in the `MainComponent.h` file.
-```cpp
-auto alertCallback = [this, msgOpts, loadingError](int result)
-{
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // NOTE (hugo): there's something weird about the button indices assigned by the msgOpts here
-    // DBG("ALERT-CALLBACK: buttonClicked alertCallback listener activated: chosen: " << chosen);
-    // auto chosen = msgOpts.getButtonText(result);
-    // they're not the same as the order of the buttons in the alert
-    // this is the order that I actually observed them to be.
-    // UPDATE/TODO (xribene): This should be fixed in Juce v8
-    // see: https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-```
+Note: if a file has never been formatted before, it may overwrite the entire `git blame` with the formatting changes.
+If you want to format files that haven't been formatted before, it's better to group all the formatting changes into a single commit and then add the hash of the commit to file `.git-blame-ignore-revs` to avoid this issue.
 
-## Buttons and MultiButtons
+### Managing Collections of Dynamically Created Objects
 
-## Icons - FontAwesome and FontAudio
-
-## FlexBox
-
-## Managing Collections  of Dynamically Created Objects
-
-When working with collections of objects created with `new`, like UI components or other heap-allocated data, avoid storing raw pointers (`T*`) directly in standard containers like `juce::Array<T*>` or `std::vector<T*>`. This requires manual `delete` calls, which is error-prone and can easily lead to memory leaks or crashes if not handled perfectly (e.g., in destructors, during removal, exception handling).
+When working with collections of objects created with `new`, such as UI components or other heap-allocated data, avoid storing raw pointers (`T*`) directly in standard containers like `juce::Array<T*>` or `std::vector<T*>`.
+This requires manual `delete` calls, and can easily lead to memory leaks or crashes if handled imperfectly (_e.g._, in destructors, during removal, with exceptions, etc.).
 
 **Problem Example (from `NoteGridComponent`):**
 
@@ -60,7 +46,6 @@ void NoteGridComponent::insertNote(MidiNoteComponent n)
     MidiNoteComponent* note = new MidiNoteComponent(n); // Manual allocation
     midiNotes.add(note); // Array doesn't own the pointer
     addAndMakeVisible(note);
-    // ...
 }
 
 void NoteGridComponent::resetNotes() // Manual deletion required
@@ -72,7 +57,6 @@ void NoteGridComponent::resetNotes() // Manual deletion required
         delete note; // *** Manual delete ***
     }
     midiNotes.clear(); // Just clears pointers, doesn't delete objects
-    // ...
 }
 
 NoteGridComponent::~NoteGridComponent() {
@@ -80,7 +64,7 @@ NoteGridComponent::~NoteGridComponent() {
 }
 ```
 
-This pattern is risky. If `resetNotes` isn't called, or if a note is removed from `midiNotes` without being `delete`d, memory leaks occur.
+This pattern is risky. If `resetNotes` isn't called, or if a note is removed from `midiNotes` without a corresponding call to `delete`, memory leaks occur.
 
 **Preferred Solutions:**
 
@@ -88,47 +72,36 @@ Choose one of the following approaches to ensure automatic memory management (RA
 
 **Option 1: Use `juce::OwnedArray<T>` (Idiomatic JUCE)**
 
-`juce::OwnedArray` is specifically designed to take ownership of raw pointers allocated with `new`. It automatically `delete`s the objects it holds when they are removed or when the `OwnedArray` itself is destroyed.
+`juce::OwnedArray` is specifically designed to take ownership of raw pointers allocated with `new`. It automatically calls `delete` on the objects it holds when they are removed or when the `OwnedArray` itself is destroyed.
 
 *   **Declaration:**
     ```cpp
-    // In NoteGridComponent.h
     juce::OwnedArray<MidiNoteComponent> midiNotes;
     ```
 *   **Adding Elements:**
     ```cpp
-    // filepath: /Users/xribene/Projects/HARP/src/pianoroll/NoteGridComponent.cpp
     void NoteGridComponent::insertNote(MidiNoteComponent n)
     {
-        MidiNoteComponent* note = new MidiNoteComponent(n); // Still use new...
-        note->setInterceptsMouseClicks(false, false);
+        MidiNoteComponent* note = new MidiNoteComponent(n); // Still use `new`
         addAndMakeVisible(note); // Add to parent component *before* transferring ownership if needed elsewhere
 
-        midiNotes.add(note); // ...but OwnedArray takes ownership here.
-                             // It will call delete later.
-
-        resized();
-        repaint();
+        midiNotes.add(note); // OwnedArray takes ownership here
     }
     ```
-*   **Cleanup:** Automatic! No manual `delete` needed.
+*   **Removing Elements:**
     ```cpp
-    // filepath: /Users/xribene/Projects/HARP/src/pianoroll/NoteGridComponent.cpp
     void NoteGridComponent::resetNotes()
     {
-        // Still need to remove components from the parent hierarchy
+        // Still need to remove components from parent hierarchy
         for (auto* note : midiNotes)
             removeChildComponent(note);
 
-        // Clearing the OwnedArray automatically deletes the objects it owns
+        // Clearing OwnedArray automatically deletes objects it owns
         midiNotes.clear();
-
-        resized();
-        repaint();
     }
 
-    // Destructor might still call resetNotes if other cleanup is needed,
-    // but the core memory management is handled by midiNotes's own destructor.
+    // Destructor may still call resetNotes if other cleanup is needed,
+    // but core memory management is handled by OwnedArray destructor.
     NoteGridComponent::~NoteGridComponent() { resetNotes(); }
     ```
 
@@ -138,50 +111,41 @@ Use standard C++ smart pointers (`std::unique_ptr`) within a standard container.
 
 *   **Declaration:**
     ```cpp
-    // In NoteGridComponent.h
     #include <memory> // Required for unique_ptr
+
     juce::Array<std::unique_ptr<MidiNoteComponent>> midiNotes;
     // Or: std::vector<std::unique_ptr<MidiNoteComponent>> midiNotes;
     ```
-*   **Adding Elements:** Use `std::make_unique`.
+*   **Adding Elements:**
     ```cpp
-    // filepath: /Users/xribene/Projects/HARP/src/pianoroll/NoteGridComponent.cpp
-    #include <memory> // Ensure included
-    // ...
+    #include <memory>
+
     void NoteGridComponent::insertNote(MidiNoteComponent n)
     {
-        auto note = std::make_unique<MidiNoteComponent>(n); // Use make_unique, NO raw new/delete
-        note->setInterceptsMouseClicks(false, false);
+        auto note = std::make_unique<MidiNoteComponent>(n); // Use `std::make_unique` (no raw `new` or `delete`)
 
         // Get raw pointer for non-owning uses like addAndMakeVisible
         MidiNoteComponent* notePtr = note.get();
         addAndMakeVisible(notePtr);
 
-        // Move ownership into the array
+        // Move ownership into array
         midiNotes.add(std::move(note));
-
-        resized();
-        repaint();
     }
     ```
 *   **Cleanup:** Automatic! `std::unique_ptr` handles deletion.
     ```cpp
-    // filepath: /Users/xribene/Projects/HARP/src/pianoroll/NoteGridComponent.cpp
     void NoteGridComponent::resetNotes()
     {
-        // Still need to remove components from the parent hierarchy
-        for (const auto& note : midiNotes) // Use .get() to access raw pointer
-            removeChildComponent(note.get());
+        // Still need to remove components from parent hierarchy
+        for (const auto& note : midiNotes)
+            removeChildComponent(note.get()); // Use .get() to access raw pointer
 
-        // Clearing the array destroys the unique_ptrs, which delete the objects
+        // Clearing array destroys all instances of unique_ptr, which deletes corresponding objects
         midiNotes.clear();
-
-        resized();
-        repaint();
     }
 
-    // Destructor might still call resetNotes if other cleanup is needed,
-    // but the core memory management is handled by unique_ptr destructors.
+    // Destructor may still call resetNotes if other cleanup is needed,
+    // but core memory management is handled by unique_ptr destructor.
     NoteGridComponent::~NoteGridComponent() { resetNotes(); }
     ```
 
@@ -190,6 +154,104 @@ Use standard C++ smart pointers (`std::unique_ptr`) within a standard container.
 *   For JUCE projects, `juce::OwnedArray` is often the simplest and most idiomatic choice for managing collections of heap-allocated JUCE objects.
 *   `juce::Array<std::unique_ptr<T>>` (or `std::vector`) is the standard C++ approach and is excellent for ensuring RAII, especially in non-JUCE specific contexts or when integrating with other modern C++ code.
 
-Please adopt one of these safer patterns to avoid manual memory management pitfalls.
+<!-- Project Conventions -->
+
+## HARP Conventions
+
+<!-- The following was generated and adapted from ChatGPT based on some loose notes. -->
+
+### Modularity
+- Prefer clear separation of concerns: independent components, widgets, and services should live in their own units.
+- Avoid unnecessary crosstalk between UI, model logic, and infrastructure layers.
+- If a change touches many unrelated areas, it’s usually a sign to introduce an abstraction (_e.g._ `SharedResourcePointer`, service objects).
+- Avoid hard-coded conditionals that branch on specific models, modes (_e.g._, Gradio vs. Stability), or UI states—favor extensibility.
+- Good design should feel “boring”: things fall neatly into place with minimal glue code.
+
+### Efficiency
+- Avoid unnecessary or repeated calls to `resized()`, `repaint()`, and layout invalidation. This can significantly slow down the application.
+- Prefer event-driven updates over polling.
+- Be mindful of blocking calls on the message thread; long-running work belongs off the UI thread.
+- Cache derived values where appropriate, but keep lifetimes explicit.
+
+### Error Handling
+- Use `OpResult` for anything with meaningful modes of failure (I/O, network, model execution, parsing, etc.).
+- Errors should be propagated, not swallowed—callers decide how to surface them.
+- `jassertfalse` is acceptable for truly unreachable states (logic errors, violated invariants).
+
+### Logging & Debugging
+- Use the `DBG_AND_LOG` macro to log to console and file simultaneously.
+- Log at system boundaries: network calls, job lifecycle changes, model execution, and cancellation.
+- Prefer structured log messages and include any contextual information (_e.g._ `"ModelTab::cancelCallback: Canceling process \"" + String(currentProcessID) + "\"."`).
+
+### Windows & Popups
+- Popups are transient and contextual (errors, selections, etc.).
+- Windows are persistent, user-managed, and represent full workflows or views.
+- Be consistent about ownership and lifetime: who creates, shows, and destroys.
+- Launch behavior (modal vs non-modal) should be predictable across the app.
+
+### Buttons & MultiButtons
+- Buttons should do one thing and emit a clear intent (no hidden side effects).
+- `MultiButton` should be used when states are mutually exclusive and obvious.
+- FontAwesome and FontAudio can be used to create buttons with icons rather than text.
+- Avoid encoding business logic inside button callbacks—delegate to controllers/services.
+
+### Sizing Components
+- Prefer FlexBox layouts over hard-coded sizes and manual positioning.
+- Components should size themselves based on content where possible.
+- Avoid “magic numbers” for spacing—centralize or derive them.
+- Resizing should be stable and predictable across window sizes.
+
+### External Code
+- Use submodules for external dependencies that work out-of-the-box.
+- Organize external code with clear boundaries (_i.e._ `external/`) and treat it as read-only.
+- Do not modify third-party code unless absolutely necessary; wrap instead.
+- Only include what is needed in build targets—avoid leaking dependencies globally.
+
+<!-- TODOs -->
+
+## TODOs
+
+### Upgrading JUCE
+
+If and when we decide to upgrade to JUCE v8, we need to be aware of the button ordering issue affecting the `alertCallback` lambda function of `ModelTab::openErrorPopup`.
+```cpp
+auto alertCallback = [this, ..., errorPopup](int choice)
+{
+    enum Choice
+    {
+        Choice1,
+        Choice2,
+        Choice3
+    };
+
+    /*
+    TODO - The button indices assigned by MessageBoxOptions do not follow the order in which
+    they were added. This should be fixed in JUCE v8. The following is a temporary workaround.
+
+    See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
+
+    When this is fixed, errorPopup can be removed from the argument list.
+    */
+    {
+        std::map<int, int> observedButtonIndicesMap = {};
+
+        if (errorPopup.getNumButtons() == 3)
+        {
+            observedButtonIndicesMap.insert({ 1, Choice::Choice1 });
+        }
+
+        observedButtonIndicesMap.insert(
+            { errorPopup.getNumButtons() - 1, Choice::Choice2 });
+
+        observedButtonIndicesMap.insert({ 0, Choice::Choice3 });
+
+        choice = observedButtonIndicesMap[choice];
+    }
+
+    ...
+}
+```
+
+Note: upgrading JUCE is likely to be a breaking change for many more reasons. It may not be simple or quick.
 
 ---

@@ -215,7 +215,7 @@ private:
 
             See https://forum.juce.com/t/wrong-callback-value-for-alertwindow-showokcancelbox/55671/2
 
-            When this is fixed, remove errorPopup from the argument list.
+            When this is fixed, errorPopup can be removed from the argument list.
             */
             {
                 std::map<int, int> observedButtonIndicesMap = {};
@@ -406,7 +406,7 @@ private:
     {
         processCancelButton.setEnabled(false);
 
-        DBG_AND_LOG("ModelTab::processCallback: Canceling process \"" + String(currentProcessID)
+        DBG_AND_LOG("ModelTab::cancelCallback: Canceling process \"" + String(currentProcessID)
                     + "\".");
 
         // Invalidate any in-flight jobs
