@@ -227,15 +227,12 @@ public:
               windowIdentifier(name.replaceCharacters(" :", "__"))
         {
             setUsingNativeTitleBar(true);
-            setContentOwned(new MainComponent(), true);
+            MainComponent* mainComp = new MainComponent();
+            setContentOwned(mainComp, true);
             setResizable(true, true);
 
-            // Minimum size to ensure all controls remain visible and functional:
-            // - WelcomeWindow popup is 480x500, needs padding
-            // - Dropdown labels need adequate width
-            // - Control Area needs space for sliders/toggles/textboxes
-            // Minimum: 550x750 (larger than 480x500 popup + padding)
-            setResizeLimits(550, 750, 20000, 20000);
+            setConstrainer(&constrainer);
+            mainComp->updateWindowConstraints();
 
             // Try to restore saved position and size
             restoreWindowPosition();
@@ -365,6 +362,8 @@ public:
         }
 
         String windowIdentifier;
+
+        ComponentBoundsConstrainer constrainer;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HARPWindow)
     };

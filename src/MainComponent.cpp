@@ -1,7 +1,5 @@
 #include "MainComponent.h"
 
-#include <cmath>
-
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
 MainComponent::MainComponent()
@@ -10,6 +8,8 @@ MainComponent::MainComponent()
 
     initializeMenuBar();
 
+    mainModelTab.addChangeListener(this);
+
     addAndMakeVisible(mainModelTab);
     addAndMakeVisible(statusAreaWidget);
     addAndMakeVisible(mediaClipboardWidget);
@@ -17,14 +17,20 @@ MainComponent::MainComponent()
     showStatusArea = Settings::getBoolValue("view.showStatusArea", true);
     showMediaClipboard = Settings::getBoolValue("view.showMediaClipboard", false);
 
-    sharedTokens->initializeAPIKeys();
+    requiredWindowWidth = minimumWindowWidth;
+    requiredWindowHeight = minimumWindowHeight;
+    setSize(requiredWindowWidth, requiredWindowHeight);
 
-    setSize(800, 2000);
+    sharedTokens->initializeAPIKeys();
 
     statusMessage->setMessage("Welcome to HARP!");
 }
 
-MainComponent::~MainComponent() { deinitializeMenuBar(); }
+MainComponent::~MainComponent()
+{
+    deinitializeMenuBar();
+    mainModelTab.removeChangeListener(this);
+}
 
 void MainComponent::paint(Graphics& g)
 {
@@ -33,15 +39,6 @@ void MainComponent::paint(Graphics& g)
 
 void MainComponent::resized()
 {
-    constexpr int statusAreaHeight = 100;
-    constexpr float mediaClipboardFlex = 0.4f;
-    constexpr float mediaClipboardScale = 1.4f;
-    constexpr int baseMinWindowWidth = 700;
-    constexpr int baseMinWindowHeight = 500;
-    constexpr int minMainPanelPadding = 32;
-    constexpr int minMainPanelBaselineWidth = 320;
-    constexpr int windowFramePadding = 32;
-
     Rectangle<int> fullArea = getLocalBounds();
 
 #if not JUCE_MAC
@@ -78,50 +75,63 @@ void MainComponent::resized()
     }
 
     fullWindow.performLayout(fullArea);
+}
 
+void MainComponent::updateWindowConstraints()
+{
     if (auto* window = findParentComponentOfClass<DocumentWindow>())
     {
-        const float mainPanelShare = showMediaClipboard ? (1.0f / mediaClipboardScale) : 1.0f;
-        const int minMainPanelWidth = jmax(minMainPanelBaselineWidth,
-                                           mainModelTab.getMinimumRequiredControlWidth()
-                                               + minMainPanelPadding);
-        const int minWindowWidth = jmax(baseMinWindowWidth,
-                                        (int) std::ceil((float) minMainPanelWidth / mainPanelShare));
+        // Compute percentage of total window width given to main panel
+        const float mainPanelRatio = showMediaClipboard ? (1.0f / mediaClipboardScale) : 1.0f;
 
-        const int currentMainPanelWidth =
-            jmax(minMainPanelWidth, mainModelTab.getWidth());
-        const int minMainPanelHeight =
-            mainModelTab.getMinimumRequiredHeightForWidth(currentMainPanelWidth)
+        // Determine minimum width needed to display controls plus padding
+        const int requiredMainPanelWidth =
+            jmax(minimumMainPanelWidth,
+                 mainModelTab.getMinimumRequiredControlWidth() + minimumMainPanelHorPadding);
+        // Determine current width of main panel
+        const int mainPanelWidth = jmax(requiredMainPanelWidth, mainModelTab.getWidth());
+        // Determine minimum height needed to display all model contents plus status widget
+        const int requiredMainPanelHeight =
+            mainModelTab.getMinimumRequiredHeightForWidth(mainPanelWidth)
             + (showStatusArea ? statusAreaHeight : 0);
-        const int minWindowHeight = jmax(baseMinWindowHeight, minMainPanelHeight + windowFramePadding);
 
-        auto& displays = Desktop::getInstance().getDisplays();
-        auto* currentDisplay = displays.getDisplayForRect(window->getScreenBounds());
-        auto* primaryDisplay = displays.getPrimaryDisplay();
-        auto userArea = currentDisplay != nullptr ? currentDisplay->userArea
-                        : (primaryDisplay != nullptr ? primaryDisplay->userArea
-                                                     : Rectangle<int>(0, 0, minWindowWidth, minWindowHeight));
+        // Determine effective minimum width of entire window
+        const int newRequiredWindowWidth = jmax(
+            minimumWindowWidth, (int) std::ceil((float) requiredMainPanelWidth / mainPanelRatio));
+        // Determine effective minimum height of entire window
+        const int newRequiredWindowHeight =
+            jmax(minimumWindowHeight, requiredMainPanelHeight + minimumMainPanelVertPadding);
 
-        const int maxWindowWidth = userArea.getWidth();
-        const int maxWindowHeight = userArea.getHeight();
+        auto* currentDisplay =
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
 
-        int clampedMinWidth = jmin(minWindowWidth, maxWindowWidth);
-        int clampedMinHeight = jmin(minWindowHeight, maxWindowHeight);
+        const auto userArea =
+            currentDisplay != nullptr
+                ? currentDisplay->userArea
+                : Rectangle<int>(0, 0, newRequiredWindowWidth, newRequiredWindowHeight);
 
-        window->setResizeLimits(
-            clampedMinWidth, clampedMinHeight, maxWindowWidth, maxWindowHeight);
+        ComponentBoundsConstrainer* constrainer = window->getConstrainer();
 
-        if (! window->isFullScreen())
+        constrainer->setMinimumSize(jmin(newRequiredWindowWidth, userArea.getWidth()),
+                                    jmin(newRequiredWindowHeight, userArea.getHeight()));
+        constrainer->setMaximumSize(userArea.getWidth(), userArea.getHeight());
+        constrainer->setMinimumOnscreenAmounts(40, 40, 40, 40);
+
+        const bool constraintsDecreased = newRequiredWindowWidth < requiredWindowWidth
+                                          || newRequiredWindowHeight < requiredWindowHeight;
+
+        requiredWindowWidth = newRequiredWindowWidth;
+        requiredWindowHeight = newRequiredWindowHeight;
+
+        auto bounds = window->getBounds();
+
+        window->setBoundsConstrained(bounds);
+
+        if (constraintsDecreased)
         {
-            auto bounds = window->getBounds();
-            int boundedWidth = jlimit(clampedMinWidth, maxWindowWidth, bounds.getWidth());
-            int boundedHeight = jlimit(clampedMinHeight, maxWindowHeight, bounds.getHeight());
-
-            if (boundedWidth != bounds.getWidth() || boundedHeight != bounds.getHeight())
-            {
-                bounds.setSize(boundedWidth, boundedHeight);
-                window->setBounds(bounds);
-            }
+            // Small hack allowing immediate shrinking when constraints decrease
+            window->setBounds(bounds.withWidth(bounds.getWidth() + 1));
+            window->setBounds(bounds);
         }
     }
 }
@@ -159,16 +169,20 @@ void MainComponent::openSettingsWindow()
 
 void MainComponent::viewStatusAreaCallback()
 {
-    constexpr int statusAreaHeight = 100;
-
+    // Toggle status Area visibility state
     showStatusArea = ! showStatusArea;
 
+    // Find top-level window for resizing
     if (auto* window = findParentComponentOfClass<DocumentWindow>())
     {
+        // Determine which display contains HARP
         auto* currentDisplay =
-            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
 
+        // Get current bounds of top-level window
         Rectangle<int> windowBounds = window->getBounds();
+
+        // Default display height to height of current window
         int currentDisplayHeight = windowBounds.getHeight();
 
         if (currentDisplay != nullptr)
@@ -185,38 +199,48 @@ void MainComponent::viewStatusAreaCallback()
 
         if (showStatusArea)
         {
-            windowBounds.setHeight(jmin(currentDisplayHeight, windowBounds.getHeight() + statusAreaHeight));
+            // Scale bounds to extend window by height of status area
+            windowBounds.setHeight(
+                jmin(currentDisplayHeight, windowBounds.getHeight() + statusAreaHeight));
         }
         else
         {
             if (! window->isFullScreen())
             {
+                // Scale bounds to reduce window to main height
                 windowBounds.setHeight(windowBounds.getHeight() - statusAreaHeight);
             }
         }
 
+        // Set extended or reduced bounds
         window->setBounds(windowBounds);
     }
 
+    // Add view preference to persistent settings
     Settings::setValue("view.showStatusArea", showStatusArea ? "1" : "0", true);
 
+    // Send status message to add check to file menu
     commandManager.commandStatusChanged();
 
-    resized();
+    updateWindowConstraints();
 }
 
 void MainComponent::viewMediaClipboardCallback()
 {
-    constexpr float mediaClipboardScale = 1.4f;
-
+    // Toggle media clipboard visibility state
     showMediaClipboard = ! showMediaClipboard;
 
+    // Find top-level window for resizing
     if (auto* window = findParentComponentOfClass<DocumentWindow>())
     {
+        // Determine which display contains HARP
         auto* currentDisplay =
-            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
 
+        // Get current bounds of top-level window
         Rectangle<int> windowBounds = window->getBounds();
+
+        // Default display width to width of current window
         int currentDisplayWidth = windowBounds.getWidth();
 
         if (currentDisplay != nullptr)
@@ -233,25 +257,32 @@ void MainComponent::viewMediaClipboardCallback()
 
         if (showMediaClipboard)
         {
+            // Scale bounds to extend window by 40% of main width
             windowBounds.setWidth(
-                jmin(currentDisplayWidth, static_cast<int>(mediaClipboardScale * windowBounds.getWidth())));
+                jmin(currentDisplayWidth,
+                     static_cast<int>(mediaClipboardScale * windowBounds.getWidth())));
         }
         else
         {
             if (! window->isFullScreen())
             {
-                windowBounds.setWidth(static_cast<int>(windowBounds.getWidth() / mediaClipboardScale));
+                // Scale bounds to reduce window to main width
+                windowBounds.setWidth(
+                    static_cast<int>(windowBounds.getWidth() / mediaClipboardScale));
             }
         }
 
+        // Set extended or reduced bounds
         window->setBounds(windowBounds);
     }
 
+    // Add view preference to persistent settings
     Settings::setValue("view.showMediaClipboard", showMediaClipboard ? "1" : "0", true);
 
+    // Send status message to add check to file menu
     commandManager.commandStatusChanged();
 
-    resized();
+    updateWindowConstraints();
 }
 
 /* --Help-- */
@@ -320,3 +351,11 @@ void MainComponent::focusCallback()
     }
 }
 */
+
+void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
+{
+    if (source == &mainModelTab)
+    {
+        updateWindowConstraints();
+    }
+}

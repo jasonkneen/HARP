@@ -31,6 +31,8 @@ public:
         comboBox.setBounds(comboBoxArea);
     }
 
+    void setMinimumContentWidth(int width) { minimumContentWidth = jmax(0, width); }
+
     int getMinimumRequiredWidth() const override
     {
         const int labelWidth = getLabelWidth(label);
@@ -39,13 +41,13 @@ public:
     }
 
     ComboBox& getComboBox() { return comboBox; }
-    void setMinimumContentWidth(int width) { minimumContentWidth = jmax(0, width); }
 
 private:
     static constexpr int minComboWidth = 80;
     static constexpr int comboChromeWidth = 54;
 
+    int minimumContentWidth = 0;
+
     Label label;
     ComboBox comboBox;
-    int minimumContentWidth = 0;
 };

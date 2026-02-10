@@ -20,7 +20,7 @@
 
 using namespace juce;
 
-class ModelTab : public Component, private ChangeListener
+class ModelTab : public Component, private ChangeListener, public ChangeBroadcaster
 {
 public:
     ModelTab()
@@ -349,6 +349,7 @@ private:
                             inputTrackAreaWidget.updateTracks(model->getInputTracks());
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
+                            sendSynchronousChangeMessage();
                             resized();
 
                             // Re-enable processing immediately
