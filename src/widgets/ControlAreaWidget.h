@@ -30,7 +30,7 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced((int) marginSize);
+        auto area = getLocalBounds().reduced(marginSize);
 
         auto rows = buildRowsForWidth(area.getWidth());
 
@@ -49,28 +49,24 @@ public:
             }
 
             int totalComponentWidth = 0;
-            int rowHeight = 0;
+
             for (const auto& entry : row)
             {
                 totalComponentWidth += entry.width;
-                rowHeight = jmax(rowHeight, entry.height);
             }
 
-            int slotGap = minInterItemGap;
-            int edgeGap = minEdgeGap;
+            int baseSpacing = minInterItemGap * (int) (row.size() - 1);
+            int remaining = area.getWidth() - totalComponentWidth - baseSpacing;
 
-            int totalMinSpacing = minInterItemGap * jmax(0, (int) row.size() - 1);
-            int remaining = area.getWidth() - totalComponentWidth - totalMinSpacing;
+            int distributed = jmax(0, remaining / ((int) row.size() + 1));
 
-            if (remaining >= 0)
-            {
-                int slots = (int) row.size() + 1;
-                int distributed = remaining / slots;
-                edgeGap += distributed;
-                slotGap += distributed;
-            }
+            int edgeGap = minEdgeGap + distributed;
+            int slotGap = minInterItemGap + distributed;
+
+            int rowHeight = getRowHeight(row);
 
             int x = area.getX() + edgeGap;
+
             for (const auto& entry : row)
             {
                 int componentY = y + (rowHeight - entry.height) / 2;
@@ -82,39 +78,47 @@ public:
         }
     }
 
+    int getNumControls() const
+    {
+        return sliderComponents.size() + toggleComponents.size() + dropdownComponents.size()
+               + textComponents.size();
+    }
+
     int getMinimumRequiredWidth() const
     {
-        auto items = getOrderedLayoutItems();
-        if (items.empty())
-            return 0;
-
         int requiredWidth = 0;
-        for (const auto& item : items)
-        {
-            requiredWidth =
-                jmax(requiredWidth, item.component->getMinimumRequiredWidth());
-        }
 
-        return requiredWidth + 2 * ((int) marginSize + minEdgeGap);
+        auto checkGroup = [&](const auto& group)
+        {
+            for (const auto& c : group)
+            {
+                requiredWidth = jmax(requiredWidth, c->getMinimumRequiredWidth());
+            }
+        };
+
+        checkGroup(sliderComponents);
+        checkGroup(toggleComponents);
+        checkGroup(dropdownComponents);
+        checkGroup(textComponents);
+
+        return requiredWidth + 2 * (marginSize + minEdgeGap);
     }
 
     int getRequiredHeightForWidth(int width) const
     {
-        auto rows = buildRowsForWidth(width - 2 * (int) marginSize);
-        if (rows.empty())
-            return 0;
+        auto rows = buildRowsForWidth(width - 2 * marginSize);
 
-        int totalHeight = 2 * (int) marginSize;
+        if (rows.empty())
+        {
+            return 0;
+        }
+
+        int totalHeight = 2 * marginSize;
 
         for (size_t i = 0; i < rows.size(); ++i)
         {
-            int rowHeight = 0;
-            for (const auto& entry : rows[i])
-            {
-                rowHeight = jmax(rowHeight, entry.height);
-            }
+            totalHeight += getRowHeight(rows[i]);
 
-            totalHeight += rowHeight;
             if (i + 1 < rows.size())
             {
                 totalHeight += minRowGap;
@@ -122,12 +126,6 @@ public:
         }
 
         return totalHeight;
-    }
-
-    int getNumControls()
-    {
-        return textComponents.size() + toggleComponents.size() + sliderComponents.size()
-               + dropdownComponents.size();
     }
 
     void resetState()
@@ -316,128 +314,114 @@ private:
         }
     }
 
-    struct LayoutItem
+    struct LayoutSpec
     {
-        enum class Type
-        {
-            Slider,
-            Toggle,
-            Dropdown,
-            TextBox
-        };
-
-        ControlComponent* component;
-        Type type;
+        int preferredWidth;
+        int minHeight;
     };
 
     struct RowEntry
     {
         ControlComponent* component = nullptr;
+
         int width = 0;
         int height = 0;
     };
-
-    std::vector<LayoutItem> getOrderedLayoutItems() const
-    {
-        std::vector<LayoutItem> items;
-        items.reserve(sliderComponents.size() + toggleComponents.size()
-                      + dropdownComponents.size() + textComponents.size());
-
-        for (const auto& slider : sliderComponents)
-            items.push_back({ slider.get(), LayoutItem::Type::Slider });
-
-        for (const auto& toggle : toggleComponents)
-            items.push_back({ toggle.get(), LayoutItem::Type::Toggle });
-
-        for (const auto& dropdown : dropdownComponents)
-            items.push_back({ dropdown.get(), LayoutItem::Type::Dropdown });
-
-        for (const auto& text : textComponents)
-            items.push_back({ text.get(), LayoutItem::Type::TextBox });
-
-        return items;
-    }
 
     std::vector<std::vector<RowEntry>> buildRowsForWidth(int width) const
     {
         std::vector<std::vector<RowEntry>> rows;
 
-        auto items = getOrderedLayoutItems();
-
-        if (items.empty() || width <= 0)
-            return rows;
-
-        rows.emplace_back();
-        int currentRowWidth = 0;
-
-        for (const auto& item : items)
+        if (width <= 0)
         {
-            int minWidth = item.component->getMinimumRequiredWidth();
-            int itemWidth = getPreferredWidth(item.type);
-            int itemHeight = getMinimumRequiredHeight(item.type);
-
-            itemWidth = jmax(minWidth, itemWidth);
-            itemWidth = jmin(itemWidth, width);
-
-            auto& row = rows.back();
-            int gapContribution = row.empty() ? 0 : minInterItemGap;
-            int candidateWidth = currentRowWidth + gapContribution + itemWidth;
-
-            if (! row.empty() && candidateWidth > width)
-            {
-                rows.emplace_back();
-                currentRowWidth = 0;
-            }
-
-            auto& activeRow = rows.back();
-            if (! activeRow.empty())
-                currentRowWidth += minInterItemGap;
-
-            activeRow.push_back(RowEntry { item.component, itemWidth, itemHeight });
-            currentRowWidth += itemWidth;
+            return rows;
         }
+
+        addGroupToRows(rows, sliderComponents, 0, width);
+        addGroupToRows(rows, toggleComponents, 1, width);
+        addGroupToRows(rows, dropdownComponents, 2, width);
+        addGroupToRows(rows, textComponents, 3, width);
 
         return rows;
     }
 
-    int getMinimumRequiredHeight(LayoutItem::Type type) const
+    void addGroupToRows(std::vector<std::vector<RowEntry>>& rows,
+                        const auto& components,
+                        int type,
+                        int availableWidth) const
+    {
+        auto spec = getLayoutSpec(type);
+
+        for (const auto& c : components)
+        {
+            int minWidth = c->getMinimumRequiredWidth();
+            int itemWidth = jmax(minWidth, spec.preferredWidth);
+
+            itemWidth = jmin(itemWidth, availableWidth);
+
+            if (rows.empty())
+            {
+                rows.emplace_back();
+            }
+
+            auto& row = rows.back();
+
+            int currentWidth = 0;
+
+            for (const auto& entry : row)
+            {
+                currentWidth += entry.width;
+            }
+
+            if (! row.empty())
+            {
+                currentWidth += minInterItemGap * (int) row.size();
+            }
+
+            int candidateWidth = currentWidth + (row.empty() ? 0 : minInterItemGap) + itemWidth;
+
+            if (! row.empty() && candidateWidth > availableWidth)
+            {
+                rows.emplace_back();
+            }
+
+            auto& activeRow = rows.back();
+
+            activeRow.push_back({ c.get(), itemWidth, spec.minHeight });
+        }
+    }
+
+    LayoutSpec getLayoutSpec(int type) const
     {
         switch (type)
         {
-            case LayoutItem::Type::Slider:
-                return minSliderHeight;
-            case LayoutItem::Type::Toggle:
-                return minToggleHeight;
-            case LayoutItem::Type::Dropdown:
-                return minDropdownHeight;
-            case LayoutItem::Type::TextBox:
-                return minTextBoxHeight;
+            case 0:
+                return { preferredSliderWidth, minSliderHeight };
+            case 1:
+                return { preferredToggleWidth, minToggleHeight };
+            case 2:
+                return { preferredDropdownWidth, minDropdownHeight };
+            case 3:
+                return { preferredTextBoxWidth, minTextBoxHeight };
         }
 
-        return minDropdownHeight;
+        return { preferredDropdownWidth, minDropdownHeight };
     }
 
-    int getPreferredWidth(LayoutItem::Type type) const
+    static int getRowHeight(const std::vector<RowEntry>& row)
     {
-        switch (type)
+        int height = 0;
+
+        for (const auto& entry : row)
         {
-            case LayoutItem::Type::Slider:
-                return preferredSliderWidth;
-            case LayoutItem::Type::Toggle:
-                return preferredToggleWidth;
-            case LayoutItem::Type::Dropdown:
-                return preferredDropdownWidth;
-            case LayoutItem::Type::TextBox:
-                return preferredTextBoxWidth;
+            height = jmax(height, entry.height);
         }
 
-        return preferredDropdownWidth;
+        return height;
     }
 
-    // Layout constants
     static constexpr float marginSize = 4;
 
-    // Minimum heights for each control type to prevent overlapping
     static constexpr int minSliderHeight = 108;
     static constexpr int minToggleHeight = 34;
     static constexpr int minDropdownHeight = 44;
@@ -447,6 +431,7 @@ private:
     static constexpr int preferredToggleWidth = 112;
     static constexpr int preferredDropdownWidth = 140;
     static constexpr int preferredTextBoxWidth = 200;
+
     static constexpr int minInterItemGap = 6;
     static constexpr int minEdgeGap = 4;
     static constexpr int minRowGap = 6;
