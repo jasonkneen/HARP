@@ -84,6 +84,10 @@ public:
                                   .withMinHeight((float) controlsHeight)
                                   .withMargin(marginSize));
         }
+        else
+        {
+            controlAreaWidget.setBounds(0, 0, 0, 0);
+        }
 
         const float totalTracks =
             inputTrackAreaWidget.getNumTracks() + outputTrackAreaWidget.getNumTracks();
@@ -114,6 +118,10 @@ public:
                                   .withMaxHeight(processButtonRowHeight)
                                   .withFlex(0)
                                   .withMargin(marginSize));
+        }
+        else
+        {
+            processCancelButton.setBounds(0, 0, 0, 0);
         }
 
         /* Output Tracks Area Widget */
@@ -234,26 +242,29 @@ private:
                          int numTracks,
                          float totalTracks) const
     {
-        if (numTracks <= 0)
+        if (numTracks > 0)
         {
-            return;
+            float flex = 4.0f * (numTracks / totalTracks);
+
+            int minHeight = getTrackAreaMinimumHeight(numTracks);
+
+            box.items.add(FlexItem(label)
+                              .withHeight(trackSectionLabelHeight)
+                              .withMinHeight(trackSectionLabelHeight)
+                              .withMaxHeight(trackSectionLabelHeight)
+                              .withFlex(0)
+                              .withMargin(marginSize));
+
+            box.items.add(FlexItem(trackArea)
+                              .withFlex(flex)
+                              .withMinHeight((float) minHeight)
+                              .withMargin(marginSize));
         }
-
-        float flex = 4.0f * (numTracks / totalTracks);
-
-        int minHeight = getTrackAreaMinimumHeight(numTracks);
-
-        box.items.add(FlexItem(label)
-                          .withHeight(trackSectionLabelHeight)
-                          .withMinHeight(trackSectionLabelHeight)
-                          .withMaxHeight(trackSectionLabelHeight)
-                          .withFlex(0)
-                          .withMargin(marginSize));
-
-        box.items.add(FlexItem(trackArea)
-                          .withFlex(flex)
-                          .withMinHeight((float) minHeight)
-                          .withMargin(marginSize));
+        else
+        {
+            label.setBounds(0, 0, 0, 0);
+            trackArea.setBounds(0, 0, 0, 0);
+        }
     }
 
     void openErrorPopup(const Error error, std::function<void()> onExit = {})
