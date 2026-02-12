@@ -227,8 +227,12 @@ public:
               windowIdentifier(name.replaceCharacters(" :", "__"))
         {
             setUsingNativeTitleBar(true);
-            setContentOwned(new MainComponent(), true);
+            MainComponent* mainComp = new MainComponent();
+            setContentOwned(mainComp, true);
             setResizable(true, true);
+
+            setConstrainer(&constrainer);
+            mainComp->updateWindowConstraints();
 
             // Try to restore saved position and size
             restoreWindowPosition();
@@ -358,6 +362,8 @@ public:
         }
 
         String windowIdentifier;
+
+        ComponentBoundsConstrainer constrainer;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HARPWindow)
     };

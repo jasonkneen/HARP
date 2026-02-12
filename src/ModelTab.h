@@ -20,7 +20,7 @@
 
 using namespace juce;
 
-class ModelTab : public Component, private ChangeListener
+class ModelTab : public Component, private ChangeListener, public ChangeBroadcaster
 {
 public:
     ModelTab()
@@ -53,45 +53,52 @@ public:
         FlexBox tabArea;
         tabArea.flexDirection = FlexBox::Direction::column;
 
+        const int width = getWidth();
+
         /* Model Selection */
 
-        tabArea.items.add(FlexItem(modelSelectionWidget).withHeight(30));
+        tabArea.items.add(FlexItem(modelSelectionWidget)
+                              .withHeight(modelSelectionRowHeight)
+                              .withMinHeight(modelSelectionRowHeight)
+                              .withMaxHeight(modelSelectionRowHeight)
+                              .withFlex(0)
+                              .withMargin(marginSize));
 
         /* Model Info */
 
-        tabArea.items.add(FlexItem(modelInfoWidget).withFlex(1.0).withMaxHeight(100));
+        const int modelInfoHeight = modelInfoWidget.getPreferredHeightForWidth(width);
+
+        tabArea.items.add(FlexItem(modelInfoWidget)
+                              .withHeight((float) modelInfoHeight)
+                              .withMinHeight((float) modelInfoHeight)
+                              .withMargin(marginSize));
 
         /* Model Controls */
 
         if (controlAreaWidget.getNumControls() > 0)
         {
-            // TODO - set min/max height based on limits of control element scaling
-            tabArea.items.add(FlexItem(controlAreaWidget).withFlex(1.0).withMaxHeight(200));
+            int controlsHeight = getControlAreaRequiredHeightForTabWidth(width);
+
+            tabArea.items.add(FlexItem(controlAreaWidget)
+                                  .withHeight((float) controlsHeight)
+                                  .withMinHeight((float) controlsHeight)
+                                  .withMargin(marginSize));
         }
         else
         {
             controlAreaWidget.setBounds(0, 0, 0, 0);
         }
 
+        const float totalTracks =
+            inputTrackAreaWidget.getNumTracks() + outputTrackAreaWidget.getNumTracks();
+
         /* Input Tracks Area Widget */
 
-        float numInputTracks = inputTrackAreaWidget.getNumTracks();
-        float numOutputTracks = outputTrackAreaWidget.getNumTracks();
-        float totalTracks = numInputTracks + numOutputTracks;
-
-        if (numInputTracks > 0)
-        {
-            float inputTrackAreaFlex = 4 * (numInputTracks / totalTracks);
-
-            tabArea.items.add(FlexItem(inputTracksLabel).withHeight(20).withMargin(marginSize));
-            tabArea.items.add(
-                FlexItem(inputTrackAreaWidget).withFlex(inputTrackAreaFlex).withMargin(marginSize));
-        }
-        else
-        {
-            inputTracksLabel.setBounds(0, 0, 0, 0);
-            inputTrackAreaWidget.setBounds(0, 0, 0, 0);
-        }
+        addTrackSection(tabArea,
+                        inputTracksLabel,
+                        inputTrackAreaWidget,
+                        inputTrackAreaWidget.getNumTracks(),
+                        totalTracks);
 
         /* Process / Cancel Button */
 
@@ -100,13 +107,16 @@ public:
 
         if (model->isLoaded())
         {
-            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+            processCancelButtonRow.items.add(FlexItem().withFlex(1));
             processCancelButtonRow.items.add(
-                FlexItem(processCancelButton).withWidth(150).withMargin(marginSize));
-            processCancelButtonRow.items.add(FlexItem().withFlex(1)); // Filler space
+                FlexItem(processCancelButton).withWidth(processButtonWidth).withMargin(marginSize));
+            processCancelButtonRow.items.add(FlexItem().withFlex(1));
 
-            tabArea.items.add(
-                FlexItem(processCancelButtonRow).withHeight(30).withMargin(marginSize));
+            tabArea.items.add(FlexItem(processCancelButtonRow)
+                                  .withHeight(processButtonRowHeight)
+                                  .withMinHeight(processButtonRowHeight)
+                                  .withMaxHeight(processButtonRowHeight)
+                                  .withFlex(0));
         }
         else
         {
@@ -115,22 +125,47 @@ public:
 
         /* Output Tracks Area Widget */
 
-        if (numOutputTracks > 0)
-        {
-            float outputTrackAreaFlex = 4 * (numOutputTracks / totalTracks);
-
-            tabArea.items.add(FlexItem(outputTracksLabel).withHeight(20).withMargin(marginSize));
-            tabArea.items.add(FlexItem(outputTrackAreaWidget)
-                                  .withFlex(outputTrackAreaFlex)
-                                  .withMargin(marginSize));
-        }
-        else
-        {
-            outputTracksLabel.setBounds(0, 0, 0, 0);
-            outputTrackAreaWidget.setBounds(0, 0, 0, 0);
-        }
+        addTrackSection(tabArea,
+                        outputTracksLabel,
+                        outputTrackAreaWidget,
+                        outputTrackAreaWidget.getNumTracks(),
+                        totalTracks);
 
         tabArea.performLayout(getLocalBounds());
+    }
+
+    int getMinimumRequiredControlWidth() { return controlAreaWidget.getMinimumRequiredWidth(); }
+
+    int getMinimumRequiredHeightForWidth(int width)
+    {
+        int height = 0;
+
+        height += modelSelectionRowHeight + 2 * marginSize;
+        height += modelInfoWidget.getPreferredHeightForWidth(width) + 2 * marginSize;
+
+        if (controlAreaWidget.getNumControls() > 0)
+        {
+            height += getControlAreaRequiredHeightForTabWidth(width) + 2 * marginSize;
+        }
+
+        if (inputTrackAreaWidget.getNumTracks() > 0)
+        {
+            height += trackSectionLabelHeight + 4 * marginSize
+                      + getTrackAreaMinimumHeight(inputTrackAreaWidget.getNumTracks());
+        }
+
+        if (model->isLoaded())
+        {
+            height += processButtonRowHeight;
+        }
+
+        if (outputTrackAreaWidget.getNumTracks() > 0)
+        {
+            height += trackSectionLabelHeight + 4 * marginSize
+                      + getTrackAreaMinimumHeight(outputTrackAreaWidget.getNumTracks());
+        }
+
+        return height;
     }
 
     void resetState()
@@ -176,6 +211,54 @@ private:
         if (source == &modelSelectionWidget)
         {
             loadModelCallback();
+        }
+    }
+
+    int getControlAreaRequiredHeightForTabWidth(int tabWidth) const
+    {
+        return jmax(minControlAreaHeight, controlAreaWidget.getRequiredHeightForWidth(tabWidth));
+    }
+
+    int getTrackAreaMinimumHeight(int numTracks) const
+    {
+        if (numTracks <= 0)
+        {
+            return 0;
+        }
+
+        const int perTrackWithMargin = minVisibleTrackHeight + 2 * marginSize;
+
+        return numTracks * perTrackWithMargin;
+    }
+
+    void addTrackSection(FlexBox& box,
+                         Label& label,
+                         Component& trackArea,
+                         int numTracks,
+                         float totalTracks) const
+    {
+        if (numTracks > 0)
+        {
+            box.items.add(FlexItem(label)
+                              .withHeight(trackSectionLabelHeight)
+                              .withMinHeight(trackSectionLabelHeight)
+                              .withMaxHeight(trackSectionLabelHeight)
+                              .withFlex(0)
+                              .withMargin(marginSize));
+
+            float flex = 4.0f * (numTracks / totalTracks);
+
+            int minHeight = getTrackAreaMinimumHeight(numTracks);
+
+            box.items.add(FlexItem(trackArea)
+                              .withFlex(flex)
+                              .withMinHeight((float) minHeight)
+                              .withMargin(marginSize));
+        }
+        else
+        {
+            label.setBounds(0, 0, 0, 0);
+            trackArea.setBounds(0, 0, 0, 0);
         }
     }
 
@@ -290,6 +373,7 @@ private:
                             inputTrackAreaWidget.updateTracks(model->getInputTracks());
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
+                            sendSynchronousChangeMessage();
                             resized();
 
                             // Re-enable processing immediately
@@ -426,7 +510,14 @@ private:
         processCancelButton.setEnabled(true);
     }
 
-    const float marginSize = 2;
+    static constexpr float marginSize = 2;
+
+    static constexpr int modelSelectionRowHeight = 30;
+    static constexpr int minControlAreaHeight = 96;
+    static constexpr int processButtonWidth = 150;
+    static constexpr int processButtonRowHeight = 30;
+    static constexpr int trackSectionLabelHeight = 20;
+    static constexpr int minVisibleTrackHeight = 50;
 
     std::shared_ptr<Model> model { new Model() };
 
