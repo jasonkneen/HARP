@@ -116,8 +116,7 @@ public:
                                   .withHeight(processButtonRowHeight)
                                   .withMinHeight(processButtonRowHeight)
                                   .withMaxHeight(processButtonRowHeight)
-                                  .withFlex(0)
-                                  .withMargin(marginSize));
+                                  .withFlex(0));
         }
         else
         {
@@ -141,17 +140,17 @@ public:
     {
         int height = 0;
 
-        height += modelSelectionRowHeight;
-        height += modelInfoWidget.getPreferredHeightForWidth(width);
+        height += modelSelectionRowHeight + 2 * marginSize;
+        height += modelInfoWidget.getPreferredHeightForWidth(width) + 2 * marginSize;
 
         if (controlAreaWidget.getNumControls() > 0)
         {
-            height += getControlAreaRequiredHeightForTabWidth(width);
+            height += getControlAreaRequiredHeightForTabWidth(width) + 2 * marginSize;
         }
 
         if (inputTrackAreaWidget.getNumTracks() > 0)
         {
-            height += trackSectionLabelHeight
+            height += trackSectionLabelHeight + 4 * marginSize
                       + getTrackAreaMinimumHeight(inputTrackAreaWidget.getNumTracks());
         }
 
@@ -162,11 +161,11 @@ public:
 
         if (outputTrackAreaWidget.getNumTracks() > 0)
         {
-            height += trackSectionLabelHeight
+            height += trackSectionLabelHeight + 4 * marginSize
                       + getTrackAreaMinimumHeight(outputTrackAreaWidget.getNumTracks());
         }
 
-        return height + tabInternalPadding;
+        return height;
     }
 
     void resetState()
@@ -217,11 +216,7 @@ private:
 
     int getControlAreaRequiredHeightForTabWidth(int tabWidth) const
     {
-        int controlsHeight = controlAreaWidget.getRequiredHeightForWidth(tabWidth - 2 * marginSize);
-
-        controlsHeight += controlsHeightSafetyPadding;
-
-        return jmax(minControlAreaHeight, controlsHeight);
+        return jmax(minControlAreaHeight, controlAreaWidget.getRequiredHeightForWidth(tabWidth));
     }
 
     int getTrackAreaMinimumHeight(int numTracks) const
@@ -244,16 +239,16 @@ private:
     {
         if (numTracks > 0)
         {
-            float flex = 4.0f * (numTracks / totalTracks);
-
-            int minHeight = getTrackAreaMinimumHeight(numTracks);
-
             box.items.add(FlexItem(label)
                               .withHeight(trackSectionLabelHeight)
                               .withMinHeight(trackSectionLabelHeight)
                               .withMaxHeight(trackSectionLabelHeight)
                               .withFlex(0)
                               .withMargin(marginSize));
+
+            float flex = 4.0f * (numTracks / totalTracks);
+
+            int minHeight = getTrackAreaMinimumHeight(numTracks);
 
             box.items.add(FlexItem(trackArea)
                               .withFlex(flex)
@@ -517,15 +512,12 @@ private:
 
     static constexpr float marginSize = 2;
 
-    static constexpr int minVisibleTrackHeight = 50;
     static constexpr int modelSelectionRowHeight = 30;
-    static constexpr int processButtonRowHeight = 30;
-    static constexpr int processButtonWidth = 150;
-    static constexpr int trackSectionLabelHeight = 20;
-
-    static constexpr int tabInternalPadding = 40;
     static constexpr int minControlAreaHeight = 96;
-    static constexpr int controlsHeightSafetyPadding = 12;
+    static constexpr int processButtonWidth = 150;
+    static constexpr int processButtonRowHeight = 30;
+    static constexpr int trackSectionLabelHeight = 20;
+    static constexpr int minVisibleTrackHeight = 50;
 
     std::shared_ptr<Model> model { new Model() };
 
