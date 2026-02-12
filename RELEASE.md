@@ -20,11 +20,11 @@
  - **Multiple Window Interactions**:
    - Tracks are now added to current window instead of main window when "Current Window" is selected.
  - **Status Panel Visibility**:
-   - TODO - toggleable view and scrollability for statuses
+   - Toggleable visibility of status panel.
  - **Help File Menu Tab**:
    - A "Help" tab invoking About / Welcome windows has been added to file menu.
  - **Control Sizing**:
-   - TODO
+   - Fixed control sizing and enforcement of minimum window size.
  - **MIDI Colors**:
    - MIDI notes in pianoroll displays are now colored according to instrument number.
 
