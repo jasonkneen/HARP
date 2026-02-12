@@ -1,4 +1,4 @@
-<!-- content/intro.md -->
+<!-- website/content/intro.md -->
 # HARP
 
 <!-- TODO - Update this figure! -->
@@ -19,17 +19,16 @@ HARP is a sample editor for **h**osted, **a**synchronous, **r**emote **p**rocess
     * **[Workflow](#workflow)**
 * **[Contributing](#contributing)**
     * **[Version Compatibility](#version-compatibility)**
-    * **[Adding Models with PyHARP](#adding-models-with-pyharp)**
+    * **[Adding Models with pyharp](#adding-models-with-pyharp)**
     * **[Building Harp](#building-harp)**
     * **[Debugging](#debugging)**
     * **[Distribution](#distribution)**
 * **[Citations](#citations)**
 
-<!-- TODO - add link to HARP 3.0 paper -->
-For more information on HARP, please see [our website](https://harp-plugin.netlify.app), our [NeurIPS workshop paper](https://neuripscreativityworkshop.github.io/2023/papers/ml4cd2023_paper23.pdf), or our [ISMIR Late Breaking Demo](https://arxiv.org/abs/2503.02977).
+For more information on HARP, please see [our website](https://harp-plugin.netlify.app) or our most recent [NeurIPS workshop paper](https://openreview.net/pdf?id=Ha2z921r51).
 
 
-<!-- content/supported_os.md -->
+<!-- website/content/supported_os.md -->
 # Installation
 
 HARP has been tested on the following operating systems:
@@ -38,25 +37,25 @@ HARP has been tested on the following operating systems:
 | :-: | :-: | :-: | :-: | :-: |
 | Versions | 13.0, 13.4, 14.2.1, 14.5 | 10.15 | 10, 11 | 22.04 |
 
-<!-- content/install/ -->
-<!-- content/setup/ -->
-Please visit [our website](https://harp-plugin.netlify.app/content/install/macos.html) for instructions on installing HARP for different operating systems and setting it up as an external sample editor for different DAWs.
+<!-- website/content/install/ -->
+<!-- website/content/setup/ -->
+Please visit [our website](https://harp-plugin.netlify.app/content/install/macos.html) for instructions on installing HARP and setting it up as an external sample editor for specific operating systems and DAWs.
 
 
 # Usage
 
-HARP can be used to apply deep learning models to your audio either as a stand-alone or within any DAW (e.g. Logic Pro) that supports external sample editors.
+HARP can be used to apply deep learning models to your audio either as a standalone or within any DAW (e.g. Logic Pro) that supports external sample editors.
 
-If you use it stand-alone, just load a file, load a model and apply the model to the audio file. When you're happy with the result, save the output.
+If you use it standalone, just load a file, load a model and apply the model to the audio file. When you're happy with the result, save the output.
 
-In a DAW, you select the exceprt you want to process, open it in HARP, process it, and select _Save_ from the  _File_ menu in HARP. This will return the processed file back to the DAW.
+In a DAW, select the excerpt you want to process, open it in HARP, process it, and click the _Save_ icon on the track display or media clipboard. This will open a file browser for saving the selected file.
 
-<!-- content/usage/warnings.md -->
+<!-- website/content/usage/warnings.md -->
 ## Warning!
 
-**HARP is a _destructive_ file editor.** When operating HARP as a standalone application, use _Save As_ to avoid overwriting input files. If you save your outputs while operating in the DAW, HARP will overwrite input regions. By creating a duplicate / bounce / alternate take of the region you want to edit with HARP, you can ensure the original region remains unaffected.
+**HARP is a _destructive_ file editor.** When operating HARP as a standalone application, use _Save As_ to avoid overwriting input files. If you save your outputs via the _Send-to-DAW_ feature, HARP will overwrite input regions. By creating a duplicate / bounce / alternate take of the region you want to edit with HARP, you can ensure the original region remains unaffected.
 
-<!-- content/usage/partial_track.md -->
+<!-- website/content/usage/partial_track.md -->
 ### Processing just a portion of a track
 
 HARP processes full regions in the DAW. Therefore, to edit a portion of an audio or MIDI region:
@@ -65,12 +64,12 @@ HARP processes full regions in the DAW. Therefore, to edit a portion of an audio
 - (Optional) Create a duplicate / bounce / alternate take of the region you want to edit
 - Open with HARP to process
 
-<!-- content/usage/models.md -->
+<!-- website/content/usage/models.md -->
 ## Models
 
 Please visit [our website](https://harp-plugin.netlify.app/content/usage/models.html) for a full list of supported models.
 
-<!-- content/usage/workflow.md -->
+<!-- website/content/usage/workflow.md -->
 ## Workflow
 
 HARP supports a simple workflow: pick an existing model for processing or provide a URL to your own, load the model and it's corresponding interface, tweak controls to your liking, and process.
@@ -83,34 +82,34 @@ To get started:
 - Import audio or MIDI data to process with the model either via the `Open File` button or by dragging and dropping a file into HARP
 - Adjust controls to taste in the interface
 - Click `Process` to run the model; outputs will automatically be rendered in HARP
-- To save your outputs, click the `Save` button or select `Save As` from the `File` menu
+- To save your outputs, click the `Save` icon (output track or media clipboard) or the `Send-to-DAW` icon (orange circle with arrow in media clipboard)
 
 <img width="1819" height="1042" alt="text-to-audio" src="https://github.com/user-attachments/assets/a5579d82-3955-46a1-84a6-22f7632a9d51" />
 
 
-<!-- content/contributing/overview.md -->
+<!-- website/content/contributing/overview.md -->
 # Contributing
 
-To get started building and deploying models for others to use in HARP, see [Adding Models with PyHARP](#adding-models-with-pyharp). To get started developing the HARP app itself, see [Building Harp](#building-harp). 
+To get started building and deploying models for others to use in HARP, see [Adding Models with pyharp](#adding-models-with-pyharp). To get started developing the HARP app itself, see [Building HARP](#building-harp). Please also see our [Developer Notes](https://github.com/TEAMuP-dev/HARP/blob/main/DevNotes.md) for various conventions and suggestions.
 
-<!-- content/contributing/version_compat.md -->
+<!-- website/content/contributing/version_compat.md -->
 ## Version Compatibility
 
-The currently available versions of HARP and PyHARP are mutually compatible.
+The currently available versions of HARP and pyharp are mutually compatible.
 
-| HARP | PyHARP |
+| HARP | pyharp |
 | :-: | :-: |
-| 3.0.0 | 0.3.0 |
+| 3.1.0 | 0.3.0 |
 | 2.2.0 | 0.2.1 |
 
-<!-- content/contributing/add_model.md -->
-# Adding Models with PyHARP
+<!-- website/content/contributing/add_model.md -->
+# Adding Models with pyharp
 
 [![ReadMe Card](https://github-readme-stats.vercel.app/api/pin/?username=TEAMuP-dev&repo=pyharp)](https://github.com/TEAMuP-dev/pyharp)
 
-PyHARP provides a lightweight API to build HARP-compatible [Gradio](https://www.gradio.app) apps. It allows researchers to easily create DAW-friendly interfaces for any audio processing code with minimal Python wrappers.
+pyharp provides a lightweight API to build HARP-compatible [Gradio](https://www.gradio.app) apps. It allows researchers to easily create DAW-friendly interfaces for any audio processing code with minimal Python wrapping.
 
-<!-- content/contributing/build_source.md -->
+<!-- website/content/contributing/build_source.md -->
 # Building HARP
 
 HARP can be built from scratch with the following steps:
@@ -159,7 +158,7 @@ make -j <NUM_PROCESSORS>
 cmake --build . --config Debug -j <NUM_PROCESSORS>
 ```
 
-<!-- content/contributing/debug.md -->
+<!-- website/content/contributing/debug.md -->
 ## Debugging
 
 We provide instructions for debugging your HARP build in [Visual Studio Code](https://code.visualstudio.com/):
@@ -212,7 +211,7 @@ We provide instructions for debugging your HARP build in [Visual Studio Code](ht
 
 6. Add break points and run the debugger.
 
-<!-- content/contributing/dist.md -->
+<!-- website/content/contributing/dist.md -->
 ## Distribution
 
 ### MacOS
@@ -238,11 +237,19 @@ Usage:
 ./HARP/packaging/package.sh <DEV_ID_APPLICATION> <ARTIFACTS_PATH> <PROJECT_NAME> <PRODUCT_NAME> <NOTARIZATION_USERNAME> <NOTARIZATION_PASSWORD> <TEAM_ID>
 ```
 
-After running `package.sh`, you should have a signed and notarized dmg file in the `packaging/` directory.
+After running `package.sh`, you should have a signed and notarized `dmg` file in the `packaging/` directory.
 
 ## Citations
 
-<!-- TODO - HARP 3.0 paper citation -->
+[NeurIPS 2025 Workshop on AI for Music Paper](https://openreview.net/pdf?id=Ha2z921r51):
+```
+@inproceedings{cwitkowitz2025harp,
+    title     = {{HARP} 3.0: Generalizing {I/O} and {API} Support for Machine Learning in Digital Audio Workstations},
+    author    = {Cwitkowitz, Frank and Benetatos, Christodoulos and Deng, Qixin and Yu, Huiran and Pruyne, Nathan and O'Reilly, Patrick and Garcia, Hugo Flores and Duan, Zhiyao and Pardo, Bryan},
+    year      = 2025,
+    booktitle = {AI for Music Workshop}
+}
+```
 
 [ISMIR 2024 Late Breaking Demo](https://ismir2024program.ismir.net/lbd_497.html):
 ```
@@ -254,7 +261,7 @@ After running `package.sh`, you should have a signed and notarized dmg file in t
 }
 ```
 
-[NeurIPS 2023 Paper](https://neuripscreativityworkshop.github.io/2023/papers/ml4cd2023_paper23.pdf):
+[NeurIPS 2023 Workshop on Machine Learning for Creativity and Design Paper](https://neuripscreativityworkshop.github.io/2023/papers/ml4cd2023_paper23.pdf):
 ```
 @inproceedings{garcia2023harp,
     title     = {{HARP}: Bringing Deep Learning to the {DAW} with Hosted, Asynchronous, Remote Processing},

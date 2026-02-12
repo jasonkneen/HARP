@@ -1,16 +1,32 @@
-## v3.0.1
+## v3.1.0
  ### Overview
- - HARP 3.0.1 introduces a few minor improvements to workflow and usability.
+ - HARP 3.1.0 introduces significantly refactored code, major features, and many small improvements.
 
- ### Minor Improvements
- - **Settings Window**:
-   - A settings window can now be opened from the file menu. This is where most important persistent settings will be managed.
-- **Token Interactions**:
-   - The token logins for Hugging Face and Stability AI have been moved to settings. Previously added tokens are displayed and the ability to remove added tokens has been added.
-- **Token Error Messages**:
-   - The case where a user has not added a token is now detected for both Hugging Face and Stability AI models, and more intuitive error messages are given to the user.
-- **Fixed Incorrect Links**:
-   - The links for sleeping spaces have been fixed, along with better links on the about page and for the Stability AI models.
+ ### Significant Refactoring
+ - **Decoupling & Organization**:
+   - The entire codebase has been decoupled and reorganized for improved modularity and readability.
+ - **Token Management**:
+   - Tokens are now managed through a shared resource accessible through a single settings tab.
+ - **Logging & Error Reporting**:
+   - Utilities for logging, error reporting, and more have been broadened and improved.
+
+ ### Major Features
+ - **Welcome / Walkthrough**:
+   - Upon startup a Welcome / Walkthrough dialog appears to provide an overview of HARP and assist new users.
+ - **Model Tags for Loading Failures**:
+   - Upon loading failures, model paths are now added to dropdown with an appropriate tag.
+
+ ### Other Improvements
+ - **Multiple Window Interactions**:
+   - Tracks are now added to current window instead of main window when "Current Window" is selected.
+ - **Status Panel Visibility**:
+   - Toggleable visibility of status panel.
+ - **Help File Menu Tab**:
+   - A "Help" tab invoking About / Welcome windows has been added to file menu.
+ - **Control Sizing**:
+   - Fixed control sizing and enforcement of minimum window size.
+ - **MIDI Colors**:
+   - MIDI notes in pianoroll displays are now colored according to instrument number.
 
  ### Requirements
  - Supports models deployed with [`pyharp` **v0.3.0**](https://github.com/TEAMuP-dev/pyharp/releases/tag/v0.3.0) and `gradio` **v5.x.x**.
