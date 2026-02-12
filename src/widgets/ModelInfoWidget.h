@@ -7,6 +7,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <cmath>
 
 #include "../widgets/StatusAreaWidget.h"
 
@@ -57,8 +58,6 @@ public:
         authorLabel.setBounds(totalArea.translated(0, 3));
     }
 
-    // void paint(Graphics& g) override {}
-
     void setModelName(const String& modelName)
     {
         modelLabel.setText(modelName, dontSendNotification);
@@ -105,14 +104,20 @@ public:
     {
         addAndMakeVisible(modelAuthorLabel);
 
+        // Configure description as scrollable read-only text
+        description.setMultiLine(true);
+        description.setReadOnly(true);
+        description.setScrollbarsShown(true);
+        description.setCaretVisible(false); // no blinking cursor
+        description.setPopupMenuEnabled(false); // disable right-click menu
         description.setFont(Font(15.0f));
-        description.setJustificationType(Justification::topLeft);
-        description.setInterceptsMouseClicks(true, false);
 
-        descriptionViewport.setViewedComponent(&description, false);
-        descriptionViewport.setScrollBarsShown(true, false);
+        // Make it visually match the old TextLabel appearance
+        description.setColour(TextEditor::backgroundColourId, Colours::transparentBlack);
+        description.setColour(TextEditor::outlineColourId, Colours::transparentBlack);
+        description.setColour(TextEditor::shadowColourId, Colours::transparentBlack);
 
-        addAndMakeVisible(descriptionViewport);
+        addAndMakeVisible(description);
     }
 
     ~ModelInfoWidget() {}
@@ -126,24 +131,18 @@ public:
         // Set fixed size for model and author labels
         modelAuthorLabel.setBounds(bounds.removeFromTop(headerHeight));
         // Grant remaining space to description
-        descriptionViewport.setBounds(bounds);
+        description.setBounds(bounds);
+    }
 
-        const int availableWidth = descriptionViewport.getWidth();
+    int getPreferredHeightForWidth(int width) const
+    {
+        const int contentWidth = jmax(120, width - 2 * (int) marginSize);
+        const int lineCount = estimateWrappedLineCount(description.getText(), contentWidth);
+        const int visibleLines = jlimit(1, 4, lineCount);
+        const int lineHeight = (int) std::ceil(description.getFont().getHeight() + 2.0f);
+        const int descriptionHeight = visibleLines * lineHeight + 4;
 
-        if (availableWidth > 0)
-        {
-            AttributedString attributedText;
-            attributedText.setText(description.getText());
-            attributedText.setFont(description.getFont());
-            attributedText.setJustification(Justification::topLeft);
-
-            TextLayout layout;
-            layout.createLayout(attributedText, static_cast<float>(availableWidth));
-
-            const int textHeight = static_cast<int>(std::ceil(layout.getHeight()));
-
-            description.setSize(availableWidth, textHeight);
-        }
+        return (int) (2 * marginSize + headerHeight + descriptionHeight);
     }
 
     void resetState()
@@ -176,11 +175,11 @@ public:
 
         if (metadata.description.empty())
         {
-            description.setText("", dontSendNotification);
+            description.setText("");
         }
         else
         {
-            description.setText(String(metadata.description), dontSendNotification);
+            description.setText(String(metadata.description));
         }
 
         resized();
@@ -189,11 +188,62 @@ public:
     void addOpenablePath(const String& openablePath) { modelAuthorLabel.setURL(URL(openablePath)); }
 
 private:
+    int estimateWrappedLineCount(const String& text, int availableWidth) const
+    {
+        if (availableWidth <= 0)
+            return 1;
+
+        auto font = description.getFont();
+        const float spaceWidth = jmax(1.0f, font.getStringWidthFloat(" "));
+        int lines = 0;
+
+        StringArray paragraphs;
+        paragraphs.addLines(text.isEmpty() ? String(" ") : text);
+
+        for (const auto& paragraph : paragraphs)
+        {
+            StringArray words;
+            words.addTokens(paragraph, " ", "");
+            words.removeEmptyStrings();
+
+            if (words.isEmpty())
+            {
+                ++lines;
+                continue;
+            }
+
+            float currentLineWidth = 0.0f;
+            for (const auto& word : words)
+            {
+                const float wordWidth = font.getStringWidthFloat(word);
+
+                if (currentLineWidth <= 0.0f)
+                {
+                    currentLineWidth = wordWidth;
+                    continue;
+                }
+
+                if (currentLineWidth + spaceWidth + wordWidth <= (float) availableWidth)
+                {
+                    currentLineWidth += spaceWidth + wordWidth;
+                }
+                else
+                {
+                    ++lines;
+                    currentLineWidth = wordWidth;
+                }
+            }
+
+            ++lines;
+        }
+
+        return jmax(1, lines);
+    }
+
     const float headerHeight = 30;
     const float marginSize = 2;
 
     ModelAuthorLabel modelAuthorLabel;
 
-    Label description;
-    Viewport descriptionViewport;
+    TextEditor description;
 };

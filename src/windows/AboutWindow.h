@@ -58,5 +58,6 @@ private:
     HyperlinkButton modelGlossaryButton;
     HyperlinkButton visitWebpageButton;
     HyperlinkButton reportIssueButton;
+
     Label copyrightLabel;
 };

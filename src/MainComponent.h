@@ -27,7 +27,10 @@ using namespace juce;
 // Forward declaration (include in .cpp)
 class WelcomeWindow;
 
-class MainComponent : public Component, public MenuBarModel, public ApplicationCommandTarget
+class MainComponent : public Component,
+                      public MenuBarModel,
+                      public ApplicationCommandTarget,
+                      private ChangeListener
 
 {
 public:
@@ -66,17 +69,18 @@ public:
 
     // Help
     void openAboutWindow();
+    void openWelcomeWindow(bool ensureDefaultModelLoaded = false);
+
+    /* Tutorial */
+
+    std::shared_ptr<Model> getModel();
+    ChangeBroadcaster& getLoadBroadcaster();
 
     void setTutorialActive(bool active);
     void setTutorialHighlight(Rectangle<int> bounds);
     void setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds);
     void ensureTutorialModelLoaded();
     void resetTutorialAutoLoadedModel();
-    void openWelcomeWindow(bool ensureDefaultModelLoaded = false);
-
-    // Accessor methods for WelcomeWindow tutorial
-    std::shared_ptr<Model> getModel();
-    ChangeBroadcaster& getLoadBroadcaster();
 
     // Bounds accessors for tutorial steps (public for WelcomeWindow)
     Rectangle<int> getModelSelectBounds();
@@ -103,6 +107,8 @@ public:
     void paintOverChildren(Graphics& g) override;
     void resized() override;
 
+    void updateWindowConstraints();
+
 private:
     /* File Menu */
 
@@ -120,8 +126,26 @@ private:
 
     // Miscellaneous
     //void focusCallback();
+    void changeListenerCallback(ChangeBroadcaster* source);
 
     /* Interface */
+
+    const int statusAreaHeight = 100;
+    const float mediaClipboardFlex = 0.4f;
+    const float mediaClipboardScale = 1.4f;
+
+    // Minimum size to ensure all controls remain visible and functional:
+    // - WelcomeWindow popup is 480x500, needs padding
+    // - Dropdown labels need adequate width
+    // - Control Area needs space for sliders/toggles/textboxes
+    const int minimumWindowWidth = 700;
+    const int minimumWindowHeight = 500;
+    const int minimumMainPanelWidth = 320;
+    const int minimumMainPanelHorPadding = 32;
+    const int minimumMainPanelVertPadding = 32;
+
+    int requiredWindowWidth;
+    int requiredWindowHeight;
 
     bool showStatusArea;
     bool showMediaClipboard;

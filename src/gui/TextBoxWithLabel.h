@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "ControlComponent.h"
 
 using namespace juce;
 
-class TextBoxWithLabel : public Component
+class TextBoxWithLabel : public ControlComponent
 {
 public:
     TextBoxWithLabel(const String& labelText)
@@ -45,11 +45,19 @@ public:
         textBox.setBounds(textBoxArea);
     }
 
+    int getMinimumRequiredWidth() const override
+    {
+        const int labelWidth = getLabelWidth(label);
+        return jmax(minTextBoxWidth, labelWidth + defaultPadding);
+    }
+
     TextEditor& getTextBox() { return textBox; }
 
     void setText(const String& text) { textBox.setText(text, dontSendNotification); }
 
 private:
+    static constexpr int minTextBoxWidth = 120;
+
     Label label;
     TextEditor textBox;
 };

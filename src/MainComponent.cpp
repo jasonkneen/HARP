@@ -11,6 +11,8 @@ MainComponent::MainComponent()
 
     initializeMenuBar();
 
+    mainModelTab.addChangeListener(this);
+
     addAndMakeVisible(mainModelTab);
     addAndMakeVisible(statusAreaWidget);
     addAndMakeVisible(mediaClipboardWidget);
@@ -18,15 +20,21 @@ MainComponent::MainComponent()
     showStatusArea = Settings::getBoolValue("view.showStatusArea", true);
     showMediaClipboard = Settings::getBoolValue("view.showMediaClipboard", false);
 
-    sharedTokens->initializeAPIKeys();
+    requiredWindowWidth = minimumWindowWidth;
+    requiredWindowHeight = minimumWindowHeight;
+    setSize(requiredWindowWidth, requiredWindowHeight);
 
-    setSize(800, 2000);
+    sharedTokens->initializeAPIKeys();
 
     statusMessage->setMessage("Welcome to HARP!");
 
 }
 
-MainComponent::~MainComponent() { deinitializeMenuBar(); }
+MainComponent::~MainComponent()
+{
+    deinitializeMenuBar();
+    mainModelTab.removeChangeListener(this);
+}
 
 void MainComponent::paint(Graphics& g)
 {
@@ -96,7 +104,7 @@ void MainComponent::resized()
 
     if (showStatusArea)
     {
-        mainPanel.items.add(FlexItem(statusAreaWidget).withHeight(100));
+        mainPanel.items.add(FlexItem(statusAreaWidget).withHeight(statusAreaHeight));
     }
     else
     {
@@ -107,7 +115,7 @@ void MainComponent::resized()
 
     if (showMediaClipboard)
     {
-        fullWindow.items.add(FlexItem(mediaClipboardWidget).withFlex(0.4));
+        fullWindow.items.add(FlexItem(mediaClipboardWidget).withFlex(mediaClipboardFlex));
     }
     else
     {
@@ -119,6 +127,65 @@ void MainComponent::resized()
     if (welcomeWindow != nullptr)
     {
         welcomeWindow->refreshHighlightForCurrentStep();
+    }
+}
+
+void MainComponent::updateWindowConstraints()
+{
+    if (auto* window = findParentComponentOfClass<DocumentWindow>())
+    {
+        // Compute percentage of total window width given to main panel
+        const float mainPanelRatio = showMediaClipboard ? (1.0f / mediaClipboardScale) : 1.0f;
+
+        // Determine minimum width needed to display controls plus padding
+        const int requiredMainPanelWidth =
+            jmax(minimumMainPanelWidth,
+                 mainModelTab.getMinimumRequiredControlWidth() + minimumMainPanelHorPadding);
+        // Determine current width of main panel
+        const int mainPanelWidth = jmax(requiredMainPanelWidth, mainModelTab.getWidth());
+        // Determine minimum height needed to display all model contents plus status widget
+        const int requiredMainPanelHeight =
+            mainModelTab.getMinimumRequiredHeightForWidth(mainPanelWidth)
+            + (showStatusArea ? statusAreaHeight : 0);
+
+        // Determine effective minimum width of entire window
+        const int newRequiredWindowWidth = jmax(
+            minimumWindowWidth, (int) std::ceil((float) requiredMainPanelWidth / mainPanelRatio));
+        // Determine effective minimum height of entire window
+        const int newRequiredWindowHeight =
+            jmax(minimumWindowHeight, requiredMainPanelHeight + minimumMainPanelVertPadding);
+
+        auto* currentDisplay =
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
+
+        const auto userArea =
+            currentDisplay != nullptr
+                ? currentDisplay->userArea
+                : Rectangle<int>(0, 0, newRequiredWindowWidth, newRequiredWindowHeight);
+
+        ComponentBoundsConstrainer* constrainer = window->getConstrainer();
+
+        constrainer->setMinimumSize(jmin(newRequiredWindowWidth, userArea.getWidth()),
+                                    jmin(newRequiredWindowHeight, userArea.getHeight()));
+        constrainer->setMaximumSize(userArea.getWidth(), userArea.getHeight());
+        constrainer->setMinimumOnscreenAmounts(40, 40, 40, 40);
+
+        const bool constraintsDecreased = newRequiredWindowWidth < requiredWindowWidth
+                                          || newRequiredWindowHeight < requiredWindowHeight;
+
+        requiredWindowWidth = newRequiredWindowWidth;
+        requiredWindowHeight = newRequiredWindowHeight;
+
+        auto bounds = window->getBounds();
+
+        window->setBoundsConstrained(bounds);
+
+        if (constraintsDecreased)
+        {
+            // Small hack allowing immediate shrinking when constraints decrease
+            window->setBounds(bounds.withWidth(bounds.getWidth() + 1));
+            window->setBounds(bounds);
+        }
     }
 }
 
@@ -163,9 +230,13 @@ void MainComponent::viewStatusAreaCallback()
     {
         // Determine which display contains HARP
         auto* currentDisplay =
-            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
 
-        int currentDisplayHeight;
+        // Get current bounds of top-level window
+        Rectangle<int> windowBounds = window->getBounds();
+
+        // Default display height to height of current window
+        int currentDisplayHeight = windowBounds.getHeight();
 
         if (currentDisplay != nullptr)
         {
@@ -179,20 +250,18 @@ void MainComponent::viewStatusAreaCallback()
             }
         }
 
-        // Get current bounds of top-level window
-        Rectangle<int> windowBounds = window->getBounds();
-
         if (showStatusArea)
         {
             // Scale bounds to extend window by height of status area
-            windowBounds.setHeight(jmin(currentDisplayHeight, windowBounds.getHeight() + 100));
+            windowBounds.setHeight(
+                jmin(currentDisplayHeight, windowBounds.getHeight() + statusAreaHeight));
         }
         else
         {
             if (! window->isFullScreen())
             {
                 // Scale bounds to reduce window to main height
-                windowBounds.setHeight(windowBounds.getHeight() - 100);
+                windowBounds.setHeight(windowBounds.getHeight() - statusAreaHeight);
             }
         }
 
@@ -206,7 +275,7 @@ void MainComponent::viewStatusAreaCallback()
     // Send status message to add check to file menu
     commandManager.commandStatusChanged();
 
-    resized();
+    updateWindowConstraints();
 }
 
 void MainComponent::viewMediaClipboardCallback()
@@ -219,9 +288,13 @@ void MainComponent::viewMediaClipboardCallback()
     {
         // Determine which display contains HARP
         auto* currentDisplay =
-            Desktop::getInstance().getDisplays().getDisplayForRect(getScreenBounds());
+            Desktop::getInstance().getDisplays().getDisplayForRect(window->getScreenBounds());
 
-        int currentDisplayWidth;
+        // Get current bounds of top-level window
+        Rectangle<int> windowBounds = window->getBounds();
+
+        // Default display width to width of current window
+        int currentDisplayWidth = windowBounds.getWidth();
 
         if (currentDisplay != nullptr)
         {
@@ -235,23 +308,20 @@ void MainComponent::viewMediaClipboardCallback()
             }
         }
 
-        //int totalDesktopWidth = Desktop::getInstance().getDisplays().getDisplayForRect(getBounds())->totalArea.getWidth();
-
-        // Get current bounds of top-level window
-        Rectangle<int> windowBounds = window->getBounds();
-
         if (showMediaClipboard)
         {
             // Scale bounds to extend window by 40% of main width
             windowBounds.setWidth(
-                jmin(currentDisplayWidth, static_cast<int>(1.4 * windowBounds.getWidth())));
+                jmin(currentDisplayWidth,
+                     static_cast<int>(mediaClipboardScale * windowBounds.getWidth())));
         }
         else
         {
             if (! window->isFullScreen())
             {
                 // Scale bounds to reduce window to main width
-                windowBounds.setWidth(static_cast<int>(windowBounds.getWidth() / 1.4));
+                windowBounds.setWidth(
+                    static_cast<int>(windowBounds.getWidth() / mediaClipboardScale));
             }
         }
 
@@ -265,7 +335,7 @@ void MainComponent::viewMediaClipboardCallback()
     // Send status message to add check to file menu
     commandManager.commandStatusChanged();
 
-    resized();
+    updateWindowConstraints();
 }
 
 /* --Help-- */
@@ -541,3 +611,11 @@ void MainComponent::focusCallback()
     }
 }
 */
+
+void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
+{
+    if (source == &mainModelTab)
+    {
+        updateWindowConstraints();
+    }
+}

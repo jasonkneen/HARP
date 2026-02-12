@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "ControlComponent.h"
 
 using namespace juce;
 
-class SliderWithLabel : public Component
+class SliderWithLabel : public ControlComponent
 {
 public:
     SliderWithLabel(const String& labelText, Slider::SliderStyle style)
@@ -34,9 +34,17 @@ public:
         slider.setBounds(sliderArea);
     }
 
+    int getMinimumRequiredWidth() const override
+    {
+        const int labelWidth = getLabelWidth(label);
+        return jmax(minSliderBody, labelWidth + defaultPadding);
+    }
+
     Slider& getSlider() { return slider; }
 
 private:
+    static constexpr int minSliderBody = 60;
+
     Label label;
     Slider slider;
 };
