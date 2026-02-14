@@ -1,7 +1,6 @@
 #include "MainComponent.h"
 
 #include "windows/WelcomeWindow.h"
-#include "utils/TutorialConstants.h"
 
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
@@ -27,7 +26,6 @@ MainComponent::MainComponent()
     sharedTokens->initializeAPIKeys();
 
     statusMessage->setMessage("Welcome to HARP!");
-
 }
 
 MainComponent::~MainComponent()
@@ -356,42 +354,6 @@ void MainComponent::openAboutWindow()
     options.launchAsync();
 }
 
-void MainComponent::setTutorialActive(bool active)
-{
-    isTutorialActive = active;
-    repaint();
-}
-
-void MainComponent::setTutorialHighlight(Rectangle<int> bounds)
-{
-    tutorialHighlightRect = bounds;
-    repaint();
-}
-
-void MainComponent::setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds)
-{
-    tutorialExtraHighlights = bounds;
-    repaint();
-}
-
-void MainComponent::ensureTutorialModelLoaded()
-{
-    if (! mainModelTab.isModelLoaded())
-        mainModelTab.loadDefaultModel();
-}
-
-void MainComponent::resetTutorialAutoLoadedModel()
-{
-    if (! mainModelTab.isModelLoaded())
-        return;
-
-    if (mainModelTab.getLoadedPath() == TutorialConstants::fallbackModelPath)
-    {
-        mainModelTab.clearLoadedModel();
-        resized();
-    }
-}
-
 void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
 {
     if (ensureDefaultModelLoaded)
@@ -423,23 +385,47 @@ void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
         });
 }
 
-// Accessor methods for WelcomeWindow tutorial
-std::shared_ptr<Model> MainComponent::getModel() { return mainModelTab.getModel(); }
+/* --Tutorial-- */
 
-ChangeBroadcaster& MainComponent::getLoadBroadcaster() { return mainModelTab.getLoadBroadcaster(); }
+void MainComponent::setTutorialActive(bool active)
+{
+    isTutorialActive = active;
+    repaint();
+}
 
-// Bounds accessors for tutorial steps - delegate to mainModelTab
+void MainComponent::setTutorialHighlight(Rectangle<int> bounds)
+{
+    tutorialHighlightRect = bounds;
+    repaint();
+}
+
+void MainComponent::setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds)
+{
+    tutorialExtraHighlights = bounds;
+    repaint();
+}
+
+void MainComponent::ensureTutorialModelLoaded()
+{
+    if (! mainModelTab.isModelLoaded())
+        mainModelTab.loadDefaultModel();
+}
+
+void MainComponent::resetTutorialAutoLoadedModel()
+{
+    if (! mainModelTab.isModelLoaded())
+        return;
+
+    if (mainModelTab.getLoadedPath() == TutorialConstants::fallbackModelPath)
+    {
+        mainModelTab.resetState();
+    }
+}
+
 Rectangle<int> MainComponent::getModelSelectBounds()
 {
     auto bounds = mainModelTab.getModelSelectBounds();
     return getLocalArea(&mainModelTab, bounds);
-}
-
-Rectangle<int> MainComponent::getInfoBarBounds()
-{
-    if (showStatusArea && statusAreaWidget.isVisible())
-        return statusAreaWidget.getBounds().expanded(5, 5);
-    return {};
 }
 
 Rectangle<int> MainComponent::getControlsBounds()
@@ -481,7 +467,7 @@ Rectangle<int> MainComponent::getTracksBounds()
 Rectangle<int> MainComponent::getClipboardBounds()
 {
     if (showMediaClipboard && mediaClipboardWidget.isVisible())
-        return mediaClipboardWidget.getBounds().expanded(5, 5);
+        return mediaClipboardWidget.getBounds();
     return {};
 }
 
@@ -562,6 +548,13 @@ Rectangle<int> MainComponent::getClipboardSendToDAWButtonBounds()
         auto bounds = mediaClipboardWidget.getSendToDAWButtonBounds();
         return getLocalArea(&mediaClipboardWidget, bounds);
     }
+    return {};
+}
+
+Rectangle<int> MainComponent::getInfoBarBounds()
+{
+    if (showStatusArea && statusAreaWidget.isVisible())
+        return statusAreaWidget.getBounds();
     return {};
 }
 

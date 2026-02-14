@@ -76,19 +76,7 @@ public:
 
         mainWindow.reset(new HARPWindow(windowTitle));
 
-        bool forceShowWelcome = false;
-
-        bool showWelcome = true;
-
-        if (! forceShowWelcome)
-        {
-            const String welcomeKey = "view.showWelcomePopup";
-
-            if (Settings::containsKey(welcomeKey))
-            {
-                showWelcome = Settings::getIntValue(welcomeKey, 1);
-            }
-        }
+        bool showWelcome = Settings::getBoolValue("view.showWelcomePopup", true);
 
         if (showWelcome)
         {

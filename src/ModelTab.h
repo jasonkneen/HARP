@@ -17,7 +17,7 @@
 
 #include "utils/Errors.h"
 #include "utils/Logging.h"
-#include "utils/TutorialConstants.h"
+#include "utils/Tutorial.h"
 
 using namespace juce;
 
@@ -51,18 +51,11 @@ public:
 
     // Accessor methods for WelcomeWindow tutorial
     std::shared_ptr<Model> getModel() const { return model; }
-    ChangeBroadcaster& getLoadBroadcaster() { return modelLoadedBroadcaster; }
     String getLoadedPath() const { return model->getLoadedPath(); }
 
     void loadDefaultModel()
     {
         modelSelectionWidget.loadModelBypass(TutorialConstants::fallbackModelPath);
-    }
-
-    void clearLoadedModel()
-    {
-        resetState();
-        resized();
     }
 
     // Bounds accessors for tutorial steps
@@ -73,8 +66,11 @@ public:
 
     Rectangle<int> getControlsBounds() const
     {
-        if (controlAreaWidget.isVisible())
-            return controlAreaWidget.getBounds().expanded(5, 5);
+        auto bounds = controlAreaWidget.getBounds();
+
+        if (bounds.getWidth() > 0 && bounds.getHeight() > 0)
+            return bounds.expanded(2, 2);
+
         return {};
     }
 
@@ -105,7 +101,7 @@ public:
         if (outputTracksLabel.isVisible())
             bounds = bounds.getUnion(outputTracksLabel.getBounds());
 
-        return bounds.expanded(5, 5);
+        return bounds.expanded(2, 2);
     }
 
     bool isModelLoaded()
@@ -247,6 +243,8 @@ public:
         processCancelButton.setEnabled(false);
 
         currentProcessID = 0;
+
+        resized();
     }
 
 private:
@@ -438,9 +436,9 @@ private:
                             inputTrackAreaWidget.updateTracks(model->getInputTracks());
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
-                            sendSynchronousChangeMessage();
                             resized();
-                            modelLoadedBroadcaster.sendChangeMessage();
+
+                            sendSynchronousChangeMessage();
 
                             // Re-enable processing immediately
                             processCancelButton.setEnabled(true);
@@ -603,7 +601,6 @@ private:
 
     ThreadPool loadingThreadPool { 1 };
     ThreadPool processingThreadPool { 10 };
-    ChangeBroadcaster modelLoadedBroadcaster;
 
     std::atomic<uint64_t> currentProcessID { 0 };
 };

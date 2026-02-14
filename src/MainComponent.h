@@ -21,6 +21,7 @@
 #include "utils/Interface.h"
 #include "utils/Logging.h"
 #include "utils/Settings.h"
+#include "utils/Tutorial.h"
 
 using namespace juce;
 
@@ -73,8 +74,7 @@ public:
 
     /* Tutorial */
 
-    std::shared_ptr<Model> getModel();
-    ChangeBroadcaster& getLoadBroadcaster();
+    ModelTab* getModelTab() { return &mainModelTab; }
 
     void setTutorialActive(bool active);
     void setTutorialHighlight(Rectangle<int> bounds);
@@ -84,7 +84,6 @@ public:
 
     // Bounds accessors for tutorial steps (public for WelcomeWindow)
     Rectangle<int> getModelSelectBounds();
-    Rectangle<int> getInfoBarBounds();
     Rectangle<int> getControlsBounds();
     Rectangle<int> getInputTrackBounds();
     Rectangle<int> getInputFolderBounds();
@@ -100,6 +99,7 @@ public:
     Rectangle<int> getClipboardRemoveButtonBounds();
     Rectangle<int> getClipboardPlayButtonBounds();
     Rectangle<int> getClipboardSendToDAWButtonBounds();
+    Rectangle<int> getInfoBarBounds();
 
     /* Component */
 

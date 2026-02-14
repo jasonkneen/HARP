@@ -12,7 +12,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../utils/Settings.h"
-#include "../utils/TutorialConstants.h"
+#include "../utils/Tutorial.h"
 
 using namespace juce;
 
@@ -38,94 +38,34 @@ public:
           mainComponent(mainComp)
     {
         setUsingNativeTitleBar(true);
-        setResizable(true, true);
-        setSize(500, 420);
+        WelcomeContent* c = new WelcomeContent(*this);
+        setContentOwned(c, true);
+        content = c;
+
         setAlwaysOnTop(true);
-        setContentOwned(new Component(), true);
+        setResizable(true, true); // Still need to set this to fix size with constrainer
+        centreWithSize(content->getWidth(), content->getHeight());
+
+        setConstrainer(&constrainer);
+        constrainer.setMinimumSize(content->getWidth(), content->getHeight());
+        constrainer.setMaximumSize(content->getWidth(), content->getHeight());
+        constrainer.setMinimumOnscreenAmounts(40, 40, 40, 40);
 
         if (mainComponent)
         {
-            mainComponent->getLoadBroadcaster().addChangeListener(this);
+            mainComponent->getModelTab()->addChangeListener(this);
             mainComponent->setTutorialActive(true);
         }
 
-        // Initial Build
         rebuildSteps();
-
-        // UI Init
-        addToContent(titleLabel);
-        titleLabel.setFont(Font(24.0f, Font::bold));
-        titleLabel.setJustificationType(Justification::centred);
-
-        addToContent(descriptionEditor);
-        descriptionEditor.setMultiLine(true);
-        descriptionEditor.setReadOnly(true);
-        descriptionEditor.setScrollbarsShown(true);
-        descriptionEditor.setCaretVisible(false);
-        // Make it look like a label (transparent)
-        descriptionEditor.setColour(TextEditor::backgroundColourId, Colours::transparentBlack);
-        descriptionEditor.setColour(TextEditor::outlineColourId, Colours::transparentBlack);
-        descriptionEditor.setFont(Font(16.0f));
-
-        addToContent(learnMoreLink);
-        learnMoreLink.setButtonText("Learn more");
-        learnMoreLink.setURL(URL("https://harp-plugin.netlify.app/content/intro.html"));
-
-        // pyHarpLink init removed
-
-        // Step 2 Labels init
-        // hostingEditor init removed
-
-        // endpointLabel removed
-
-        addToContent(copyrightLabel);
-        copyrightLabel.setText("Copyright 2026 TEAMuP. All rights reserved.", dontSendNotification);
-        copyrightLabel.setJustificationType(Justification::centred);
-        copyrightLabel.setFont(Font(12.0f));
-        copyrightLabel.setColour(Label::textColourId, Colours::grey);
-
-        addToContent(nextButton);
-        nextButton.setButtonText("Next");
-        nextButton.onClick = [this] { nextStep(); };
-
-        addToContent(prevButton);
-        prevButton.setButtonText("Back");
-        prevButton.onClick = [this] { prevStep(); };
-
-        addToContent(skipButton);
-        skipButton.setButtonText("Skip Tutorial");
-        skipButton.onClick = [this] { skipTutorial(); };
-
-        addToContent(dontShowAgainToggle);
-        dontShowAgainToggle.setButtonText("Dont show again");
-        dontShowAgainToggle.setToggleState(false, dontSendNotification);
-
-        addToContent(pageIndicator);
-        pageIndicator.setJustificationType(Justification::centredLeft);
-        pageIndicator.setFont(Font(12.0f));
-        pageIndicator.setInterceptsMouseClicks(false, false);
-
-        addToContent(showDetailsButton);
-        showDetailsButton.setButtonText("Show detailed control descriptions");
-        showDetailsButton.onClick = [this]
-        {
-            showingDetails = ! showingDetails;
-            showDetailsButton.setButtonText(showingDetails ? "Hide detailed control descriptions"
-                                                           : "Show detailed control descriptions");
-            rebuildSteps();
-            updateStep();
-        };
-
-        // Initial Update
         updateStep();
-        setVisible(true);
     }
 
     ~WelcomeWindow() override
     {
         if (mainComponent)
         {
-            mainComponent->getLoadBroadcaster().removeChangeListener(this);
+            mainComponent->getModelTab()->removeChangeListener(this);
             mainComponent->setTutorialActive(false);
         }
     }
@@ -137,17 +77,16 @@ public:
         {
             if (mainComponent != nullptr)
             {
-                auto model = mainComponent->getModel();
+                auto model = mainComponent->getModelTab()->getModel();
                 auto loadedPath = model ? model->getLoadedPath() : String();
 
-                autoLoadedByTutorialFallback =
-                    (loadedPath == TutorialConstants::fallbackModelPath);
+                autoLoadedByTutorialFallback = (loadedPath == TutorialConstants::fallbackModelPath);
             }
             pendingTutorialFallbackLoad = false;
         }
         else if (autoLoadedByTutorialFallback && mainComponent != nullptr)
         {
-            auto model = mainComponent->getModel();
+            auto model = mainComponent->getModelTab()->getModel();
             auto loadedPath = model ? model->getLoadedPath() : String();
             if (loadedPath != TutorialConstants::fallbackModelPath)
                 autoLoadedByTutorialFallback = false;
@@ -155,13 +94,13 @@ public:
 
         rebuildSteps();
 
-        if (currentStep > 0)
+        if (content->currentStep > 0)
         {
             // Auto-jump to Step 3 ("Quick Start") if user loads a new model
             // (Index 2 corresponds to "Quick Start")
             if (steps.size() > 2)
             {
-                currentStep = 2;
+                content->currentStep = 2;
             }
         }
 
@@ -194,7 +133,7 @@ public:
 
         if (mainComponent)
         {
-            auto model = mainComponent->getModel();
+            auto model = mainComponent->getModelTab()->getModel();
             if (model && model->isLoaded())
             {
                 modelName = model->getMetadata().name;
@@ -224,7 +163,8 @@ public:
                       bounds.setRight(clipboard.getX());
                   }
                   return bounds;
-              }, // Highlight entire interface except clipboard
+              },
+              // Highlight entire interface except clipboard
               [](MainComponent* c)
               {
                   std::vector<Rectangle<int>> v;
@@ -237,7 +177,7 @@ public:
         // 4. Configure Parameters (Dynamic)
         if (mainComponent)
         {
-            auto model = mainComponent->getModel();
+            auto model = mainComponent->getModelTab()->getModel();
             if (model && model->isLoaded())
             {
                 String controlsStepTitle = "Configure Parameters (Optional)";
@@ -248,7 +188,7 @@ public:
 
                 String fullText = baseText;
 
-                if (showingDetails)
+                if (content->showingDetails)
                 {
                     fullText +=
                         "--------------------------------------------------\nDetailed Control Descriptions:\n\n";
@@ -357,8 +297,8 @@ public:
         // Refresh if we are showing the tutorial
         if (isVisible())
         {
-            if (currentStep >= (int) steps.size())
-                currentStep = (int) steps.size() - 1;
+            if (content->currentStep >= (int) steps.size())
+                content->currentStep = (int) steps.size() - 1;
             updateStep();
         }
     }
@@ -538,14 +478,73 @@ public:
         g.fillAll(getLookAndFeel().findColour(ResizableWindow::backgroundColourId));
     }
 
-    void resized() override
+private:
+    class WelcomeContent : public Component
     {
-        DocumentWindow::resized();
-        ensureContentChildrenAttached();
-
-        if (auto* content = resolveContentRoot())
+    public:
+        explicit WelcomeContent(WelcomeWindow& ownerRef) : owner(ownerRef)
         {
-            auto area = content->getLocalBounds().reduced(20);
+            // UI Init
+            addAndMakeVisible(titleLabel);
+            titleLabel.setFont(Font(24.0f, Font::bold));
+            titleLabel.setJustificationType(Justification::centred);
+
+            addAndMakeVisible(descriptionEditor);
+            descriptionEditor.setMultiLine(true);
+            descriptionEditor.setReadOnly(true);
+            descriptionEditor.setScrollbarsShown(true);
+            descriptionEditor.setCaretVisible(false);
+            // Make it look like a label (transparent)
+            descriptionEditor.setColour(TextEditor::backgroundColourId, Colours::transparentBlack);
+            descriptionEditor.setColour(TextEditor::outlineColourId, Colours::transparentBlack);
+            descriptionEditor.setFont(Font(16.0f));
+
+            addAndMakeVisible(learnMoreLink);
+            learnMoreLink.setButtonText("Learn more");
+            learnMoreLink.setURL(URL("https://harp-plugin.netlify.app/content/intro.html"));
+
+            addAndMakeVisible(copyrightLabel);
+            copyrightLabel.setText("Copyright 2026 TEAMuP. All rights reserved.",
+                                   dontSendNotification);
+            copyrightLabel.setJustificationType(Justification::centred);
+            copyrightLabel.setFont(Font(12.0f));
+            copyrightLabel.setColour(Label::textColourId, Colours::grey);
+
+            addAndMakeVisible(nextButton);
+            nextButton.onClick = [this] { owner.nextStep(); };
+
+            addAndMakeVisible(prevButton);
+            prevButton.onClick = [this] { owner.prevStep(); };
+
+            addAndMakeVisible(skipButton);
+            skipButton.onClick = [this] { owner.skipTutorial(); };
+
+            addAndMakeVisible(dontShowAgainToggle);
+            bool notToggleState = Settings::getBoolValue("view.showWelcomePopup", true);
+            dontShowAgainToggle.setToggleState(! notToggleState, dontSendNotification);
+
+            addAndMakeVisible(pageIndicator);
+            pageIndicator.setJustificationType(Justification::centredLeft);
+            pageIndicator.setFont(Font(12.0f));
+            pageIndicator.setInterceptsMouseClicks(false, false);
+
+            addAndMakeVisible(showDetailsButton);
+            showDetailsButton.onClick = [this]
+            {
+                showingDetails = ! showingDetails;
+                showDetailsButton.setButtonText(showingDetails
+                                                    ? "Hide detailed control descriptions"
+                                                    : "Show detailed control descriptions");
+                owner.rebuildSteps();
+                owner.updateStep();
+            };
+
+            setSize(500, 420);
+        }
+
+        void resized() override
+        {
+            auto area = getLocalBounds().reduced(20);
 
             titleLabel.setBounds(area.removeFromTop(40));
             area.removeFromTop(10);
@@ -556,14 +555,16 @@ public:
 
             const int buttonHeight = 30;
             const int buttonPaddingX = 28;
-            const int buttonWidth = jmax(skipButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX,
-                                         nextButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX);
+            const int buttonWidth =
+                jmax(skipButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX,
+                     nextButton.getBestWidthForHeight(buttonHeight) + buttonPaddingX);
             skipButton.setBounds(footer.removeFromLeft(buttonWidth));
             nextButton.setBounds(footer.removeFromRight(buttonWidth));
             footer.removeFromRight(10);
             prevButton.setBounds(footer.removeFromRight(buttonWidth));
 
-            const int middleRightX = prevButton.isVisible() ? (prevButton.getX() - 10) : nextButton.getX();
+            const int middleRightX =
+                prevButton.isVisible() ? (prevButton.getX() - 10) : nextButton.getX();
             const int middleX = skipButton.getRight() + 12;
             const int middleW = jmax(0, middleRightX - middleX);
             copyrightLabel.setBounds(middleX, footer.getY(), middleW, footer.getHeight());
@@ -603,56 +604,40 @@ public:
                 learnMoreLink.setVisible(false);
             }
         }
-    }
 
-private:
-    void ensureContentChildrenAttached()
-    {
-        if (auto* content = resolveContentRoot())
-        {
-            auto attach = [content](Component& component)
-            {
-                if (component.getParentComponent() != content)
-                    content->addAndMakeVisible(component);
-            };
+        Label titleLabel;
+        TextEditor descriptionEditor;
 
-            attach(titleLabel);
-            attach(descriptionEditor);
-            attach(learnMoreLink);
-            attach(copyrightLabel);
-            attach(nextButton);
-            attach(prevButton);
-            attach(skipButton);
-            attach(dontShowAgainToggle);
-            attach(pageIndicator);
-            attach(showDetailsButton);
-        }
-    }
+        TextButton nextButton { "Next" };
+        TextButton prevButton { "Back" };
+        TextButton skipButton { "Skip Tutorial" };
+        ToggleButton dontShowAgainToggle { "Don't show again" };
 
-    void addToContent(Component& component)
-    {
-        if (auto* content = resolveContentRoot())
-            content->addAndMakeVisible(component);
-    }
+        Label pageIndicator;
+        HyperlinkButton learnMoreLink { "Learn more",
+                                        URL("https://harp-plugin.netlify.app/content/intro.html") };
+        Label copyrightLabel;
 
-    Component* resolveContentRoot()
-    {
-        if (contentRoot == nullptr)
-            contentRoot = getContentComponent();
-        return contentRoot;
-    }
+        TextButton showDetailsButton { "Show detailed control descriptions" };
+
+        int currentStep = 0;
+        bool showingDetails = false;
+
+    private:
+        WelcomeWindow& owner;
+    };
 
     void updateStep()
     {
         if (steps.empty())
             return;
 
-        const auto& step = steps[size_t(currentStep)];
+        const auto& step = steps[size_t(content->currentStep)];
 
-        titleLabel.setText(step.title, dontSendNotification);
-        descriptionEditor.setText(step.description);
+        content->titleLabel.setText(step.title, dontSendNotification);
+        content->descriptionEditor.setText(step.description);
         // Scroll to top when changing steps
-        descriptionEditor.setCaretPosition(0);
+        content->descriptionEditor.setCaretPosition(0);
 
         // Highlight logic
         {
@@ -670,40 +655,41 @@ private:
         }
 
         // Buttons
-        prevButton.setVisible(currentStep > 0);
+        content->prevButton.setVisible(content->currentStep > 0);
 
-        bool isLast = currentStep == (int) steps.size() - 1;
-        bool isFirst = currentStep == 0;
-        // bool isSecond = currentStep == 1; // "Select a Model"
+        bool isLast = content->currentStep == (int) steps.size() - 1;
+        bool isFirst = content->currentStep == 0;
+        // bool isSecond = content->currentStep == 1; // "Select a Model"
 
-        nextButton.setButtonText(isLast ? "Finish" : "Next");
-        skipButton.setVisible(true);
-        dontShowAgainToggle.setVisible(true);
+        content->nextButton.setButtonText(isLast ? "Finish" : "Next");
+        content->skipButton.setVisible(true);
+        content->dontShowAgainToggle.setVisible(true);
 
         // Items specific to first page
-        learnMoreLink.setVisible(isFirst);
-        copyrightLabel.setVisible(isFirst);
+        content->learnMoreLink.setVisible(isFirst);
+        content->copyrightLabel.setVisible(isFirst);
 
         // Item specific to second page (Step 2)
         // hostingEditor removed
         // pyHarpLink removed
 
-        pageIndicator.setText("Step " + String(currentStep + 1) + " of " + String(steps.size()),
-                              dontSendNotification);
+        content->pageIndicator.setText("Step " + String(content->currentStep + 1) + " of "
+                                           + String(steps.size()),
+                                       dontSendNotification);
 
         // Show details button only on Configure Parameters step
         bool isConfigParams = step.title.contains("Configure Parameters");
-        showDetailsButton.setVisible(isConfigParams);
+        content->showDetailsButton.setVisible(isConfigParams);
 
         // Trigger layout update
-        resized();
+        content->resized();
     }
 
     void nextStep()
     {
-        if (currentStep == 1 && mainComponent != nullptr)
+        if (content->currentStep == 1 && mainComponent != nullptr)
         {
-            auto model = mainComponent->getModel();
+            auto model = mainComponent->getModelTab()->getModel();
             if (! model || ! model->isLoaded())
             {
                 pendingTutorialFallbackLoad = true;
@@ -712,9 +698,9 @@ private:
             }
         }
 
-        if (currentStep < (int) steps.size() - 1)
+        if (content->currentStep < (int) steps.size() - 1)
         {
-            currentStep++;
+            content->currentStep++;
             updateStep();
         }
         else
@@ -725,24 +711,20 @@ private:
 
     void prevStep()
     {
-        if (currentStep > 0)
+        if (content->currentStep > 0)
         {
-            currentStep--;
+            content->currentStep--;
             updateStep();
         }
     }
 
-    void skipTutorial()
-    {
-        finishTutorial();
-    }
+    void skipTutorial() { finishTutorial(); }
 
     void finishTutorial()
     {
-        if (dontShowAgainToggle.getToggleState())
-        {
-            Settings::setValue("view.showWelcomePopup", 0, true);
-        }
+        String showWelcomePopupUponNextStartup =
+            ! content->dontShowAgainToggle.getToggleState() ? "1" : "0";
+        Settings::setValue("view.showWelcomePopup", showWelcomePopupUponNextStartup, true);
 
         if (autoLoadedByTutorialFallback && mainComponent != nullptr)
             mainComponent->resetTutorialAutoLoadedModel();
@@ -750,29 +732,15 @@ private:
         closeButtonPressed();
     }
 
-    MainComponent* mainComponent;
-    Component* contentRoot = nullptr;
-    std::vector<TutorialStep> steps;
-    int currentStep = 0;
     bool pendingTutorialFallbackLoad = false;
     bool autoLoadedByTutorialFallback = false;
 
-    Label titleLabel;
-    TextEditor descriptionEditor; // Changed from Label
+    std::vector<TutorialStep> steps;
 
-    // Step 2 specific labels removed
+    MainComponent* mainComponent;
+    WelcomeContent* content = nullptr;
 
-    TextButton nextButton;
-    TextButton prevButton;
-    TextButton skipButton;
-    ToggleButton dontShowAgainToggle;
-    Label pageIndicator;
-    HyperlinkButton learnMoreLink;
-    // HyperlinkButton pyHarpLink; // Removed
-    Label copyrightLabel;
-
-    TextButton showDetailsButton;
-    bool showingDetails = false;
+    ComponentBoundsConstrainer constrainer;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WelcomeWindow)
 };
