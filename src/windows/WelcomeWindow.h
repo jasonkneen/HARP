@@ -44,12 +44,13 @@ public:
 
         setAlwaysOnTop(true);
         setResizable(true, true); // Still need to set this to fix size with constrainer
-        centreWithSize(content->getWidth(), content->getHeight());
 
         setConstrainer(&constrainer);
         constrainer.setMinimumSize(content->getWidth(), content->getHeight());
         constrainer.setMaximumSize(content->getWidth(), content->getHeight());
         constrainer.setMinimumOnscreenAmounts(40, 40, 40, 40);
+
+        positionOnMainComponentDisplay();
 
         if (mainComponent)
         {
@@ -479,6 +480,30 @@ public:
     }
 
 private:
+    void positionOnMainComponentDisplay()
+    {
+        const int width = content != nullptr ? content->getWidth() : getWidth();
+        const int height = content != nullptr ? content->getHeight() : getHeight();
+        setSize(width, height);
+
+        Rectangle<int> targetBounds;
+
+        if (mainComponent != nullptr)
+        {
+            if (auto* topLevel = mainComponent->getTopLevelComponent())
+                targetBounds = topLevel->getScreenBounds();
+        }
+
+        if (targetBounds.isEmpty())
+        {
+            centreWithSize(width, height);
+            return;
+        }
+
+        setTopLeftPosition(targetBounds.getCentreX() - width / 2,
+                           targetBounds.getCentreY() - height / 2);
+    }
+
     class WelcomeContent : public Component
     {
     public:

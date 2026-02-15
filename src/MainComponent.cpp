@@ -379,7 +379,6 @@ void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
                     safeThis->welcomeWindow.reset();
             };
 
-            safeThis->welcomeWindow->centreWithSize(500, 420);
             safeThis->welcomeWindow->setVisible(true);
             safeThis->welcomeWindow->toFront(true);
         });
