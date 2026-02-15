@@ -210,6 +210,12 @@ public:
 
     String getCurrentlySelectedPath() { return selectedPath; }
 
+    void loadModelBypass(const String& modelPath)
+    {
+        selectedPath = modelPath;
+        sendChangeMessage();
+    }
+
     void resetState()
     {
         lastLoadedPathIndex = -1;
@@ -483,8 +489,7 @@ private:
             DBG_AND_LOG("ModelSelectionWidget::openCustomPathPopup::loadCallback: "
                         << "Custom path \"" << path << "\" entered.");
 
-            selectedPath = path;
-            sendChangeMessage();
+            loadModelBypass(path);
         };
 
         std::function<void()> cancelCallback = [this]()

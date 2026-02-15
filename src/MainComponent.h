@@ -21,8 +21,12 @@
 #include "utils/Interface.h"
 #include "utils/Logging.h"
 #include "utils/Settings.h"
+#include "utils/Tutorial.h"
 
 using namespace juce;
+
+// Forward declaration (include in .cpp)
+class WelcomeWindow;
 
 class MainComponent : public Component,
                       public MenuBarModel,
@@ -66,11 +70,41 @@ public:
 
     // Help
     void openAboutWindow();
-    //void openWelcomeWindow();
+    void openWelcomeWindow(bool ensureDefaultModelLoaded = false);
+
+    /* Tutorial */
+
+    ModelTab* getModelTab() { return &mainModelTab; }
+
+    void setTutorialActive(bool active);
+    void setTutorialHighlight(Rectangle<int> bounds);
+    void setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds);
+    void ensureTutorialModelLoaded();
+    void resetTutorialAutoLoadedModel();
+
+    // Bounds accessors for tutorial steps (public for WelcomeWindow)
+    Rectangle<int> getModelSelectBounds();
+    Rectangle<int> getControlsBounds();
+    Rectangle<int> getInputTrackBounds();
+    Rectangle<int> getInputFolderBounds();
+    Rectangle<int> getInputPlayBounds();
+    Rectangle<int> getProcessButtonBounds();
+    Rectangle<int> getTracksBounds();
+    Rectangle<int> getClipboardBounds();
+    Rectangle<int> getClipboardTrackAreaBounds();
+    Rectangle<int> getClipboardControlsBounds();
+    Rectangle<int> getClipboardNameBoxBounds();
+    Rectangle<int> getClipboardButtonsBounds();
+    Rectangle<int> getClipboardAddButtonBounds();
+    Rectangle<int> getClipboardRemoveButtonBounds();
+    Rectangle<int> getClipboardPlayButtonBounds();
+    Rectangle<int> getClipboardSendToDAWButtonBounds();
+    Rectangle<int> getInfoBarBounds();
 
     /* Component */
 
     void paint(Graphics& g) override;
+    void paintOverChildren(Graphics& g) override;
     void resized() override;
 
     void updateWindowConstraints();
@@ -119,6 +153,11 @@ private:
     ModelTab mainModelTab;
     StatusAreaWidget statusAreaWidget;
     MediaClipboardWidget mediaClipboardWidget;
+
+    bool isTutorialActive = false;
+    Rectangle<int> tutorialHighlightRect;
+    std::vector<Rectangle<int>> tutorialExtraHighlights;
+    std::unique_ptr<WelcomeWindow> welcomeWindow;
 
     SharedResourcePointer<SharedAPIKeys> sharedTokens;
     SharedResourcePointer<StatusMessage> statusMessage;

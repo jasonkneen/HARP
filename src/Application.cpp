@@ -19,8 +19,8 @@ enum CommandIDs
     viewMediaClipboard = 0x2001,
 
     // Help
-    welcome = 0x3000,
-    about = 0x3001
+    about = 0x3000,
+    tutorial = 0x3001
 };
 
 StringArray MainComponent::getMenuBarNames()
@@ -75,7 +75,7 @@ PopupMenu MainComponent::getMenuForIndex([[maybe_unused]] int menuIndex, const S
     else if (menuName == "Help")
     {
         menu.addCommandItem(&commandManager, CommandIDs::about);
-        menu.addCommandItem(&commandManager, CommandIDs::welcome);
+        menu.addCommandItem(&commandManager, CommandIDs::tutorial);
     }
     else
     {
@@ -140,7 +140,7 @@ void MainComponent::getAllCommands(Array<CommandID>& commands)
 
     commands.addArray(viewIDs, numElementsInArray(viewIDs));
 
-    const CommandID helpIDs[] = { CommandIDs::about, CommandIDs::welcome };
+    const CommandID helpIDs[] = { CommandIDs::about, CommandIDs::tutorial };
 
     commands.addArray(helpIDs, numElementsInArray(helpIDs));
 }
@@ -209,15 +209,15 @@ void MainComponent::getCommandInfo(CommandID commandID, ApplicationCommandInfo& 
             break;
 
         /* --Help-- */
-        case CommandIDs::welcome:
-            result.setInfo(
-                "Welcome Page", "Provides helpful information for first-time users", "Help", 0);
-
-            break;
-
         case CommandIDs::about:
             result.setInfo(
                 "About HARP", "Provides helpful information and links for application", "Help", 0);
+
+            break;
+
+        case CommandIDs::tutorial:
+            result.setInfo(
+                "Welcome Tutorial", "Provides helpful information for first-time users", "Help", 0);
 
             break;
     }
@@ -279,15 +279,15 @@ bool MainComponent::perform(const InvocationInfo& info)
             break;
 
         /* --Help-- */
-        case CommandIDs::welcome:
-            DBG_AND_LOG("MainComponent::perform: \"welcome\" command invoked.");
-            // TODO - openWelcomeWindow();
-
-            break;
-
         case CommandIDs::about:
             DBG_AND_LOG("MainComponent::perform: \"about\" command invoked.");
             openAboutWindow();
+
+            break;
+
+        case CommandIDs::tutorial:
+            DBG_AND_LOG("MainComponent::perform: \"tutorial\" command invoked.");
+            openWelcomeWindow();
 
             break;
 

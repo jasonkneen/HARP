@@ -1014,6 +1014,26 @@ void MediaDisplayComponent::updateCursorPosition()
         Rectangle<float>(cursorPositionX, cursorPositionY, cursorWidth, mediaBounds.getHeight()));
 }
 
+Rectangle<int> MediaDisplayComponent::getChooseFileButtonBounds()
+{
+    if (auto* p = chooseFileButton.getParentComponent())
+    {
+        return getLocalArea(p, chooseFileButton.getBounds());
+    }
+
+    return chooseFileButton.getBounds();
+}
+
+Rectangle<int> MediaDisplayComponent::getPlayButtonBounds()
+{
+    if (auto* p = playStopButton.getParentComponent())
+    {
+        return getLocalArea(p, playStopButton.getBounds());
+    }
+
+    return playStopButton.getBounds();
+}
+
 void MediaDisplayComponent::mouseEnter(const MouseEvent& e)
 {
     if (! isThumbnailTrack() && e.eventComponent == getMediaComponent()

@@ -1,5 +1,7 @@
 #include "MainComponent.h"
 
+#include "windows/WelcomeWindow.h"
+
 JUCE_IMPLEMENT_SINGLETON(HARPLogger)
 
 MainComponent::MainComponent()
@@ -35,6 +37,50 @@ MainComponent::~MainComponent()
 void MainComponent::paint(Graphics& g)
 {
     g.fillAll(getUIColourIfAvailable(LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
+}
+
+void MainComponent::paintOverChildren(Graphics& g)
+{
+    if (isTutorialActive)
+    {
+        auto area = getLocalBounds();
+        g.setColour(Colours::black.withAlpha(0.6f));
+
+        if (tutorialHighlightRect.isEmpty() && tutorialExtraHighlights.empty())
+        {
+            // Full dim if no highlight
+            g.fillAll();
+        }
+        else
+        {
+            // Dim with cutout
+            Path backgroundPath;
+            backgroundPath.addRectangle(area.toFloat());
+
+            Path highlightPath;
+            if (! tutorialHighlightRect.isEmpty())
+                highlightPath.addRoundedRectangle(tutorialHighlightRect.toFloat(), 5.0f);
+
+            // Add extra highlights to the cutout path
+            for (auto& rect : tutorialExtraHighlights)
+            {
+                highlightPath.addRoundedRectangle(rect.toFloat(), 5.0f);
+            }
+
+            backgroundPath.setUsingNonZeroWinding(false);
+            backgroundPath.addPath(highlightPath);
+
+            g.fillPath(backgroundPath);
+
+            g.setColour(Colours::white);
+            g.drawRoundedRectangle(tutorialHighlightRect.toFloat(), 5.0f, 2.0f);
+
+            for (auto& rect : tutorialExtraHighlights)
+            {
+                g.drawRoundedRectangle(rect.toFloat(), 5.0f, 2.0f);
+            }
+        }
+    }
 }
 
 void MainComponent::resized()
@@ -75,6 +121,11 @@ void MainComponent::resized()
     }
 
     fullWindow.performLayout(fullArea);
+
+    if (welcomeWindow != nullptr)
+    {
+        welcomeWindow->refreshHighlightForCurrentStep();
+    }
 }
 
 void MainComponent::updateWindowConstraints()
@@ -303,7 +354,208 @@ void MainComponent::openAboutWindow()
     options.launchAsync();
 }
 
-// void MainComponent::openWelcomeWindow() { TODO }
+void MainComponent::openWelcomeWindow(bool ensureDefaultModelLoaded)
+{
+    if (ensureDefaultModelLoaded)
+        ensureTutorialModelLoaded();
+
+    if (welcomeWindow != nullptr)
+    {
+        welcomeWindow->toFront(true);
+        return;
+    }
+
+    Component::SafePointer<MainComponent> safeThis(this);
+    MessageManager::callAsync(
+        [safeThis]()
+        {
+            if (safeThis == nullptr)
+                return;
+
+            safeThis->welcomeWindow.reset(new WelcomeWindow(safeThis.getComponent()));
+            safeThis->welcomeWindow->onClose = [safeThis]()
+            {
+                if (safeThis != nullptr)
+                    safeThis->welcomeWindow.reset();
+            };
+
+            safeThis->welcomeWindow->setVisible(true);
+            safeThis->welcomeWindow->toFront(true);
+        });
+}
+
+/* --Tutorial-- */
+
+void MainComponent::setTutorialActive(bool active)
+{
+    isTutorialActive = active;
+    repaint();
+}
+
+void MainComponent::setTutorialHighlight(Rectangle<int> bounds)
+{
+    tutorialHighlightRect = bounds;
+    repaint();
+}
+
+void MainComponent::setTutorialExtraHighlights(std::vector<Rectangle<int>> bounds)
+{
+    tutorialExtraHighlights = bounds;
+    repaint();
+}
+
+void MainComponent::ensureTutorialModelLoaded()
+{
+    if (! mainModelTab.isModelLoaded())
+        mainModelTab.loadDefaultModel();
+}
+
+void MainComponent::resetTutorialAutoLoadedModel()
+{
+    if (! mainModelTab.isModelLoaded())
+        return;
+
+    if (mainModelTab.getLoadedPath() == TutorialConstants::fallbackModelPath)
+    {
+        mainModelTab.resetState();
+    }
+}
+
+Rectangle<int> MainComponent::getModelSelectBounds()
+{
+    auto bounds = mainModelTab.getModelSelectBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getControlsBounds()
+{
+    auto bounds = mainModelTab.getControlsBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getInputTrackBounds()
+{
+    auto bounds = mainModelTab.getInputTrackBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getInputFolderBounds()
+{
+    auto bounds = mainModelTab.getInputFolderBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getInputPlayBounds()
+{
+    auto bounds = mainModelTab.getInputPlayBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getProcessButtonBounds()
+{
+    auto bounds = mainModelTab.getProcessButtonBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getTracksBounds()
+{
+    auto bounds = mainModelTab.getTracksBounds();
+    return getLocalArea(&mainModelTab, bounds);
+}
+
+Rectangle<int> MainComponent::getClipboardBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+        return mediaClipboardWidget.getBounds();
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardTrackAreaBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardTrackAreaBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardControlsBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardControlsBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardNameBoxBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardNameBoxBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardButtonsBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getClipboardButtonsBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardAddButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getAddFileButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardRemoveButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getRemoveButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardPlayButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getPlayButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getClipboardSendToDAWButtonBounds()
+{
+    if (showMediaClipboard && mediaClipboardWidget.isVisible())
+    {
+        auto bounds = mediaClipboardWidget.getSendToDAWButtonBounds();
+        return getLocalArea(&mediaClipboardWidget, bounds);
+    }
+    return {};
+}
+
+Rectangle<int> MainComponent::getInfoBarBounds()
+{
+    if (showStatusArea && statusAreaWidget.isVisible())
+        return statusAreaWidget.getBounds();
+    return {};
+}
 
 /* --Miscellaneous-- */
 

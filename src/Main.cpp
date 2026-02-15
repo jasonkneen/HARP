@@ -76,36 +76,15 @@ public:
 
         mainWindow.reset(new HARPWindow(windowTitle));
 
-        bool forceShowWelcome = false;
-
-        bool showWelcome = true;
-
-        if (! forceShowWelcome)
-        {
-            if (Settings::containsKey("view.showWelcomePopup"))
-            {
-                showWelcome = Settings::getIntValue("view.showWelcomePopup", 1) == 1;
-            }
-        }
+        bool showWelcome = Settings::getBoolValue("view.showWelcomePopup", true);
 
         if (showWelcome)
         {
-            MessageManager::callAsync(
-                [this]()
-                {
-                    DialogWindow::LaunchOptions opts;
-                    opts.dialogTitle = "Welcome";
-                    opts.content.setOwned(new WelcomeWindow(
-                        [this]()
-                        {
-                            if (auto* mainComp =
-                                    dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
-                                mainComp->openSettingsWindow();
-                        }));
-                    opts.content->setSize(480, 500);
-                    opts.useNativeTitleBar = true;
-                    opts.launchAsync();
-                });
+            if (auto* mainComp =
+                    dynamic_cast<MainComponent*>(getMainWindowPtr()->getContentComponent()))
+            {
+                mainComp->openWelcomeWindow();
+            }
         }
 
         StringArray args;
@@ -585,7 +564,7 @@ private:
                     debugAndLog(
                         "GuiAppApplication::handleFileOpenChoice: No window currently focused. Importing file to main window.");
 
-                    windowForFileImport = mainWindow.get();
+                    windowForFileImport = getMainWindowPtr();
                 }
 
                 if (auto* mainComp =

@@ -17,6 +17,7 @@
 
 #include "utils/Errors.h"
 #include "utils/Logging.h"
+#include "utils/Tutorial.h"
 
 using namespace juce;
 
@@ -47,6 +48,66 @@ public:
     }
 
     ~ModelTab() { modelSelectionWidget.removeChangeListener(this); }
+
+    // Accessor methods for WelcomeWindow tutorial
+    std::shared_ptr<Model> getModel() const { return model; }
+    String getLoadedPath() const { return model->getLoadedPath(); }
+
+    void loadDefaultModel()
+    {
+        modelSelectionWidget.loadModelBypass(TutorialConstants::fallbackModelPath);
+    }
+
+    // Bounds accessors for tutorial steps
+    Rectangle<int> getModelSelectBounds() const
+    {
+        return modelSelectionWidget.getBounds().expanded(2, 2);
+    }
+
+    Rectangle<int> getControlsBounds() const
+    {
+        auto bounds = controlAreaWidget.getBounds();
+
+        if (bounds.getWidth() > 0 && bounds.getHeight() > 0)
+            return bounds.expanded(2, 2);
+
+        return {};
+    }
+
+    Rectangle<int> getInputFolderBounds()
+    {
+        auto bounds = inputTrackAreaWidget.getFirstTrackFolderButtonBounds();
+        return getLocalArea(&inputTrackAreaWidget, bounds);
+    }
+
+    Rectangle<int> getInputPlayBounds()
+    {
+        auto bounds = inputTrackAreaWidget.getFirstTrackPlayButtonBounds();
+        return getLocalArea(&inputTrackAreaWidget, bounds);
+    }
+
+    Rectangle<int> getInputTrackBounds() const { return inputTrackAreaWidget.getBounds(); }
+
+    Rectangle<int> getProcessButtonBounds() const { return processCancelButton.getBounds(); }
+
+    Rectangle<int> getTracksBounds() const
+    {
+        auto bounds = inputTrackAreaWidget.getBounds();
+        if (outputTrackAreaWidget.isVisible())
+            bounds = bounds.getUnion(outputTrackAreaWidget.getBounds());
+
+        if (inputTracksLabel.isVisible())
+            bounds = bounds.getUnion(inputTracksLabel.getBounds());
+        if (outputTracksLabel.isVisible())
+            bounds = bounds.getUnion(outputTracksLabel.getBounds());
+
+        return bounds.expanded(2, 2);
+    }
+
+    bool isModelLoaded()
+    {
+        return model->isLoaded();
+    }
 
     void resized() override
     {
@@ -170,7 +231,7 @@ public:
 
     void resetState()
     {
-        model.reset();
+        model = std::make_shared<Model>();
 
         modelSelectionWidget.resetState();
         modelInfoWidget.resetState();
@@ -182,6 +243,8 @@ public:
         processCancelButton.setEnabled(false);
 
         currentProcessID = 0;
+
+        resized();
     }
 
 private:
@@ -373,8 +436,9 @@ private:
                             inputTrackAreaWidget.updateTracks(model->getInputTracks());
                             outputTrackAreaWidget.updateTracks(model->getOutputTracks());
 
-                            sendSynchronousChangeMessage();
                             resized();
+
+                            sendSynchronousChangeMessage();
 
                             // Re-enable processing immediately
                             processCancelButton.setEnabled(true);
