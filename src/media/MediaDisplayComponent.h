@@ -126,6 +126,8 @@ public:
 
     virtual bool isPlaying() { return transportSource.isPlaying(); }
 
+    void setChooseFileButtonEnabled(bool enabled);
+
     Rectangle<int> getChooseFileButtonBounds();
     Rectangle<int> getPlayButtonBounds();
 
@@ -244,6 +246,7 @@ private:
     MultiButton::Mode stopButtonInfo;
     MultiButton chooseFileButton;
     MultiButton::Mode chooseFileButtonInfo;
+    MultiButton::Mode chooseFileButtonInactiveInfo;
     MultiButton saveFileButton;
     MultiButton::Mode saveFileButtonActiveInfo;
     MultiButton::Mode saveFileButtonInactiveInfo;

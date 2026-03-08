@@ -493,6 +493,12 @@ private:
         modelSelectionWidget.setDisabled();
         processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
+        // Switch choose-file button to inactive mode on all tracks during processing
+        for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
+            mediaDisplay->setChooseFileButtonEnabled(false);
+        for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
+            mediaDisplay->setChooseFileButtonEnabled(false);
+
         uint64_t processID = currentProcessID;
 
         processingThreadPool.addJob(
@@ -527,6 +533,12 @@ private:
                             modelSelectionWidget
                                 .setFinishedState(); // TODO - should this be last selected?
                             processCancelButton.setMode(processButtonInfo.displayLabel);
+
+                            // Switch choose-file button back to active on all tracks
+                            for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
+                                mediaDisplay->setChooseFileButtonEnabled(true);
+                            for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
+                                mediaDisplay->setChooseFileButtonEnabled(true);
                         };
 
                         if (result.wasOk())
@@ -572,6 +584,12 @@ private:
 
         processCancelButton.setMode(processButtonInfo.displayLabel);
         processCancelButton.setEnabled(true);
+
+        // Switch choose-file button back to active on all tracks
+        for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
+            mediaDisplay->setChooseFileButtonEnabled(true);
+        for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
+            mediaDisplay->setChooseFileButtonEnabled(true);
     }
 
     static constexpr float marginSize = 2;

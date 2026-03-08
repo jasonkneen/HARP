@@ -80,7 +80,12 @@ void MediaDisplayComponent::initializeButtons()
                                                MultiButton::DrawingMode::IconOnly,
                                                Colours::lightblue,
                                                fontawesome::Folder };
+    chooseFileButtonInactiveInfo =
+        MultiButton::Mode { "ChooseFile-Inactive", "Cannot choose file while processing.",
+                            [this] {}, MultiButton::DrawingMode::IconOnly,
+                            Colours::lightgrey, fontawesome::Folder };
     chooseFileButton.addMode(chooseFileButtonInfo);
+    chooseFileButton.addMode(chooseFileButtonInactiveInfo);
     headerComponent.addAndMakeVisible(chooseFileButton);
 
     // Mode when an unsaved file is loaded
@@ -1012,6 +1017,12 @@ void MediaDisplayComponent::updateCursorPosition()
 
     currentPositionCursor.setRectangle(
         Rectangle<float>(cursorPositionX, cursorPositionY, cursorWidth, mediaBounds.getHeight()));
+}
+
+void MediaDisplayComponent::setChooseFileButtonEnabled(bool enabled)
+{
+    chooseFileButton.setMode(enabled ? chooseFileButtonInfo.displayLabel
+                                     : chooseFileButtonInactiveInfo.displayLabel);
 }
 
 Rectangle<int> MediaDisplayComponent::getChooseFileButtonBounds()
