@@ -104,10 +104,7 @@ public:
         return bounds.expanded(2, 2);
     }
 
-    bool isModelLoaded()
-    {
-        return model->isLoaded();
-    }
+    bool isModelLoaded() { return model->isLoaded(); }
 
     void resized() override
     {
@@ -494,10 +491,7 @@ private:
         processCancelButton.setMode(cancelButtonInfo.displayLabel);
 
         // Switch choose-file button to inactive mode on all tracks during processing
-        for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
-            mediaDisplay->setChooseFileButtonEnabled(false);
-        for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
-            mediaDisplay->setChooseFileButtonEnabled(false);
+        inputTrackAreaWidget.setLoadTrackEnabled(false);
 
         uint64_t processID = currentProcessID;
 
@@ -535,10 +529,7 @@ private:
                             processCancelButton.setMode(processButtonInfo.displayLabel);
 
                             // Switch choose-file button back to active on all tracks
-                            for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
-                                mediaDisplay->setChooseFileButtonEnabled(true);
-                            for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
-                                mediaDisplay->setChooseFileButtonEnabled(true);
+                            inputTrackAreaWidget.setLoadTrackEnabled(true);
                         };
 
                         if (result.wasOk())
@@ -586,10 +577,7 @@ private:
         processCancelButton.setEnabled(true);
 
         // Switch choose-file button back to active on all tracks
-        for (auto& mediaDisplay : inputTrackAreaWidget.getMediaDisplays())
-            mediaDisplay->setChooseFileButtonEnabled(true);
-        for (auto& mediaDisplay : outputTrackAreaWidget.getMediaDisplays())
-            mediaDisplay->setChooseFileButtonEnabled(true);
+        inputTrackAreaWidget.setLoadTrackEnabled(true);
     }
 
     static constexpr float marginSize = 2;
