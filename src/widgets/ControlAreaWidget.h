@@ -1,404 +1,448 @@
-#include "juce_gui_basics/juce_gui_basics.h"
+/**
+ * @file ControlAreaWidget.h
+ * @brief Component comprising all model controls.
+ * @author hugofloresgarcia, xribene, cwitkowitz
+ */
 
-#include "../WebModel.h"
-#include "../gui/SliderWithLabel.h"
-#include "../gui/TitledTextBox.h"
+#pragma once
+
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "../gui/HoverableLabel.h"
+#include "../widgets/StatusAreaWidget.h"
+
 #include "../gui/ComboBoxWithLabel.h"
-#include "../gui/StatusComponent.h"
 #include "../gui/HoverHandler.h"
-#include "../utils.h"
+#include "../gui/SliderWithLabel.h"
+#include "../gui/TextBoxWithLabel.h"
+#include "../gui/ToggleWithLabel.h"
 
-class ControlAreaWidget : public juce::Component,
-                          public Button::Listener,
-                          public Slider::Listener,
-                          public ComboBox::Listener,
-                          public TextEditor::Listener
+#include "../utils/Controls.h"
+#include "../utils/Logging.h"
+
+using namespace juce;
+
+class ControlAreaWidget : public Component
 {
 public:
-    ControlAreaWidget() {}
-
-    void setModel(std::shared_ptr<WebModel> model) { mModel = model; }
-
-    void populateControls()
-    {
-        // headerLabel.setText("No model loaded", juce::dontSendNotification);
-        // headerLabel.setJustificationType(juce::Justification::centred);
-        // addAndMakeVisible(headerLabel);
-
-        if (mModel == nullptr)
-        {
-            DBG("populate gui called, but model is null");
-            return;
-        }
-
-        auto& controlsInfo = mModel->getControlsInfo();
-        // // clear the m_ctrls vector
-        // m_ctrls.clear();
-        // juce::Array<juce::var>& inputComponents = mModel->getControls();
-
-        // // iterate through the list of input components
-        // // and choosing only the ones that correspond to input controls and not input media
-        for (const auto& pair : controlsInfo)
-        {
-            auto controlInfo = pair.second;
-            // SliderCtrl
-            if (auto sliderCtrl = dynamic_cast<SliderInfo*>(controlInfo.get()))
-            {
-                auto sliderWithLabel = std::make_unique<SliderWithLabel>(
-                    sliderCtrl->label, juce::Slider::RotaryHorizontalVerticalDrag);
-                // auto& label = sliderWithLabel->getLabel();
-                // label.setColour(juce::Label::ColourIds::textColourId, mHARPLookAndFeel.textHeaderColor);
-                auto& slider = sliderWithLabel->getSlider();
-                slider.setName(sliderCtrl->id.toString());
-                slider.setRange(sliderCtrl->minimum, sliderCtrl->maximum, sliderCtrl->step);
-                slider.setValue(sliderCtrl->value);
-                slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
-                slider.addListener(this);
-                addAndMakeVisible(*sliderWithLabel);
-                sliders.push_back(std::move(sliderWithLabel));
-                auto sliderHandler = std::make_unique<HoverHandler>(slider);
-                juce::String infoString(sliderCtrl->info);
-                sliderHandler->onMouseEnter = [this, infoString]()
-                { updateInstructionBox(infoString); };
-                sliderHandler->onMouseExit = [this]() { updateInstructionBox(""); };
-                sliderHandler->attach();
-                handlers.push_back(std::move(sliderHandler));
-                DBG("Slider: " + sliderCtrl->label + " added");
-
-                // ToggleCtrl
-            }
-            else if (auto toggleCtrl = dynamic_cast<ToggleInfo*>(controlInfo.get()))
-            {
-                auto toggle = std::make_unique<juce::ToggleButton>();
-                toggle->setName(toggleCtrl->id.toString());
-                toggle->setTitle(toggleCtrl->label);
-                toggle->setButtonText(toggleCtrl->label);
-                toggle->setToggleState(toggleCtrl->value, juce::dontSendNotification);
-                toggle->addListener(this);
-                addAndMakeVisible(*toggle);
-                auto toggleHandler = std::make_unique<HoverHandler>(*toggle);
-                juce::String infoString(toggleCtrl->info);
-                toggleHandler->onMouseEnter = [this, infoString]()
-                { updateInstructionBox(infoString); };
-                toggleHandler->onMouseExit = [this]() { updateInstructionBox(""); };
-                toggleHandler->attach();
-                handlers.push_back(std::move(toggleHandler));
-                toggles.push_back(std::move(toggle));
-                DBG("Toggle: " + toggleCtrl->label + " added");
-
-                // TextBoxCtrl
-            }
-            else if (auto textBoxCtrl = dynamic_cast<TextBoxInfo*>(controlInfo.get()))
-            {
-                auto textCtrl = std::make_unique<TitledTextBox>();
-                textCtrl->setName(textBoxCtrl->id.toString());
-                textCtrl->setTitle(textBoxCtrl->label);
-                textCtrl->setText(textBoxCtrl->value);
-                textCtrl->addListener(this);
-                addAndMakeVisible(*textCtrl);
-                auto textHandler = std::make_unique<HoverHandler>(*textCtrl);
-                juce::String infoString(textBoxCtrl->info);
-                textHandler->onMouseEnter = [this, infoString]()
-                { updateInstructionBox(infoString); };
-                textHandler->onMouseExit = [this]() { updateInstructionBox(""); };
-                textHandler->attach();
-                handlers.push_back(std::move(textHandler));
-                textCtrls.push_back(std::move(textCtrl));
-                DBG("Text Box: " + textBoxCtrl->label + " added");
-
-                // ComboBoxCtrl
-            }
-            else if (auto comboBoxCtrl = dynamic_cast<ComboBoxInfo*>(controlInfo.get()))
-            {
-                auto comboBoxWithLabel = std::make_unique<ComboBoxWithLabel>(comboBoxCtrl->label);
-                auto& comboBox = comboBoxWithLabel->getComboBox();
-                comboBox.setName(comboBoxCtrl->id.toString());
-                for (const auto& option : comboBoxCtrl->options)
-                {
-                    comboBox.addItem(option, comboBox.getNumItems() + 1);
-                }
-
-                // Set initial selection if value is present
-                if (! comboBoxCtrl->value.empty())
-                {
-                    comboBox.setSelectedItemIndex(
-                        std::distance(comboBoxCtrl->options.begin(),
-                                      std::find(comboBoxCtrl->options.begin(),
-                                                comboBoxCtrl->options.end(),
-                                                comboBoxCtrl->value)),
-                        juce::dontSendNotification);
-                }
-                else
-                {
-                    comboBox.setSelectedItemIndex(
-                        0, juce::dontSendNotification); // fallback to first item
-                }
-
-                comboBox.addListener(this);
-                comboBox.setTextWhenNoChoicesAvailable("No choices");
-                addAndMakeVisible(*comboBoxWithLabel);
-                auto comboHandler = std::make_unique<HoverHandler>(*comboBoxWithLabel);
-                juce::String infoString(comboBoxCtrl->info);
-                comboHandler->onMouseEnter = [this, infoString]()
-                { updateInstructionBox(infoString); };
-                comboHandler->onMouseExit = [this]() { updateInstructionBox(""); };
-                comboHandler->attach();
-                handlers.push_back(std::move(comboHandler));
-                optionCtrls.push_back(std::move(comboBoxWithLabel));
-                DBG("Combo Box: " + comboBoxCtrl->label + " added");
-            }
-            // TODO: NumberBox (check class HarpNumberBox in pyharp)
-        }
-
-        repaint();
-        resized();
-    }
-
-    void resetUI()
-    {
-        DBG("ControlAreaWidget::resetUI called");
-        mModel.reset();
-        // remove all the widgets and empty the vectors
-        for (auto& ctrl : sliders)
-        {
-            removeChildComponent(ctrl.get());
-        }
-        sliders.clear();
-
-        for (auto& ctrl : toggles)
-        {
-            removeChildComponent(ctrl.get());
-        }
-        toggles.clear();
-
-        for (auto& ctrl : optionCtrls)
-        {
-            removeChildComponent(ctrl.get());
-        }
-        optionCtrls.clear();
-
-        for (auto& ctrl : textCtrls)
-        {
-            removeChildComponent(ctrl.get());
-        }
-        textCtrls.clear();
-    }
+    ControlAreaWidget() { resetState(); }
+    ~ControlAreaWidget() { resetState(); }
 
     void resized() override
     {
-        /*
-        place sliders side by side, with minWidth 30 and max 50
-        place toggles first in their own column with minWidth 30 and maxWidth 50, and then put them in the same row as sliders.
-        place textboxes side by side with minWIdth 80 and max 200
-        Precalculate the length of all the controls side by side and dynamically set the number of rows. 
-        For example if 1 slider 1 toggle and 1 textbox, their total min width is 30 + 30 + 80 = 140
-        so if the area.width() is 200, then we can fit all of them in one row.
-        If however, the area.width() is 100, then we need to put them in two rows.
-        Another example, if 2 sliders, 2 toggles and 2 textboxes, their total min width is 60 + 30 + 160 = 250
-        The reason that I don't count the width of toggles 2 times is because they are first placed in their own column.
-        
-        */
-        auto area = getLocalBounds();
+        auto area = getLocalBounds().reduced(marginSize);
 
-        // headerLabel.setBounds(area.removeFromTop(30));  // Adjust height to your preference
+        auto rows = buildRowsForWidth(area.getWidth());
 
-        juce::FlexBox mainBox;
-        mainBox.flexDirection =
-            juce::FlexBox::Direction::row; // Set the main flex direction to column
-
-        // juce::FlexItem::Margin margin(2);
-        int margin = 4;
-        int maxHeight = 100;
-        // Sliders
-        juce::FlexBox sliderBox;
-        sliderBox.flexDirection = juce::FlexBox::Direction::row;
-        for (auto& sliderWithLabel : sliders)
+        if (area.isEmpty() || rows.empty())
         {
-            // DBG("Adding slider with name: " + sliderWithLabel->getSlider().getName()
-            //     + " to sliderBox");
-            sliderBox.items.add(juce::FlexItem(*sliderWithLabel)
-                                    .withFlex(1)
-                                    .withMinWidth(20)
-                                    .withMaxHeight(maxHeight)
-                                    .withMargin(margin)); // Adjusted min height
-        }
-
-        // Toggles
-        juce::FlexBox toggleBox;
-        toggleBox.flexDirection = juce::FlexBox::Direction::row;
-        for (auto& toggle : toggles)
-        {
-            // DBG("Adding toggle with name: " + toggle->getName() + " to toggleBox");
-            toggleBox.items.add(
-                juce::FlexItem(*toggle).withFlex(1).withMinWidth(40).withMaxHeight(20).withMargin(
-                    margin));
-        }
-
-        // Option Controls
-        juce::FlexBox optionBox;
-        optionBox.flexDirection = juce::FlexBox::Direction::row;
-        for (auto& optionCtrl : optionCtrls)
-        {
-            // DBG("Adding option control with name: " + optionCtrl->getName() + " to optionBox");
-            optionBox.items.add(juce::FlexItem(*optionCtrl)
-                                    .withFlex(1)
-                                    .withMinWidth(40)
-                                    .withMaxHeight(50)
-                                    .withMargin(margin));
-        }
-
-        // Text Controls
-        juce::FlexBox textBox;
-        textBox.flexDirection = juce::FlexBox::Direction::row;
-        for (auto& textCtrl : textCtrls)
-        {
-            // DBG("Adding text control with name: " + textCtrl->getName() + " to textBox");
-            textBox.items.add(juce::FlexItem(*textCtrl)
-                                  .withFlex(1)
-                                  .withMinWidth(80)
-                                  .withMaxWidth(180)
-                                  .withMaxHeight(maxHeight)
-                                  .withMargin(margin));
-        }
-
-        // Add each FlexBox to the main FlexBox
-        if (sliders.size() > 0)
-        {
-            mainBox.items.add(juce::FlexItem(sliderBox).withFlex(1).withMinHeight(90));
-        }
-        if (toggles.size() > 0)
-        {
-            mainBox.items.add(
-                juce::FlexItem(toggleBox).withFlex(1).withMinHeight(30).withMargin(margin));
-        }
-        if (optionCtrls.size() > 0)
-        {
-            mainBox.items.add(
-                juce::FlexItem(optionBox).withFlex(1).withMinHeight(30).withMargin(margin));
-        }
-        if (textCtrls.size() > 0)
-        {
-            mainBox.items.add(
-                juce::FlexItem(textBox).withFlex(1).withMinHeight(40).withMargin(margin));
-        }
-
-        // Perform Layout
-        mainBox.performLayout(area);
-    }
-
-    void buttonClicked(Button* button) override
-    {
-        auto id = juce::Uuid(button->getName().toStdString());
-
-        // ComponentInfoList& controlsInfo = mModel->getControlsInfo();
-        auto componentInfo = mModel->findComponentInfoByUuid(id);
-        if (componentInfo == nullptr)
-        {
-            DBG("buttonClicked: ctrl not found");
             return;
         }
-        if (auto toggleInfo = dynamic_cast<ToggleInfo*>(componentInfo.get()))
+
+        int y = area.getY();
+
+        for (const auto& row : rows)
         {
-            toggleInfo->value = button->getToggleState();
-        }
-        else
-        {
-            DBG("buttonClicked: ctrl is not a toggle");
+            if (row.empty())
+            {
+                continue;
+            }
+
+            int totalComponentWidth = 0;
+
+            for (const auto& entry : row)
+            {
+                totalComponentWidth += entry.width;
+            }
+
+            int baseSpacing = minInterItemGap * (int) (row.size() - 1);
+            int remaining = area.getWidth() - totalComponentWidth - baseSpacing;
+
+            int distributed = jmax(0, remaining / ((int) row.size() + 1));
+
+            int edgeGap = minEdgeGap + distributed;
+            int slotGap = minInterItemGap + distributed;
+
+            int rowHeight = getRowHeight(row);
+
+            int x = area.getX() + edgeGap;
+
+            for (const auto& entry : row)
+            {
+                int componentY = y + (rowHeight - entry.height) / 2;
+                entry.component->setBounds(x, componentY, entry.width, entry.height);
+                x += entry.width + slotGap;
+            }
+
+            y += rowHeight + minRowGap;
         }
     }
 
-    void comboBoxChanged(ComboBox* comboBox) override
+    int getNumControls() const
     {
-        auto id = juce::Uuid(comboBox->getName().toStdString());
-
-        // ComponentInfoList& controlsInfo = mModel->getControlsInfo();
-        auto componentInfo = mModel->findComponentInfoByUuid(id);
-        if (componentInfo == nullptr)
-        {
-            DBG("comboBoxChanged: ctrl not found");
-            return;
-        }
-        if (auto comboBoxInfo = dynamic_cast<ComboBoxInfo*>(componentInfo.get()))
-        {
-            comboBoxInfo->value = comboBox->getText().toStdString();
-        }
-        else
-        {
-            DBG("comboBoxChanged: ctrl is not a combobox");
-        }
+        return sliderComponents.size() + toggleComponents.size() + dropdownComponents.size()
+               + textComponents.size();
     }
 
-    void textEditorTextChanged(TextEditor& textEditor) override
+    int getMinimumRequiredWidth() const
     {
-        auto id = juce::Uuid(textEditor.getName().toStdString());
+        int requiredWidth = 0;
 
-        // ComponentInfoList& controlsInfo = mModel->getControlsInfo();
-        auto componentInfo = mModel->findComponentInfoByUuid(id);
-        if (componentInfo == nullptr)
+        auto checkGroup = [&](const auto& group)
         {
-            DBG("textEditorTextChanged: ctrl not found");
-            return;
-        }
-        if (auto textBoxInfo = dynamic_cast<TextBoxInfo*>(componentInfo.get()))
-        {
-            textBoxInfo->value = textEditor.getText().toStdString();
-        }
-        else
-        {
-            DBG("textEditorTextChanged: ctrl is not a text box");
-        }
+            for (const auto& c : group)
+            {
+                requiredWidth = jmax(requiredWidth, c->getMinimumRequiredWidth());
+            }
+        };
+
+        checkGroup(sliderComponents);
+        checkGroup(toggleComponents);
+        checkGroup(dropdownComponents);
+        checkGroup(textComponents);
+
+        return requiredWidth + 2 * (marginSize + minEdgeGap);
     }
 
-    void sliderValueChanged(Slider* slider) override { ignoreUnused(slider); }
-
-    void sliderDragEnded(Slider* slider) override
+    int getRequiredHeightForWidth(int width) const
     {
-        auto id = juce::Uuid(slider->getName().toStdString());
+        auto rows = buildRowsForWidth(width - 2 * marginSize);
 
-        // ComponentInfoList& controlsInfo = mModel->getControlsInfo();
-        auto componentInfo = mModel->findComponentInfoByUuid(id);
-        // Check if pair is nullptr
-        if (componentInfo == nullptr)
+        if (rows.empty())
         {
-            DBG("sliderDragEnded: ctrl not found");
-            return;
+            return 0;
         }
-        if (auto sliderInfo = dynamic_cast<SliderInfo*>(componentInfo.get()))
+
+        int totalHeight = 2 * marginSize;
+
+        for (size_t i = 0; i < rows.size(); ++i)
         {
-            sliderInfo->value = slider->getValue();
+            totalHeight += getRowHeight(rows[i]);
+
+            if (i + 1 < rows.size())
+            {
+                totalHeight += minRowGap;
+            }
         }
-        else if (auto numberBoxInfo = dynamic_cast<NumberBoxInfo*>(componentInfo.get()))
+
+        return totalHeight;
+    }
+
+    void resetState()
+    {
+        for (auto& c : textComponents)
         {
-            numberBoxInfo->value = slider->getValue();
+            removeChildComponent(c.get());
         }
-        else
+        textComponents.clear();
+
+        // TODO - numberComponents
+
+        for (auto& c : toggleComponents)
         {
-            DBG("sliderDragEnded: ctrl is not a slider");
+            removeChildComponent(c.get());
         }
+        toggleComponents.clear();
+
+        for (auto& c : sliderComponents)
+        {
+            removeChildComponent(c.get());
+        }
+        sliderComponents.clear();
+
+        for (auto& c : dropdownComponents)
+        {
+            removeChildComponent(c.get());
+        }
+        dropdownComponents.clear();
+
+        handlers.clear();
+    }
+
+    void updateControls(const ModelComponentInfoList& controlsInfo)
+    {
+        resetState();
+
+        for (const auto& info : controlsInfo)
+        {
+            if (auto* textInfo = dynamic_cast<TextBoxComponentInfo*>(info.get()))
+            {
+                addTextBox(textInfo);
+            }
+            //else if (const auto* numberInfo = dynamic_cast<NumberBoxComponentInfo*>(info.get())) { addNumberBox(numberInfo); }
+            else if (auto* toggleInfo = dynamic_cast<ToggleComponentInfo*>(info.get()))
+            {
+                addToggle(toggleInfo);
+            }
+            else if (auto* sliderInfo = dynamic_cast<SliderComponentInfo*>(info.get()))
+            {
+                addSlider(sliderInfo);
+            }
+            else if (auto* dropdownInfo = dynamic_cast<ComboBoxComponentInfo*>(info.get()))
+            {
+                addDropdown(dropdownInfo);
+            }
+            else
+            {
+                // Unsupported control detected
+                jassertfalse;
+            }
+        }
+
+        resized();
     }
 
 private:
-    // ToolbarSliderStyle toolbarSliderStyle;
-    juce::SharedResourcePointer<InstructionBox> instructionBox;
-    // TODO - remove model and parameterize based on ComponentInfoList
-    //        and split into separate addCtrl functions?
-    std::shared_ptr<WebModel> mModel { nullptr };
+    void addTextBox(TextBoxComponentInfo* info)
+    {
+        std::unique_ptr<TextBoxWithLabel> textComponent =
+            std::make_unique<TextBoxWithLabel>(info->label);
 
-    juce::Label headerLabel;
+        auto& textBox = textComponent->getTextBox();
 
-    // Vectors of unique pointers to widgets
-    std::vector<std::unique_ptr<SliderWithLabel>> sliders;
-    std::vector<std::unique_ptr<juce::ToggleButton>> toggles;
-    std::vector<std::unique_ptr<ComboBoxWithLabel>> optionCtrls;
-    std::vector<std::unique_ptr<TitledTextBox>> textCtrls;
+        textComponent->setText(info->value);
+
+        addHandler(&textBox, info);
+        textBox.addListener(info);
+
+        addAndMakeVisible(*textComponent);
+
+        textComponents.push_back(std::move(textComponent));
+    }
+
+    // TODO - void addNumberBox() {}
+
+    void addToggle(ToggleComponentInfo* info)
+    {
+        std::unique_ptr<ToggleWithLabel> toggleComponent =
+            std::make_unique<ToggleWithLabel>(info->label);
+
+        auto& toggle = toggleComponent->getToggleButton();
+
+        toggleComponent->setToggleState(info->value, dontSendNotification);
+
+        addHandler(&toggle, info);
+        toggle.addListener(info);
+
+        addAndMakeVisible(*toggleComponent);
+
+        toggleComponents.push_back(std::move(toggleComponent));
+    }
+
+    void addSlider(SliderComponentInfo* info)
+    {
+        std::unique_ptr<SliderWithLabel> sliderComponent =
+            std::make_unique<SliderWithLabel>(info->label, Slider::RotaryHorizontalVerticalDrag);
+
+        auto& slider = sliderComponent->getSlider();
+
+        slider.setRange(info->minimum, info->maximum, info->step);
+        slider.setValue(info->value);
+        slider.setTextBoxStyle(Slider::TextBoxBelow, false, 80, 20);
+
+        addHandler(&slider, info);
+        slider.addListener(info);
+
+        addAndMakeVisible(*sliderComponent);
+
+        sliderComponents.push_back(std::move(sliderComponent));
+    }
+
+    void addDropdown(ComboBoxComponentInfo* info)
+    {
+        std::unique_ptr<ComboBoxWithLabel> dropdownComponent =
+            std::make_unique<ComboBoxWithLabel>(info->label);
+
+        auto& dropdown = dropdownComponent->getComboBox();
+        auto font = dropdown.getLookAndFeel().getComboBoxFont(dropdown);
+        int widestOptionText = 0;
+
+        for (const auto& option : info->options)
+        {
+            dropdown.addItem(option, dropdown.getNumItems() + 1);
+            widestOptionText = jmax(widestOptionText, font.getStringWidth(option));
+        }
+
+        if (! info->value.empty())
+        {
+            // Set initial selection if "value" was provided
+            dropdown.setSelectedItemIndex(
+                std::distance(info->options.begin(),
+                              std::find(info->options.begin(), info->options.end(), info->value)),
+                dontSendNotification);
+        }
+        else
+        {
+            // Fallback to first item
+            dropdown.setSelectedItemIndex(0, dontSendNotification);
+        }
+        dropdown.setTextWhenNoChoicesAvailable("Empty");
+        dropdownComponent->setMinimumContentWidth(widestOptionText);
+
+        addHandler(&dropdown, info);
+        dropdown.addListener(info);
+
+        addAndMakeVisible(*dropdownComponent);
+
+        dropdownComponents.push_back(std::move(dropdownComponent));
+    }
+
+    void addHandler(Component* comp, ModelComponentInfo* info)
+    {
+        std::unique_ptr<HoverHandler> handler = std::make_unique<HoverHandler>(*comp);
+
+        handler->onMouseEnter = [this, info]() { setInstructions(info->info); };
+        handler->onMouseExit = [this]() { clearInstructions(); };
+        handler->attach();
+
+        handlers.push_back(std::move(handler));
+    }
+
+    void setInstructions(const String& text)
+    {
+        if (text.isNotEmpty() && instructionsMessage != nullptr)
+        {
+            instructionsMessage->setMessage(text);
+        }
+    }
+
+    void clearInstructions()
+    {
+        if (instructionsMessage != nullptr)
+        {
+            instructionsMessage->clearMessage();
+        }
+    }
+
+    struct LayoutSpec
+    {
+        int preferredWidth;
+        int minHeight;
+    };
+
+    struct RowEntry
+    {
+        ControlComponent* component = nullptr;
+
+        int width = 0;
+        int height = 0;
+    };
+
+    std::vector<std::vector<RowEntry>> buildRowsForWidth(int width) const
+    {
+        std::vector<std::vector<RowEntry>> rows;
+
+        if (width <= 0)
+        {
+            return rows;
+        }
+
+        addGroupToRows(rows, sliderComponents, 0, width);
+        addGroupToRows(rows, toggleComponents, 1, width);
+        addGroupToRows(rows, dropdownComponents, 2, width);
+        addGroupToRows(rows, textComponents, 3, width);
+
+        return rows;
+    }
+
+    void addGroupToRows(std::vector<std::vector<RowEntry>>& rows,
+                        const auto& components,
+                        int type,
+                        int availableWidth) const
+    {
+        auto spec = getLayoutSpec(type);
+
+        for (const auto& c : components)
+        {
+            int minWidth = c->getMinimumRequiredWidth();
+            int itemWidth = jmax(minWidth, spec.preferredWidth);
+
+            itemWidth = jmin(itemWidth, availableWidth);
+
+            if (rows.empty())
+            {
+                rows.emplace_back();
+            }
+
+            auto& row = rows.back();
+
+            int currentWidth = 0;
+
+            for (const auto& entry : row)
+            {
+                currentWidth += entry.width;
+            }
+
+            if (! row.empty())
+            {
+                currentWidth += minInterItemGap * (int) row.size();
+            }
+
+            int candidateWidth = currentWidth + (row.empty() ? 0 : minInterItemGap) + itemWidth;
+
+            if (! row.empty() && candidateWidth > availableWidth)
+            {
+                rows.emplace_back();
+            }
+
+            auto& activeRow = rows.back();
+
+            activeRow.push_back({ c.get(), itemWidth, spec.minHeight });
+        }
+    }
+
+    LayoutSpec getLayoutSpec(int type) const
+    {
+        switch (type)
+        {
+            case 0:
+                return { preferredSliderWidth, minSliderHeight };
+            case 1:
+                return { preferredToggleWidth, minToggleHeight };
+            case 2:
+                return { preferredDropdownWidth, minDropdownHeight };
+            case 3:
+                return { preferredTextBoxWidth, minTextBoxHeight };
+        }
+
+        return { preferredDropdownWidth, minDropdownHeight };
+    }
+
+    static int getRowHeight(const std::vector<RowEntry>& row)
+    {
+        int height = 0;
+
+        for (const auto& entry : row)
+        {
+            height = jmax(height, entry.height);
+        }
+
+        return height;
+    }
+
+    static constexpr float marginSize = 4;
+
+    static constexpr int minSliderHeight = 108;
+    static constexpr int minToggleHeight = 34;
+    static constexpr int minDropdownHeight = 44;
+    static constexpr int minTextBoxHeight = 84;
+
+    static constexpr int preferredSliderWidth = 108;
+    static constexpr int preferredToggleWidth = 112;
+    static constexpr int preferredDropdownWidth = 140;
+    static constexpr int preferredTextBoxWidth = 200;
+
+    static constexpr int minInterItemGap = 6;
+    static constexpr int minEdgeGap = 4;
+    static constexpr int minRowGap = 6;
+
+    std::vector<std::unique_ptr<TextBoxWithLabel>> textComponents;
+    // TODO - numberComponents
+    std::vector<std::unique_ptr<ToggleWithLabel>> toggleComponents;
+    std::vector<std::unique_ptr<SliderWithLabel>> sliderComponents;
+    std::vector<std::unique_ptr<ComboBoxWithLabel>> dropdownComponents;
 
     std::vector<std::unique_ptr<HoverHandler>> handlers;
 
-    void updateInstructionBox(const juce::String& text)
-    {
-        if (instructionBox != nullptr)
-        {
-            instructionBox->setStatusMessage(text);
-        }
-    }
+    SharedResourcePointer<InstructionsMessage> instructionsMessage;
 };

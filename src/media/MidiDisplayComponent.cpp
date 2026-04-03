@@ -50,8 +50,8 @@ void MidiDisplayComponent::loadMediaFile(const URL& filePath)
 
     if (! midiFile.readFrom(*fileStream))
     {
-        DBG("MidiDisplayComponent::loadMediaFile: Error reading MIDI from file "
-            << file.getFullPathName() << ".");
+        DBG_AND_LOG("MidiDisplayComponent::loadMediaFile: Error reading MIDI from file "
+                    << file.getFullPathName() << ".");
         // TODO - better error handing
         //jassertfalse;
         //return;
@@ -61,7 +61,7 @@ void MidiDisplayComponent::loadMediaFile(const URL& filePath)
 
     totalLengthInSecs = midiFile.getLastTimestamp();
 
-    //DBG("MidiDisplayComponent::loadMediaFile: Total duration of MIDI file " << totalLengthInSecs << " seconds.");
+    //DBG_AND_LOG("MidiDisplayComponent::loadMediaFile: Total duration of MIDI file " << totalLengthInSecs << " seconds.");
 
     pianoRoll.resizeNoteGrid(totalLengthInSecs);
 
@@ -81,6 +81,10 @@ void MidiDisplayComponent::loadMediaFile(const URL& filePath)
     // Keep track of note MIDI numbers
     std::vector<int> midiNumbers;
 
+    // Keep track of current instrument numbers by channel
+    std::array<int, 16> instrumentNumbers;
+    instrumentNumbers.fill(0);
+
     for (int eventIdx = 0; eventIdx < allTracks.getNumEvents(); ++eventIdx)
     {
         const auto midiEvent = allTracks.getEventPointer(eventIdx);
@@ -88,13 +92,27 @@ void MidiDisplayComponent::loadMediaFile(const URL& filePath)
 
         double startTime = midiEvent->message.getTimeStamp();
 
-        //DBG("MidiDisplayComponent::loadMediaFile: Event " << eventIdx << " at " << startTime << ": " << midiMessage.getDescription());
+        //DBG_AND_LOG("MidiDisplayComponent::loadMediaFile: Event " << eventIdx << " at " << startTime << ": " << midiMessage.getDescription());
+
+        int channel = midiMessage.getChannel();
+
+        if (channel == 10)
+        {
+            // TODO - handle drums channel
+        }
+
+        if (midiMessage.isProgramChange())
+        {
+            // Update instrument number for current channel
+            instrumentNumbers[channel - 1] = midiMessage.getProgramChangeNumber();
+        }
 
         if (midiMessage.isNoteOn())
         {
             int noteChannel = midiMessage.getChannel();
             int noteNumber = midiMessage.getNoteNumber();
             int velocity = midiMessage.getVelocity();
+            int instrument = instrumentNumbers[channel - 1];
 
             midiNumbers.push_back(noteNumber);
 
@@ -118,7 +136,8 @@ void MidiDisplayComponent::loadMediaFile(const URL& filePath)
             MidiNote n = MidiNote(static_cast<unsigned char>(noteNumber),
                                   startTime,
                                   duration,
-                                  static_cast<unsigned char>(velocity));
+                                  static_cast<unsigned char>(velocity),
+                                  static_cast<unsigned char>(instrument));
             pianoRoll.insertNote(n);
         }
     }
